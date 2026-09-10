@@ -11,6 +11,8 @@ export default defineConfig({
     hmr: {
       clientPort: 443
     },
+    // Allow all hosts for Arena preview
+    allowedHosts: true,
   },
   preview: {
     host: '0.0.0.0',
