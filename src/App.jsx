@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import MyCourses from './pages/MyCourses';
+import MyPayments from './pages/MyPayments';
 import Learn from './pages/Learn';
 import Enroll from './pages/Enroll';
 import Certificates from './pages/Certificates';
@@ -33,7 +34,6 @@ function AdminRoute({ children }) {
   const { user, loading, isAdmin, isAdminSessionValid } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#020a1f]"><div className="h-8 w-8 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" /></div>;
   if (!user || !isAdmin) return <Navigate to="/admin/login" replace />;
-  // Additional session validation for admin
   if (!isAdminSessionValid()) {
     return <Navigate to="/admin/login" replace />;
   }
@@ -79,22 +79,19 @@ export default function App() {
             <Route path="/verify-certificate" element={<Layout><VerifyCertificate /></Layout>} />
             <Route path="/certificate/:id" element={<Layout><CertificateView /></Layout>} />
 
-            {/* Admin Login - Public but restricted */}
             <Route path="/admin/login" element={<PublicAdminRoute><AdminLogin /></PublicAdminRoute>} />
 
-            {/* Protected */}
             <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
             <Route path="/my-courses" element={<ProtectedRoute><Layout><MyCourses /></Layout></ProtectedRoute>} />
+            <Route path="/my-payments" element={<ProtectedRoute><Layout><MyPayments /></Layout></ProtectedRoute>} />
             <Route path="/learn/:slug" element={<ProtectedRoute><Learn /></ProtectedRoute>} />
             <Route path="/enroll/:slug" element={<ProtectedRoute><Layout><Enroll /></Layout></ProtectedRoute>} />
             <Route path="/certificates" element={<ProtectedRoute><Layout><Certificates /></Layout></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
 
-            {/* Admin - Secure */}
             <Route path="/admin" element={<AdminRedirect />} />
             <Route path="/admin/dashboard" element={<AdminRoute><Layout><Admin /></Layout></AdminRoute>} />
 
-            {/* Fallback */}
             <Route path="*" element={<Layout><div className="min-h-[60vh] flex items-center justify-center text-center p-8"><div><h1 className="font-black text-4xl">404</h1><p className="text-white/60 mt-2">Page not found</p><a href="/" className="inline-flex mt-6 btn-primary">GO HOME</a></div></div></Layout>} />
           </Routes>
         </CourseProvider>

@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Clock, BookOpen, BarChart3, User, Star, CheckCircle2, Play, Award, ArrowRight, Shield, Zap, Globe } from 'lucide-react';
+import { Clock, BookOpen, BarChart3, User, Star, CheckCircle2, Play, Award, ArrowRight, Shield, Zap, Globe, AlertTriangle } from 'lucide-react';
 import { useCourses } from '../context/CourseContext';
 import { useAuth } from '../context/AuthContext';
 import { formatNaira, getCourseThumbnailGradient } from '../lib/utils';
@@ -7,7 +7,7 @@ import { useState } from 'react';
 
 export default function CourseDetails() {
   const { slug } = useParams();
-  const { getCourseBySlug, isEnrolled } = useCourses();
+  const { getCourseBySlug, isEnrolled, getManualPaymentByCourse } = useCourses();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [openModule, setOpenModule] = useState('m1');
@@ -16,6 +16,7 @@ export default function CourseDetails() {
   if (!course) return <div className="p-20 text-center">Course not found</div>;
 
   const enrolled = user ? isEnrolled(user.id, course.id) : false;
+  const manualPayment = user ? getManualPaymentByCourse(user.id, course.id) : null;
   const totalLessons = course.curriculum.reduce((acc, m) => acc + m.lessons.length, 0);
   const gradient = getCourseThumbnailGradient(course.thumbnail);
 
@@ -28,12 +29,22 @@ export default function CourseDetails() {
       navigate(`/learn/${course.slug}`);
       return;
     }
+    if (manualPayment?.status === 'pending') {
+      navigate('/my-payments');
+      return;
+    }
     navigate(`/enroll/${course.slug}`);
+  };
+
+  const getEnrollButtonText = () => {
+    if (enrolled) return 'CONTINUE LEARNING';
+    if (manualPayment?.status === 'pending') return 'PAYMENT PENDING REVIEW';
+    if (manualPayment?.status === 'rejected') return `RETRY PAYMENT - ${formatNaira(course.price)}`;
+    return `ENROLL NOW - ${formatNaira(course.price)}`;
   };
 
   return (
     <div className="min-h-screen">
-      {/* Hero */}
       <div className="relative border-b border-white/[0.06] overflow-hidden">
         <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-20`} />
         <div className="absolute inset-0 bg-gradient-to-t from-[#020a1f] via-[#020a1f]/80 to-transparent" />
@@ -63,7 +74,6 @@ export default function CourseDetails() {
               </div>
             </div>
 
-            {/* Enroll Card */}
             <div className="lg:sticky lg:top-[100px]">
               <div className="rounded-[24px] glass-strong p-[1px]">
                 <div className="rounded-[23px] bg-[#0a1a4a]/80 backdrop-blur-xl overflow-hidden">
@@ -81,11 +91,28 @@ export default function CourseDetails() {
                       <div className="ml-auto px-2.5 py-1 rounded-full bg-green-500/20 text-green-300 text-xs font-bold">{Math.round((1 - course.price / course.originalPrice) * 100)}% OFF</div>
                     </div>
 
-                    <button onClick={handleEnroll} className="w-full btn-primary !py-4 !text-[15px] gap-2">
-                      {enrolled ? 'CONTINUE LEARNING' : `ENROLL NOW - ${formatNaira(course.price)}`} <ArrowRight className="h-4 w-4" />
+                    {manualPayment?.status === 'pending' && (
+                      <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 flex gap-3">
+                        <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0" />
+                        <div className="text-xs">
+                          <div className="font-bold text-amber-300">Payment Pending Review</div>
+                          <div className="text-white/60 mt-1">Ref: {manualPayment.reference} • Submitted {new Date(manualPayment.submittedAt).toLocaleDateString()}. Admin will verify soon.</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {manualPayment?.status === 'rejected' && (
+                      <div className="rounded-2xl bg-red-500/10 border border-red-500/20 p-4">
+                        <div className="font-bold text-red-300 text-xs">Payment Rejected</div>
+                        <div className="text-white/60 text-xs mt-1">Reason: {manualPayment.rejectedReason}</div>
+                      </div>
+                    )}
+
+                    <button onClick={handleEnroll} className={`w-full !py-4 !text-[15px] gap-2 inline-flex items-center justify-center rounded-full font-bold transition-all ${enrolled ? 'bg-white text-black hover:bg-white/90' : manualPayment?.status === 'pending' ? 'bg-amber-500/20 border border-amber-500/30 text-amber-300 cursor-pointer hover:bg-amber-500/30' : 'btn-primary'}`}>
+                      {getEnrollButtonText()} <ArrowRight className="h-4 w-4" />
                     </button>
 
-                    {enrolled && <div className="text-center text-xs text-green-300 flex items-center justify-center gap-1"><CheckCircle2 className="h-4 w-4" /> You are enrolled in this course</div>}
+                    {enrolled && <div className="text-center text-xs text-green-300 flex items-center justify-center gap-1"><CheckCircle2 className="h-4 w-4" /> You are enrolled • Access granted after approval</div>}
 
                     <div className="space-y-3 text-[13px]">
                       <div className="font-bold text-white/80">This course includes:</div>
@@ -101,9 +128,17 @@ export default function CourseDetails() {
                       ))}
                     </div>
 
+                    <div className="rounded-2xl bg-white/[0.05] border border-white/10 p-4 space-y-2">
+                      <div className="text-[11px] font-bold tracking-widest text-white/40">MANUAL BANK TRANSFER</div>
+                      <div className="text-xs"><span className="text-white/50">Bank:</span> <span className="font-bold">MONIEPOINT</span></div>
+                      <div className="text-xs"><span className="text-white/50">Account:</span> <span className="font-mono font-bold text-cyan-300">69852663361</span></div>
+                      <div className="text-xs"><span className="text-white/50">Name:</span> <span className="font-bold">LUNA ENTRY SERVICES- WOLI DAN TECH HUB</span></div>
+                      <div className="text-[11px] text-white/30 mt-2">Only approved payments grant course access</div>
+                    </div>
+
                     <div className="grid grid-cols-3 gap-2 pt-2">
                       <div className="glass rounded-xl p-3 text-center"><Shield className="h-5 w-5 mx-auto text-cyan-300 mb-1" /><div className="text-[11px] font-bold">Secure Pay</div></div>
-                      <div className="glass rounded-xl p-3 text-center"><Zap className="h-5 w-5 mx-auto text-cyan-300 mb-1" /><div className="text-[11px] font-bold">Instant Access</div></div>
+                      <div className="glass rounded-xl p-3 text-center"><Zap className="h-5 w-5 mx-auto text-cyan-300 mb-1" /><div className="text-[11px] font-bold">Manual Verify</div></div>
                       <div className="glass rounded-xl p-3 text-center"><Globe className="h-5 w-5 mx-auto text-cyan-300 mb-1" /><div className="text-[11px] font-bold">Lifetime</div></div>
                     </div>
                   </div>
@@ -116,7 +151,6 @@ export default function CourseDetails() {
 
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-12 grid lg:grid-cols-[1.2fr_0.8fr] gap-10">
         <div className="space-y-10">
-          {/* What you'll learn */}
           <div className="rounded-[24px] glass p-6 md:p-8">
             <h3 className="font-bold text-xl mb-6">What You Will Learn</h3>
             <div className="grid sm:grid-cols-2 gap-3">
@@ -126,7 +160,6 @@ export default function CourseDetails() {
             </div>
           </div>
 
-          {/* Curriculum */}
           <div className="rounded-[24px] glass p-6 md:p-8">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-xl">Course Curriculum</h3>
@@ -160,13 +193,12 @@ export default function CourseDetails() {
             </div>
           </div>
 
-          {/* Instructor */}
           <div className="rounded-[24px] glass p-6 md:p-8 flex gap-4">
             <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-black text-xl shrink-0">{course.instructor.charAt(0)}</div>
             <div>
               <div className="font-bold text-lg">{course.instructor}</div>
               <div className="text-sm text-cyan-300">{course.instructorRole}</div>
-              <p className="mt-2 text-sm text-white/60 leading-relaxed">Professional instructor with years of experience helping students build practical skills that generate income. Passionate about making tech education accessible in Nigeria.</p>
+              <p className="mt-2 text-sm text-white/60 leading-relaxed">Professional instructor with years of experience helping students build practical skills that generate income.</p>
             </div>
           </div>
         </div>
@@ -182,7 +214,7 @@ export default function CourseDetails() {
 
           <div className="rounded-[24px] bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/20 p-6">
             <h4 className="font-bold mb-2">Need Help?</h4>
-            <p className="text-sm text-white/60 mb-4">Chat with us on WhatsApp for any questions about this course.</p>
+            <p className="text-sm text-white/60 mb-4">Chat with us on WhatsApp for payment or course questions.</p>
             <a href="https://wa.me/2348159610509" target="_blank" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black font-bold text-sm"><User className="h-4 w-4" /> CHAT ON WHATSAPP</a>
           </div>
         </div>

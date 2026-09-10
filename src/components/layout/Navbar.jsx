@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, LogOut, LayoutDashboard, User, Shield } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, User, Shield, CreditCard, BookOpen } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useCourses } from '../../context/CourseContext';
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const { user, logout, isAdmin } = useAuth();
+  const { getPendingManualPayments } = useCourses();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -18,6 +20,7 @@ export default function Navbar() {
   ];
 
   const isActive = (path) => location.pathname === path;
+  const pendingCount = isAdmin ? getPendingManualPayments().length : 0;
 
   return (
     <nav className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#020a1f]/80 backdrop-blur-2xl">
@@ -45,10 +48,17 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             {user ? (
               <>
-                <Link to={isAdmin ? "/admin" : "/dashboard"} className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-sm font-semibold hover:bg-white/[0.1] transition">
+                <Link to={isAdmin ? "/admin/dashboard" : "/dashboard"} className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-sm font-semibold hover:bg-white/[0.1] transition relative">
                   {isAdmin ? <Shield className="h-4 w-4" /> : <LayoutDashboard className="h-4 w-4" />}
                   {isAdmin ? 'Admin' : 'Dashboard'}
+                  {pendingCount > 0 && <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center">{pendingCount}</span>}
                 </Link>
+                {!isAdmin && (
+                  <>
+                    <Link to="/my-payments" className="px-3 py-2 rounded-full text-sm text-white/60 hover:text-white hover:bg-white/[0.05] flex items-center gap-1.5"><CreditCard className="h-4 w-4" /> Payments</Link>
+                    <Link to="/my-courses" className="px-3 py-2 rounded-full text-sm text-white/60 hover:text-white hover:bg-white/[0.05] flex items-center gap-1.5"><BookOpen className="h-4 w-4" /> My Courses</Link>
+                  </>
+                )}
                 <div className="h-6 w-px bg-white/10" />
                 <div className="flex items-center gap-3">
                   <div className="text-right leading-tight hidden lg:block">
@@ -77,7 +87,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile */}
       {open && (
         <div className="md:hidden border-t border-white/10 bg-[#061236]/95 backdrop-blur-2xl">
           <div className="px-4 py-6 space-y-4">
@@ -89,9 +98,15 @@ export default function Navbar() {
             <div className="pt-4 border-t border-white/10 space-y-3">
               {user ? (
                 <>
-                  <Link to={isAdmin ? "/admin" : "/dashboard"} onClick={() => setOpen(false)} className="flex items-center gap-2 px-4 py-3 rounded-xl glass font-semibold">
-                    <LayoutDashboard className="h-4 w-4" /> {isAdmin ? 'Admin Dashboard' : 'My Dashboard'}
+                  <Link to={isAdmin ? "/admin/dashboard" : "/dashboard"} onClick={() => setOpen(false)} className="flex items-center gap-2 px-4 py-3 rounded-xl glass font-semibold">
+                    <LayoutDashboard className="h-4 w-4" /> {isAdmin ? `Admin Dashboard ${pendingCount > 0 ? `(${pendingCount} pending)` : ''}` : 'My Dashboard'}
                   </Link>
+                  {!isAdmin && (
+                    <>
+                      <Link to="/my-payments" onClick={() => setOpen(false)} className="flex items-center gap-2 px-4 py-3 rounded-xl text-white/70"><CreditCard className="h-4 w-4" /> My Payments</Link>
+                      <Link to="/my-courses" onClick={() => setOpen(false)} className="flex items-center gap-2 px-4 py-3 rounded-xl text-white/70"><BookOpen className="h-4 w-4" /> My Courses</Link>
+                    </>
+                  )}
                   <Link to="/profile" onClick={() => setOpen(false)} className="flex items-center gap-2 px-4 py-3 rounded-xl text-white/70">
                     <User className="h-4 w-4" /> Profile
                   </Link>
@@ -103,6 +118,7 @@ export default function Navbar() {
                 <>
                   <Link to="/login" onClick={() => setOpen(false)} className="block px-4 py-3 rounded-xl glass text-center font-semibold">Login</Link>
                   <Link to="/register" onClick={() => setOpen(false)} className="block btn-primary text-center">START LEARNING</Link>
+                  <Link to="/admin/login" onClick={() => setOpen(false)} className="block px-4 py-3 rounded-xl text-center text-xs text-white/40">Admin Login</Link>
                 </>
               )}
             </div>
