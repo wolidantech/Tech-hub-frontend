@@ -8,6 +8,7 @@ import QuizTaker from '../components/learn/QuizTaker';
 import AssignmentPanel from '../components/learn/AssignmentPanel';
 import Discussions from '../components/learn/Discussions';
 import { renderLessonMarkdown, evaluateCompletion, getCourseCompletionRules } from '../lib/lms';
+import { signedUrl } from '../lib/supabase';
 import { toast, Toaster } from 'sonner';
 
 function youtubeId(url = '') {
@@ -51,21 +52,52 @@ function VideoFacade({ url, title }) {
   );
 }
 
+function LessonVideo({ lesson }) {
+  const [signed, setSigned] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    setSigned(null);
+    if (lesson.videoStoragePath) {
+      signedUrl('course-videos', lesson.videoStoragePath)
+        .then((u) => { if (alive) setSigned(u); })
+        .catch(() => {});
+    }
+    return () => { alive = false; };
+  }, [lesson.videoStoragePath]);
+  if (lesson.videoStoragePath) {
+    if (!signed) {
+      return (
+        <div className="absolute inset-0 flex items-center justify-center bg-black">
+          <div className="h-8 w-8 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />
+        </div>
+      );
+    }
+    return <video src={signed} controls playsInline className="absolute inset-0 w-full h-full bg-black" />;
+  }
+  return <VideoFacade url={lesson.videoUrl} title={lesson.title} />;
+}
+
 export default function Learn() {
   const { slug } = useParams();
-  const { getCourseBySlug, getProgress, markLessonComplete, unmarkLesson, isEnrolled, getUserCertificates, issueCertificateManual, sendNotificationToUser } = useCourses();
-  const { getCourseQuizzes, getCourseAssignments, getUserQuizAverage, countApprovedAssignments, isFinalProjectApproved, completionRules, trackEvent, quizAttempts, submissions, getUpcomingClasses } = useLMS();
+  const { getCourseBySlug, getProgress, markLessonComplete, unmarkLesson, isEnrolled, getUserCertificates, ensureCourseDetail } = useCourses();
+  const { getCourseQuizzes, getCourseAssignments, getUserQuizAverage, countApprovedAssignments, isFinalProjectApproved, completionRules, quizAttempts, submissions, getUpcomingClasses } = useLMS();
   const { user } = useAuth();
   const [activeLesson, setActiveLesson] = useState(null);
   const [activeModuleId, setActiveModuleId] = useState(null);
-  const [openModules, setOpenModules] = useState({ m1: true });
+  const [openModules, setOpenModules] = useState({});
+  const [detailError, setDetailError] = useState('');
   const [view, setView] = useState('video'); // video | read
   const [certChecked, setCertChecked] = useState(false);
 
   const course = getCourseBySlug(slug);
   const progress = course && user ? getProgress(user.id, course.id) : { completedLessons: [], progress: 0, lastLessonId: null };
 
-  const allLessons = useMemo(() => (course ? course.curriculum.flatMap((m) => m.lessons.map((l) => ({ ...l, moduleId: m.id, moduleTitle: m.title }))) : []), [course]);
+  useEffect(() => {
+    if (course && !course.curriculum) ensureCourseDetail(course.id).catch((err) => setDetailError(err.message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, course?.id]);
+
+  const allLessons = useMemo(() => (course?.curriculum || []).flatMap((m) => (m.lessons || []).map((l) => ({ ...l, moduleId: m.id, moduleTitle: m.title }))), [course]);
   const totalLessons = allLessons.length;
 
   const rules = useMemo(() => (course ? getCourseCompletionRules(completionRules, course.id) : null), [course, completionRules]);
@@ -80,17 +112,12 @@ export default function Learn() {
 
   const myCert = course && user ? getUserCertificates(user.id).find((c) => c.courseId === course.id && c.status !== 'revoked') : null;
 
-  // Auto-issue certificate when ALL configured requirements are met
+  // Certificates are issued server-side when completion rules are met.
+  // Congratulate once the checklist flips to met; the cert arrives via DB.
   useEffect(() => {
     if (!course || !user || !completion?.met || myCert || certChecked) return;
     setCertChecked(true);
-    issueCertificateManual({ userId: user.id, studentName: user.fullName, courseId: course.id, courseName: course.title, issuedBy: 'WOLI DAN TECH HUB' });
-    sendNotificationToUser(user.id, {
-      title: 'Congratulations! 🎓',
-      message: `Congratulations! 🎓 You have successfully completed ${course.title}. Your WOLI DAN TECH HUB certificate is now available.`,
-      type: 'course_completed', courseId: course.id,
-    });
-    toast.success('🎓 Certificate unlocked! All requirements completed.', { duration: 6000 });
+    toast.success('🎓 All requirements completed! Your certificate is ready.', { duration: 6000 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [completion?.met]);
 
@@ -98,13 +125,15 @@ export default function Learn() {
     if (!activeLesson && allLessons.length) {
       const lastId = progress.lastLessonId;
       const last = lastId ? allLessons.find((l) => l.id === lastId) : null;
-      const nextUncompleted = allLessons.find((l) => !progress.completedLessons.includes(l.id));
+      const nextUncompleted = allLessons.find((l) => !(progress.completedLessons || []).includes(l.id));
       const first = last || nextUncompleted || allLessons[0];
       setActiveLesson(first);
       setActiveModuleId(first.moduleId);
+      setOpenModules((prev) => ({ ...prev, [first.moduleId]: true }));
+      try { sessionStorage.setItem('wdth_lesson_ctx', JSON.stringify({ courseId: course.id, lessonId: first.id })); } catch { /* ignore */ }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [allLessons, activeLesson]);
 
   if (!course) return <div className="p-20 text-center">Course not found</div>;
   if (!user) return <Navigate to="/login" />;
@@ -117,24 +146,27 @@ export default function Learn() {
   const selectLesson = (lesson, moduleId) => {
     setActiveLesson(lesson);
     setActiveModuleId(moduleId);
-    setView(lesson.type === 'text' && !lesson.videoUrl ? 'read' : 'video');
+    setView(lesson.type === 'text' && !lesson.videoUrl && !lesson.videoStoragePath ? 'read' : 'video');
     // Publish context for DanTECH AI
     try { sessionStorage.setItem('wdth_lesson_ctx', JSON.stringify({ courseId: course.id, lessonId: lesson.id })); } catch { /* ignore */ }
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (!activeLesson) return;
-    const isCompleted = progress.completedLessons.includes(activeLesson.id);
-    if (isCompleted) {
-      unmarkLesson(user.id, course.id, activeLesson.id);
-      toast.info('Marked as incomplete');
-    } else {
-      markLessonComplete(user.id, course.id, activeLesson.id);
-      trackEvent(user.id, course.id, 'lesson_complete', activeLesson.id);
-      toast.success('Lesson completed! 🎉');
-      if (nextLesson) {
-        setTimeout(() => selectLesson(nextLesson, nextLesson.moduleId), 600);
+    const isCompleted = (progress.completedLessons || []).includes(activeLesson.id);
+    try {
+      if (isCompleted) {
+        await unmarkLesson(user.id, course.id, activeLesson.id);
+        toast.info('Marked as incomplete');
+      } else {
+        await markLessonComplete(user.id, course.id, activeLesson.id);
+        toast.success('Lesson completed! 🎉');
+        if (nextLesson) {
+          setTimeout(() => selectLesson(nextLesson, nextLesson.moduleId), 600);
+        }
       }
+    } catch (err) {
+      toast.error(err.message);
     }
   };
 
@@ -155,7 +187,7 @@ export default function Learn() {
           <div>
             <h2 className="font-bold leading-tight">{course.title}</h2>
             <div className="mt-3">
-              <div className="flex justify-between text-xs mb-1.5"><span className="text-white/50">{progress.completedLessons.length} / {totalLessons} completed</span><span className="font-bold text-cyan-300">{progress.progress}%</span></div>
+              <div className="flex justify-between text-xs mb-1.5"><span className="text-white/50">{(progress.completedLessons || []).length} / {totalLessons} completed</span><span className="font-bold text-cyan-300">{progress.progress}%</span></div>
               <div className="h-2 rounded-full bg-white/10 overflow-hidden"><div className="h-full bg-gradient-to-r from-cyan-400 to-blue-600 transition-all" style={{ width: `${progress.progress}%` }} /></div>
             </div>
             {/* Completion requirements checklist */}
@@ -176,17 +208,19 @@ export default function Learn() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          {course.curriculum.map((mod) => (
+          {detailError && <div className="text-xs text-red-300 p-2">Couldn't load lessons: {detailError}</div>}
+          {!course.curriculum && !detailError && <div className="text-xs text-white/40 p-2">Loading lessons…</div>}
+          {(course.curriculum || []).map((mod) => (
             <div key={mod.id} className="rounded-2xl overflow-hidden border border-white/5">
               <button onClick={() => toggleModule(mod.id)} className="w-full flex items-center justify-between p-4 bg-white/[0.03] hover:bg-white/[0.05] transition text-left">
-                <div><div className="font-bold text-sm">{mod.title}</div><div className="text-[11px] text-white/40">{mod.lessons.filter((l) => progress.completedLessons.includes(l.id)).length}/{mod.lessons.length} completed</div></div>
+                <div><div className="font-bold text-sm">{mod.title}</div><div className="text-[11px] text-white/40">{(mod.lessons || []).filter((l) => (progress.completedLessons || []).includes(l.id)).length}/{(mod.lessons || []).length} completed</div></div>
                 {openModules[mod.id] ? <ChevronUp className="h-4 w-4 text-white/40" /> : <ChevronDown className="h-4 w-4 text-white/40" />}
               </button>
               {openModules[mod.id] && (
                 <div className="divide-y divide-white/[0.04] bg-[#020a1f]/50">
-                  {mod.lessons.map((lesson) => {
+                  {(mod.lessons || []).map((lesson) => {
                     const isActive = activeLesson?.id === lesson.id;
-                    const isDone = progress.completedLessons.includes(lesson.id);
+                    const isDone = (progress.completedLessons || []).includes(lesson.id);
                     const hasQuiz = getCourseQuizzes(course.id).some((q) => q.lessonId === lesson.id);
                     const hasTask = getCourseAssignments(course.id).some((a) => a.lessonId === lesson.id);
                     return (
@@ -198,7 +232,7 @@ export default function Learn() {
                           <div className={`text-[13px] font-medium truncate ${isActive ? 'text-cyan-300' : ''}`}>{lesson.title}</div>
                           <div className="text-[11px] text-white/40 flex items-center gap-1.5">
                             {lesson.duration}
-                            {lesson.videoUrl && <span className="inline-flex items-center gap-0.5"><Video className="h-3 w-3" /></span>}
+                            {(lesson.videoUrl || lesson.videoStoragePath) && <span className="inline-flex items-center gap-0.5"><Video className="h-3 w-3" /></span>}
                             {(lesson.textContent || lesson.content) && <span className="inline-flex items-center gap-0.5"><FileText className="h-3 w-3" /></span>}
                             {hasQuiz && <span className="inline-flex items-center gap-0.5 text-purple-300"><HelpCircle className="h-3 w-3" /></span>}
                             {hasTask && <span className="inline-flex items-center gap-0.5 text-amber-300"><PenLine className="h-3 w-3" /></span>}
@@ -232,7 +266,7 @@ export default function Learn() {
 
             {view === 'video' ? (
               <div className="bg-black aspect-video relative overflow-hidden">
-                <VideoFacade url={activeLesson.videoUrl} title={activeLesson.title} />
+                <LessonVideo lesson={activeLesson} />
               </div>
             ) : (
               <div className="px-6 md:px-8 pt-6">
@@ -253,12 +287,12 @@ export default function Learn() {
             <div className="p-6 md:p-8 space-y-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass text-[11px] font-bold tracking-widest mb-3">{activeModuleId ? course.curriculum.find((m) => m.id === activeModuleId)?.title?.toUpperCase() : 'LESSON'} • {activeLesson.duration}</div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass text-[11px] font-bold tracking-widest mb-3">{activeModuleId ? (course.curriculum || []).find((m) => m.id === activeModuleId)?.title?.toUpperCase() : 'LESSON'} • {activeLesson.duration}</div>
                   <h1 className="font-display font-bold text-[24px] md:text-[28px] leading-tight">{activeLesson.title}</h1>
                   <div className="mt-2 text-sm text-white/50">Lesson {currentIndex + 1} of {totalLessons} • {course.title}</div>
                 </div>
-                <button onClick={handleComplete} className={`inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm transition ${progress.completedLessons.includes(activeLesson.id) ? 'bg-green-500 text-white' : 'btn-primary'}`}>
-                  <CheckCircle2 className="h-4 w-4" /> {progress.completedLessons.includes(activeLesson.id) ? 'COMPLETED' : 'MARK AS COMPLETE'}
+                <button onClick={handleComplete} className={`inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm transition ${(progress.completedLessons || []).includes(activeLesson.id) ? 'bg-green-500 text-white' : 'btn-primary'}`}>
+                  <CheckCircle2 className="h-4 w-4" /> {(progress.completedLessons || []).includes(activeLesson.id) ? 'COMPLETED' : 'MARK AS COMPLETE'}
                 </button>
               </div>
 

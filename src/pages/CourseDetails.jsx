@@ -9,17 +9,19 @@ import { useState, useEffect } from 'react';
 import { toast, Toaster } from 'sonner';
 
 function ReviewsSection({ course, user, enrolled }) {
-  const { addReview, getCourseReviews, getCourseRating } = useLMS();
+  const { addReview, getCourseReviews, getCourseRating, ensureCourseReviews } = useLMS();
   const [rating, setRating] = useState(5);
   const [text, setText] = useState('');
   const reviews = getCourseReviews(course.id);
   const avg = getCourseRating(course.id, course.rating);
   const mine = user ? reviews.find((r) => r.userId === user.id) : null;
 
-  const submit = () => {
+  useEffect(() => { ensureCourseReviews(course.id).catch(() => {}); }, [course.id, ensureCourseReviews]);
+
+  const submit = async () => {
     if (!text.trim()) { toast.error('Please write your review'); return; }
     try {
-      addReview({ courseId: course.id, userId: user.id, studentName: user.fullName, rating, text });
+      await addReview({ courseId: course.id, userId: user.id, studentName: user.fullName, rating, text });
       setText('');
       toast.success('Thanks for your review! ⭐');
     } catch (err) { toast.error(err.message); }
@@ -75,24 +77,38 @@ function ReviewsSection({ course, user, enrolled }) {
 
 export default function CourseDetails() {
   const { slug } = useParams();
-  const { getCourseBySlug, isEnrolled, getManualPaymentByCourse } = useCourses();
+  const { getCourseBySlug, isEnrolled, getManualPaymentByCourse, ensureCourseDetail } = useCourses();
   const { trackView, getCourseQuizzes, getCourseAssignments, siteSettings } = useLMS();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [openModule, setOpenModule] = useState('m1');
+  const [openModule, setOpenModule] = useState(null);
+  const [detailError, setDetailError] = useState('');
 
   const course = getCourseBySlug(slug);
 
   useEffect(() => {
-    if (course) trackView(user?.id || 'anon', course.id);
+    if (!course) return;
+    trackView(user?.id, course.id);
+    if (!course.curriculum) {
+      ensureCourseDetail(course.id).catch((err) => setDetailError(err.message));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug]);
+  }, [slug, course?.id]);
+
+  useEffect(() => {
+    if (course?.curriculum?.length && !openModule) setOpenModule(course.curriculum[0].id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [course?.curriculum]);
 
   if (!course) return <div className="p-20 text-center">Course not found</div>;
 
   const enrolled = user ? isEnrolled(user.id, course.id) : false;
   const manualPayment = user ? getManualPaymentByCourse(user.id, course.id) : null;
-  const totalLessons = course.curriculum.reduce((acc, m) => acc + m.lessons.length, 0);
+  const totalLessons = course.curriculum
+    ? course.curriculum.reduce((acc, m) => acc + (m.lessons?.length || 0), 0)
+    : (course.lessonsCount || 0);
+  const quizCount = getCourseQuizzes(course.id).length;
+  const assignmentCount = getCourseAssignments(course.id).length;
   const gradient = getCourseThumbnailGradient(course.thumbnail);
 
   const handleEnroll = () => {
@@ -204,9 +220,9 @@ export default function CourseDetails() {
 
                     <div className="rounded-2xl bg-white/[0.05] border border-white/10 p-4 space-y-2">
                       <div className="text-[11px] font-bold tracking-widest text-white/40">MANUAL BANK TRANSFER</div>
-                      <div className="text-xs"><span className="text-white/50">Bank:</span> <span className="font-bold">{siteSettings.bankName}</span></div>
-                      <div className="text-xs"><span className="text-white/50">Account:</span> <span className="font-mono font-bold text-cyan-300">{siteSettings.accountNumber}</span></div>
-                      <div className="text-xs"><span className="text-white/50">Name:</span> <span className="font-bold">{siteSettings.accountName}</span></div>
+                      <div className="text-xs"><span className="text-white/50">Bank:</span> <span className="font-bold">{siteSettings?.bankName || 'MONIEPOINT'}</span></div>
+                      <div className="text-xs"><span className="text-white/50">Account:</span> <span className="font-mono font-bold text-cyan-300">{siteSettings?.accountNumber || '69852663361'}</span></div>
+                      <div className="text-xs"><span className="text-white/50">Name:</span> <span className="font-bold">{siteSettings?.accountName || 'LUNA ENTRY SERVICES'}</span></div>
                       <div className="text-[11px] text-white/30 mt-2">Only approved payments grant course access</div>
                     </div>
 
@@ -254,18 +270,20 @@ export default function CourseDetails() {
           <div className="rounded-[24px] glass p-6 md:p-8">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-xl">Course Curriculum</h3>
-              <span className="text-xs px-3 py-1 rounded-full glass">{course.curriculum.length} modules • {totalLessons} lessons</span>
+              <span className="text-xs px-3 py-1 rounded-full glass">{(course.curriculum || []).length} modules • {totalLessons} lessons</span>
             </div>
+            {detailError && <div className="text-sm text-red-300 mb-3">Couldn't load full curriculum: {detailError}</div>}
+            {!course.curriculum && !detailError && <div className="text-sm text-white/40 py-4">Loading curriculum…</div>}
             <div className="space-y-3">
-              {course.curriculum.map(mod => (
+              {(course.curriculum || []).map(mod => (
                 <div key={mod.id} className="rounded-2xl border border-white/10 overflow-hidden">
                   <button onClick={() => setOpenModule(openModule === mod.id ? null : mod.id)} className="w-full flex items-center justify-between p-4 bg-white/[0.03] hover:bg-white/[0.05] transition text-left">
                     <div className="font-bold">{mod.title}</div>
-                    <div className="text-xs text-white/50">{mod.lessons.length} lessons</div>
+                    <div className="text-xs text-white/50">{(mod.lessons || []).length} lessons</div>
                   </button>
                   {openModule === mod.id && (
                     <div className="divide-y divide-white/5">
-                      {mod.lessons.map(lesson => (
+                      {(mod.lessons || []).map(lesson => (
                         <div key={lesson.id} className="flex items-center gap-3 p-4 text-sm">
                           <div className="h-8 w-8 rounded-full glass flex items-center justify-center shrink-0">
                             {lesson.type === 'video' ? <Play className="h-3.5 w-3.5" /> : <BookOpen className="h-3.5 w-3.5" />}

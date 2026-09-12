@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCourses } from '../context/CourseContext';
+import CourseArt from '../components/course/CourseArt';
 import { Clock, BookOpen, Award, Play } from 'lucide-react';
 
 export default function MyCourses() {
@@ -25,7 +26,7 @@ export default function MyCourses() {
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
             {items.map(({ course, progress }) => {
-              const total = course.curriculum.reduce((a,m)=>a+m.lessons.length,0);
+              const total = course.curriculum ? course.curriculum.reduce((a,m)=>a+(m.lessons?.length||0),0) : (course.lessonsCount || 0);
               return (
                 <div key={course.id} className="glass rounded-[20px] p-5">
                   <div className="flex gap-4">
