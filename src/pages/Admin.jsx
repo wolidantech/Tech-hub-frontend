@@ -16,6 +16,7 @@ import CouponManager from './admin/CouponManager';
 import AIStudio from './admin/AIStudio';
 import NotificationManager from './admin/NotificationManager';
 import AuditLogViewer from './admin/AuditLogViewer';
+import CommunityManager from './admin/CommunityManager';
 
 export default function Admin() {
   const { user, isAdmin, changePassword, adminLogout, adminEmail } = useAuth();
@@ -24,6 +25,7 @@ export default function Admin() {
     updateCourse, deleteCourse, addCourse,
     approveManualPayment, rejectManualPayment
   } = useCourses();
+  const { audit } = useLMS();
   const navigate = useNavigate();
   const [tab, setTab] = useState('overview');
   const [search, setSearch] = useState('');
@@ -165,7 +167,7 @@ export default function Admin() {
           </div>
           <div className="flex flex-wrap gap-2 items-center">
             <div className="flex gap-2 flex-wrap">
-              {['overview','courses','students','quizzes','assignments','coupons','ai-studio','payments','certificates','notify','audit','settings'].map(t => (
+              {['overview','courses','students','quizzes','assignments','coupons','ai-studio','community','payments','certificates','notify','audit','settings'].map(t => (
                 <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 rounded-full text-xs font-bold tracking-wide capitalize flex items-center gap-1.5 ${tab===t?'bg-white text-black':'glass text-white/60 hover:text-white'}`}>
                   {t === 'settings' && <Settings className="h-3.5 w-3.5" />}
                   {t === 'payments' && stats.pendingPayments > 0 && <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />}
@@ -240,6 +242,8 @@ export default function Admin() {
         {tab === 'coupons' && <CouponManager />}
 
         {tab === 'ai-studio' && <AIStudio />}
+
+        {tab === 'community' && <CommunityManager />}
 
         {tab === 'notify' && <NotificationManager />}
 

@@ -8,7 +8,9 @@ import { formatNaira } from '../../lib/utils';
 import { toast } from 'sonner';
 
 export default function StudentControl() {
-  const { user } = useAuth();
+  const { user, setUserBanned } = useAuth();
+  const [, setTick] = useState(0);
+  const refresh = () => setTick((t) => t + 1);
   const {
     courses, enrollments, grantEnrollment, setEnrollmentStatus, resetProgress, adminSetLesson,
     getProgress, getUserManualPayments, getUserCertificates, issueCertificateManual, revokeCertificate,
@@ -54,7 +56,16 @@ export default function StudentControl() {
                 <h2 className="font-black text-xl">{student.fullName}</h2>
                 <div className="text-sm text-white/50">{student.email} • {student.phone}</div>
                 <div className="text-xs text-white/40 mt-1">Joined {new Date(student.createdAt).toLocaleDateString()} • ID {student.id}</div>
+                {student.banned && <div className="mt-1 inline-block px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 text-[11px] font-bold">⛔ BANNED</div>}
+                {student.lastLoginAt && <div className="text-[11px] text-white/40 mt-1">Last login: {new Date(student.lastLoginAt).toLocaleString()}</div>}
               </div>
+            </div>
+            <div className="flex gap-2 items-start">
+              {student.banned ? (
+                <button onClick={() => doAction('Unban student', () => { setUserBanned(student.id, false); audit(user, 'user.unban', 'user', student.id, {}); refresh(); })} className="h-9 px-4 rounded-full bg-green-500/20 text-green-300 text-xs font-bold flex items-center gap-1.5"><UserCheck className="h-4 w-4" /> UNBAN</button>
+              ) : (
+                <button onClick={() => doAction('BAN student (blocks login)', () => { setUserBanned(student.id, true); audit(user, 'user.ban', 'user', student.id, {}); refresh(); })} className="h-9 px-4 rounded-full bg-red-500/20 text-red-300 text-xs font-bold flex items-center gap-1.5"><Ban className="h-4 w-4" /> BAN</button>
+              )}
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="rounded-xl bg-white/[0.04] p-3"><div className="font-black text-lg">{studentEnrollments.length}</div><div className="text-[10px] text-white/40 font-bold">ENROLLED</div></div>

@@ -6,6 +6,7 @@ import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
 import QuizTaker from '../components/learn/QuizTaker';
 import AssignmentPanel from '../components/learn/AssignmentPanel';
+import Discussions from '../components/learn/Discussions';
 import { renderLessonMarkdown, evaluateCompletion, getCourseCompletionRules } from '../lib/lms';
 import { toast, Toaster } from 'sonner';
 
@@ -53,7 +54,7 @@ function VideoFacade({ url, title }) {
 export default function Learn() {
   const { slug } = useParams();
   const { getCourseBySlug, getProgress, markLessonComplete, unmarkLesson, isEnrolled, getUserCertificates, issueCertificateManual, sendNotificationToUser } = useCourses();
-  const { getCourseQuizzes, getCourseAssignments, getUserQuizAverage, countApprovedAssignments, isFinalProjectApproved, completionRules, trackEvent, quizAttempts, submissions } = useLMS();
+  const { getCourseQuizzes, getCourseAssignments, getUserQuizAverage, countApprovedAssignments, isFinalProjectApproved, completionRules, trackEvent, quizAttempts, submissions, getUpcomingClasses } = useLMS();
   const { user } = useAuth();
   const [activeLesson, setActiveLesson] = useState(null);
   const [activeModuleId, setActiveModuleId] = useState(null);
@@ -117,6 +118,8 @@ export default function Learn() {
     setActiveLesson(lesson);
     setActiveModuleId(moduleId);
     setView(lesson.type === 'text' && !lesson.videoUrl ? 'read' : 'video');
+    // Publish context for DanTECH AI
+    try { sessionStorage.setItem('wdth_lesson_ctx', JSON.stringify({ courseId: course.id, lessonId: lesson.id })); } catch { /* ignore */ }
   };
 
   const handleComplete = () => {
@@ -275,6 +278,18 @@ export default function Learn() {
                 </div>
               )}
 
+              {/* Upcoming live class */}
+              {course && getUpcomingClasses([course.id]).slice(0, 1).map((lc) => (
+                <div key={lc.id} className="rounded-2xl bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30 p-5 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[11px] font-black tracking-widest text-red-300 flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-red-400 animate-pulse" /> LIVE CLASS</div>
+                    <div className="font-bold mt-1">{lc.title}</div>
+                    <div className="text-xs text-white/60">{lc.date} • {lc.time} ({lc.duration} mins) • {lc.platform}</div>
+                  </div>
+                  <a href={lc.meetingLink} target="_blank" rel="noreferrer" className="px-5 py-2.5 rounded-full bg-red-500 text-white font-bold text-xs hover:bg-red-400">JOIN CLASS 🔴</a>
+                </div>
+              ))}
+
               {/* Quizzes */}
               {lessonQuizzes.map((q) => (
                 <div key={q.id} className="glass rounded-2xl p-6 space-y-4">
@@ -319,6 +334,11 @@ export default function Learn() {
                   <p className="text-sm text-white/60 mt-1">Your WOLI DAN TECH HUB certificate is ready.</p>
                   <Link to="/certificates" className="inline-flex mt-4 px-6 py-3 rounded-full bg-green-500 text-white font-bold text-sm">VIEW & DOWNLOAD CERTIFICATE</Link>
                 </div>
+              )}
+
+              {/* Lesson Q&A */}
+              {activeLesson && (
+                <Discussions courseId={course.id} lessonId={activeLesson.id} user={user} title={`Q&A — ${activeLesson.title.slice(0, 40)}`} />
               )}
 
               <div className="flex justify-between gap-4">

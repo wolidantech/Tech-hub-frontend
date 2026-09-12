@@ -29,6 +29,14 @@ const KEYS = {
   COURSE_VIEWS: 'wdth_course_views',
   LEARNING_EVENTS: 'wdth_learning_events',
   CERT_TEMPLATES: 'wdth_cert_templates',
+  LEARNING_PATHS: 'wdth_learning_paths',
+  BUNDLES: 'wdth_bundles',
+  REVIEWS: 'wdth_reviews',
+  POSTS: 'wdth_posts',
+  COMMENTS: 'wdth_comments',
+  LIVE_CLASSES: 'wdth_live_classes',
+  AI_CONVOS: 'wdth_ai_convos',
+  SITE_SETTINGS: 'wdth_site_settings',
 };
 
 export const getStorage = (key, fallback) => {
@@ -121,6 +129,41 @@ export const getLearningEvents = () => getStorage(KEYS.LEARNING_EVENTS, []);
 export const saveLearningEvents = (data) => setStorage(KEYS.LEARNING_EVENTS, data);
 export const getCertTemplates = () => getStorage(KEYS.CERT_TEMPLATES, null);
 export const saveCertTemplates = (data) => setStorage(KEYS.CERT_TEMPLATES, data);
+export const getLearningPaths = () => getStorage(KEYS.LEARNING_PATHS, null);
+export const saveLearningPaths = (data) => setStorage(KEYS.LEARNING_PATHS, data);
+export const getBundles = () => getStorage(KEYS.BUNDLES, []);
+export const saveBundles = (data) => setStorage(KEYS.BUNDLES, data);
+export const getReviews = () => getStorage(KEYS.REVIEWS, []);
+export const saveReviews = (data) => setStorage(KEYS.REVIEWS, data);
+export const getPosts = () => getStorage(KEYS.POSTS, []);
+export const savePosts = (data) => setStorage(KEYS.POSTS, data);
+export const getComments = () => getStorage(KEYS.COMMENTS, []);
+export const saveComments = (data) => setStorage(KEYS.COMMENTS, data);
+export const getLiveClasses = () => getStorage(KEYS.LIVE_CLASSES, []);
+export const saveLiveClasses = (data) => setStorage(KEYS.LIVE_CLASSES, data);
+export const getAIConvos = () => getStorage(KEYS.AI_CONVOS, []);
+export const saveAIConvos = (data) => setStorage(KEYS.AI_CONVOS, data);
+export const getSiteSettings = () => getStorage(KEYS.SITE_SETTINGS, null);
+export const saveSiteSettings = (data) => setStorage(KEYS.SITE_SETTINGS, data);
+
+// Site settings with safe defaults (admin-editable; bank details override constants)
+export const DEFAULT_SITE_SETTINGS = {
+  siteName: 'WOLI DAN TECH HUB',
+  tagline: 'Learn • Build • Grow',
+  whatsapp: '08159610509',
+  supportEmail: 'wolidantech@gmail.com',
+  bankName: 'MONIEPOINT',
+  accountNumber: '69852663361',
+  accountName: 'LUNA ENTRY SERVICES- WOLI DAN TECH HUB',
+  dantechEnabled: true,
+  allowRegistration: true,
+  facebook: '',
+  instagram: '',
+  twitter: '',
+  youtube: '',
+  metaDescription: 'WOLI DAN TECH HUB — Learn Digital Skills. Build Real Projects. Grow Your Future.',
+};
+export const getEffectiveSettings = () => ({ ...DEFAULT_SITE_SETTINGS, ...(getSiteSettings() || {}) });
 
 // Current user session
 export const getCurrentUser = () => getStorage(KEYS.CURRENT_USER, null);

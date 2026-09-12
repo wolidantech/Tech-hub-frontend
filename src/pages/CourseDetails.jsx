@@ -6,6 +6,72 @@ import { useAuth } from '../context/AuthContext';
 import { formatNaira, getCourseThumbnailGradient } from '../lib/utils';
 import CourseArt from '../components/course/CourseArt';
 import { useState, useEffect } from 'react';
+import { toast, Toaster } from 'sonner';
+
+function ReviewsSection({ course, user, enrolled }) {
+  const { addReview, getCourseReviews, getCourseRating } = useLMS();
+  const [rating, setRating] = useState(5);
+  const [text, setText] = useState('');
+  const reviews = getCourseReviews(course.id);
+  const avg = getCourseRating(course.id, course.rating);
+  const mine = user ? reviews.find((r) => r.userId === user.id) : null;
+
+  const submit = () => {
+    if (!text.trim()) { toast.error('Please write your review'); return; }
+    try {
+      addReview({ courseId: course.id, userId: user.id, studentName: user.fullName, rating, text });
+      setText('');
+      toast.success('Thanks for your review! ⭐');
+    } catch (err) { toast.error(err.message); }
+  };
+
+  return (
+    <div className="rounded-[24px] glass p-6 md:p-8">
+      <Toaster richColors />
+      <h3 className="font-bold text-lg">Student Reviews ({reviews.length})</h3>
+      <div className="flex items-center gap-2 mt-2">
+        <div className="flex">{[1, 2, 3, 4, 5].map((s) => <Star key={s} className={`h-5 w-5 ${s <= Math.round(avg) ? 'text-yellow-400 fill-yellow-400' : 'text-white/20'}`} />)}</div>
+        <span className="font-black text-xl">{avg}</span>
+        <span className="text-sm text-white/40">average rating</span>
+      </div>
+
+      {reviews.length > 0 ? (
+        <div className="mt-5 space-y-3 max-h-[380px] overflow-auto">
+          {reviews.map((r) => (
+            <div key={r.id} className="rounded-2xl bg-white/[0.03] border border-white/10 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-bold text-xs">{(r.studentName || '?').charAt(0)}</div>
+                  <span className="font-bold text-sm">{r.studentName}</span>
+                </div>
+                <div className="flex">{[1, 2, 3, 4, 5].map((s) => <Star key={s} className={`h-3.5 w-3.5 ${s <= r.rating ? 'text-yellow-400 fill-yellow-400' : 'text-white/20'}`} />)}</div>
+              </div>
+              <p className="text-sm text-white/70 mt-2">{r.text}</p>
+              <div className="text-[11px] text-white/30 mt-1">{new Date(r.createdAt).toLocaleDateString()}</div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-4 text-sm text-white/40">No reviews yet — be the first!</div>
+      )}
+
+      {user && enrolled && !mine && (
+        <div className="mt-5 rounded-2xl bg-white/[0.03] border border-white/10 p-4 space-y-3">
+          <div className="font-bold text-sm">Write a review</div>
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((s) => (
+              <button key={s} onClick={() => setRating(s)}><Star className={`h-7 w-7 ${s <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-white/20'} hover:scale-110 transition`} /></button>
+            ))}
+          </div>
+          <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Share your experience with this course..." className="w-full rounded-2xl glass p-3 text-sm h-20" />
+          <button onClick={submit} className="btn-primary !py-2.5 text-xs">SUBMIT REVIEW</button>
+        </div>
+      )}
+      {!user && <div className="mt-4 text-sm text-white/40">Enroll and log in to write a review.</div>}
+      {mine && <div className="mt-4 text-sm text-green-300">✓ You've reviewed this course. Thank you!</div>}
+    </div>
+  );
+}
 
 export default function CourseDetails() {
   const { slug } = useParams();
@@ -209,6 +275,8 @@ export default function CourseDetails() {
               <p className="mt-2 text-sm text-white/60 leading-relaxed">Professional instructor with years of experience helping students build practical skills that generate income.</p>
             </div>
           </div>
+
+          <ReviewsSection course={course} user={user} enrolled={enrolled} />
         </div>
 
         <div className="space-y-6">

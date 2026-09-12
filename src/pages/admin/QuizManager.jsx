@@ -11,9 +11,9 @@ export default function QuizManager() {
   const { quizzes, quizQuestions, createQuiz, updateQuiz, deleteQuiz, addQuestion, updateQuestion, deleteQuestion, quizAttempts, audit } = useLMS();
   const [courseFilter, setCourseFilter] = useState('');
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ courseId: '', title: '', description: '', passingScore: 70, allowRetake: true, isFinal: false });
+  const [form, setForm] = useState({ courseId: '', title: '', description: '', passingScore: 70, allowRetake: true, isFinal: false, attemptLimit: '' });
   const [managing, setManaging] = useState(null);
-  const [qForm, setQForm] = useState({ type: 'multiple_choice', question: '', options: ['', '', '', ''], correctAnswer: 0, correctAnswers: [], explanation: '' });
+  const [qForm, setQForm] = useState({ type: 'multiple_choice', question: '', options: ['', '', '', ''], correctAnswer: 0, correctAnswers: [], acceptedAnswers: '', explanation: '' });
   const [editingQ, setEditingQ] = useState(null);
 
   const filtered = quizzes.filter((q) => !courseFilter || q.courseId === courseFilter);
@@ -23,18 +23,19 @@ export default function QuizManager() {
     const q = createQuiz({ ...form });
     audit(user, 'quiz.create', 'quiz', q.id, { title: form.title });
     setShowAdd(false);
-    setForm({ courseId: '', title: '', description: '', passingScore: 70, allowRetake: true, isFinal: false });
+    setForm({ courseId: '', title: '', description: '', passingScore: 70, allowRetake: true, isFinal: false, attemptLimit: '' });
     setManaging(q.id);
     toast.success('Quiz created. Now add questions.');
   };
 
-  const resetQForm = () => { setQForm({ type: 'multiple_choice', question: '', options: ['', '', '', ''], correctAnswer: 0, correctAnswers: [], explanation: '' }); setEditingQ(null); };
+  const resetQForm = () => { setQForm({ type: 'multiple_choice', question: '', options: ['', '', '', ''], correctAnswer: 0, correctAnswers: [], acceptedAnswers: '', explanation: '' }); setEditingQ(null); };
 
   const saveQuestion = () => {
     if (!qForm.question.trim()) { toast.error('Question text required'); return; }
-    const opts = qForm.type === 'true_false' ? ['True', 'False'] : qForm.options.filter((o) => o.trim());
-    if (opts.length < 2) { toast.error('At least 2 options required'); return; }
-    const payload = { type: qForm.type, question: qForm.question, options: opts, correctAnswer: qForm.correctAnswer, correctAnswers: qForm.correctAnswers, explanation: qForm.explanation };
+    const opts = qForm.type === 'true_false' ? ['True', 'False'] : qForm.type === 'short_answer' ? [] : qForm.options.filter((o) => o.trim());
+    if (qForm.type !== 'short_answer' && opts.length < 2) { toast.error('At least 2 options required'); return; }
+    if (qForm.type === 'short_answer' && !qForm.acceptedAnswers.trim()) { toast.error('Add at least one accepted answer'); return; }
+    const payload = { type: qForm.type, question: qForm.question, options: opts, correctAnswer: qForm.correctAnswer, correctAnswers: qForm.correctAnswers, acceptedAnswers: qForm.acceptedAnswers.split('|').map((s) => s.trim()).filter(Boolean), explanation: qForm.explanation };
     if (editingQ) { updateQuestion(editingQ, payload); toast.success('Question updated'); }
     else { addQuestion(managing, payload); toast.success('Question added'); }
     resetQForm();
@@ -42,7 +43,7 @@ export default function QuizManager() {
 
   const startEditQ = (q) => {
     setEditingQ(q.id);
-    setQForm({ type: q.type, question: q.question, options: q.type === 'true_false' ? ['True', 'False'] : [...q.options, '', '', '', ''].slice(0, 4), correctAnswer: q.correctAnswer || 0, correctAnswers: q.correctAnswers || [], explanation: q.explanation || '' });
+    setQForm({ type: q.type, question: q.question, options: q.type === 'true_false' ? ['True', 'False'] : [...(q.options || []), '', '', '', ''].slice(0, 4), correctAnswer: q.correctAnswer || 0, correctAnswers: q.correctAnswers || [], acceptedAnswers: (q.acceptedAnswers || []).join(' | '), explanation: q.explanation || '' });
   };
 
   if (managing) {
@@ -89,12 +90,17 @@ export default function QuizManager() {
         <div className="glass-strong rounded-[20px] p-6 space-y-4">
           <h3 className="font-bold">{editingQ ? 'Edit Question' : 'Add Question'}</h3>
           <div className="flex gap-2">
-            {[{ id: 'multiple_choice', label: 'Multiple Choice' }, { id: 'true_false', label: 'True/False' }, { id: 'multiple_answer', label: 'Multiple Answer' }].map((t) => (
+            {[{ id: 'multiple_choice', label: 'Multiple Choice' }, { id: 'true_false', label: 'True/False' }, { id: 'multiple_answer', label: 'Multiple Answer' }, { id: 'short_answer', label: 'Short Answer' }].map((t) => (
               <button key={t.id} onClick={() => setQForm({ ...qForm, type: t.id })} className={`px-4 py-2 rounded-full text-xs font-bold ${qForm.type === t.id ? 'bg-white text-black' : 'glass text-white/60'}`}>{t.label}</button>
             ))}
           </div>
           <input value={qForm.question} onChange={(e) => setQForm({ ...qForm, question: e.target.value })} placeholder="Question text" className="w-full h-11 rounded-full glass px-4 text-sm" />
-          {qForm.type !== 'true_false' ? (
+          {qForm.type === 'short_answer' ? (
+            <div className="space-y-2">
+              <input value={qForm.acceptedAnswers} onChange={(e) => setQForm({ ...qForm, acceptedAnswers: e.target.value })} placeholder="Accepted answers (separate with |  e.g.  HyperText | hypertext)" className="w-full h-11 rounded-full glass px-4 text-sm" />
+              <div className="text-[11px] text-white/30">Answers match case-insensitively; partial matches containing an accepted answer also pass.</div>
+            </div>
+          ) : qForm.type !== 'true_false' ? (
             <div className="space-y-2">
               {qForm.options.map((o, i) => (
                 <div key={i} className="flex gap-2 items-center">
@@ -148,6 +154,7 @@ export default function QuizManager() {
             </select>
             <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Quiz title" className="h-11 rounded-full glass px-4 text-sm sm:col-span-2" />
             <input type="number" min="0" max="100" value={form.passingScore} onChange={(e) => setForm({ ...form, passingScore: Number(e.target.value) })} placeholder="Passing score %" className="h-11 rounded-full glass px-4 text-sm" />
+            <input type="number" min="1" value={form.attemptLimit} onChange={(e) => setForm({ ...form, attemptLimit: e.target.value ? Number(e.target.value) : '' })} placeholder="Attempt limit (blank = unlimited)" className="h-11 rounded-full glass px-4 text-sm" />
             <div className="flex gap-4 items-center text-sm px-2">
               <label className="flex items-center gap-2"><input type="checkbox" checked={form.allowRetake} onChange={(e) => setForm({ ...form, allowRetake: e.target.checked })} className="h-4 w-4" /> Allow retakes</label>
               <label className="flex items-center gap-2"><input type="checkbox" checked={form.isFinal} onChange={(e) => setForm({ ...form, isFinal: e.target.checked })} className="h-4 w-4" /> Final exam</label>

@@ -150,6 +150,40 @@ function buildSummary(input) {
   return `# ${topic} — Summary\n\n- **Big idea:** ${topic} follows a repeatable workflow: learn, demo, practice, polish.\n- **Remember:** save every exercise for your portfolio.\n- **Next:** apply this in the practical task, then take the quiz.\n`;
 }
 
+function buildExercise(input) {
+  const { topic = 'Lesson', level = 'Beginner', style = 'practical' } = input;
+  return {
+    title: `Practical Exercise: ${topic}`,
+    level, style,
+    steps: [
+      `Recreate the main ${topic} example from memory (no peeking).`,
+      `Change one variable and observe what happens.`,
+      `Create one small original piece using ${topic}.`,
+      `Self-check against the lesson quality checklist.`,
+    ],
+    deliverable: `One original ${topic} piece + a 3-line note explaining your process.`,
+    estimatedMinutes: 20,
+  };
+}
+
+function buildNotes(input) {
+  const { topic = 'Lesson' } = input;
+  return { markdown: `# 📝 Revision Notes: ${topic}\n\n## Key points\n\n- Core idea of ${topic} in one sentence.\n- The 3-step workflow: understand → demo → practice.\n- Common beginner mistake and how to avoid it.\n\n## Remember\n\n- Save every exercise for your portfolio.\n- Quality check before submitting.\n\n> [!TIP] Ask DanTECH AI to test you on this topic!` };
+}
+
+function buildFlashcards(input) {
+  const { topic = 'Lesson', numQuestions = 6 } = input;
+  const n = Math.max(3, Math.min(12, Number(numQuestions) || 6));
+  const cards = [];
+  for (let i = 0; i < n; i++) {
+    cards.push({
+      front: i % 2 === 0 ? `Define a key term in "${topic}" (#${i + 1})` : `Explain concept #${i + 1} of "${topic}" in your own words`,
+      back: `Answer from the lesson: core idea #${i + 1} of ${topic}. Say it simply, then give one example.`,
+    });
+  }
+  return { title: `${topic} — Flashcards`, topic, cards };
+}
+
 const LocalTemplateProvider = {
   name: 'local-template',
   supports() { return true; },
@@ -164,6 +198,9 @@ const LocalTemplateProvider = {
       case 'voiceover': return { kind, data: buildScript(input, false), provider: 'local-template' };
       case 'quiz': return { kind, data: buildQuiz(input), provider: 'local-template' };
       case 'assignment': return { kind, data: buildAssignment(input), provider: 'local-template' };
+      case 'exercise': return { kind, data: buildExercise(input), provider: 'local-template' };
+      case 'notes': return { kind, data: buildNotes(input), provider: 'local-template' };
+      case 'flashcards': return { kind, data: buildFlashcards(input), provider: 'local-template' };
       case 'summary': return { kind, data: { markdown: buildSummary(input) }, provider: 'local-template' };
       default: throw new Error(`Unsupported AI kind: ${kind}`);
     }
@@ -207,5 +244,8 @@ export const AI_KINDS = [
   { id: 'assignment', label: 'Generate Assignment', desc: 'Practical task with instructions' },
   { id: 'video_script', label: 'Video Script', desc: 'Scenes, visuals, narration & subtitles' },
   { id: 'voiceover', label: 'Voiceover Script', desc: 'Narration with voice & style settings' },
+  { id: 'exercise', label: 'Practical Exercise', desc: 'Hands-on student exercise' },
+  { id: 'notes', label: 'Revision Notes', desc: 'Study-ready revision notes' },
+  { id: 'flashcards', label: 'Flashcards', desc: 'Q&A flashcard deck' },
   { id: 'summary', label: 'Generate Summary', desc: 'Concise learning recap' },
 ];

@@ -7,7 +7,7 @@ export default function MyCourses() {
   const { user } = useAuth();
   const { getUserEnrollments, getCourseById, getProgress } = useCourses();
   if (!user) return null;
-  const enrollments = getUserEnrollments(user.id);
+  const enrollments = getUserEnrollments(user.id).filter((e) => e.status !== 'removed');
   const items = enrollments.map(e => ({ e, course: getCourseById(e.courseId), progress: getProgress(user.id, e.courseId) })).filter(x => x.course);
 
   return (

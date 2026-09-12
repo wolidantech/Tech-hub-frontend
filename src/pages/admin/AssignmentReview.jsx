@@ -13,7 +13,7 @@ export default function AssignmentReview() {
   const [tab, setTab] = useState('review');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ courseId: '', title: '', description: '', instructions: '', requiredOutput: '', maxScore: 100, isFinalProject: false });
+  const [form, setForm] = useState({ courseId: '', title: '', description: '', instructions: '', requiredOutput: '', maxScore: 100, isFinalProject: false, deadline: '', submissionType: 'any' });
   const [reviewing, setReviewing] = useState(null);
   const [review, setReview] = useState({ status: 'approved', score: '', feedback: '' });
   const [viewing, setViewing] = useState(null);
@@ -79,7 +79,7 @@ export default function AssignmentReview() {
                 <div key={s.id} className="glass rounded-[20px] p-4 flex flex-wrap items-center gap-4">
                   <div className="flex-1 min-w-[240px]">
                     <div className="font-bold text-sm">{nameOf(s.userId)} <span className="text-white/40 font-normal">• {asg?.title || 'Assignment'} {asg?.isFinalProject ? '(FINAL PROJECT)' : ''}</span></div>
-                    <div className="text-xs text-white/40 mt-1">{course?.title} • 📎 {s.fileName} ({(s.fileSize / 1024).toFixed(0)} KB) • {new Date(s.submittedAt).toLocaleString()}</div>
+                    <div className="text-xs text-white/40 mt-1">{course?.title} • {(s.kind || 'file') === 'file' ? `📎 ${s.fileName} (${s.fileSize ? (s.fileSize / 1024).toFixed(0) : 0} KB)` : (s.kind === 'link' ? `🔗 ${String(s.linkUrl).slice(0, 40)}` : '📝 text answer')} • {new Date(s.submittedAt).toLocaleString()} {s.late && '• LATE'}</div>
                     {s.score != null && <div className="text-xs text-amber-300 font-bold mt-1">Score: {s.score}</div>}
                   </div>
                   <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${s.status === 'approved' ? 'bg-green-500/20 text-green-300' : s.status === 'needs_revision' ? 'bg-red-500/20 text-red-300' : 'bg-amber-500/20 text-amber-300'}`}>{s.status.replace('_', ' ').toUpperCase()}</span>
@@ -110,6 +110,13 @@ export default function AssignmentReview() {
                 <textarea value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} placeholder="Instructions (step by step)" className="rounded-2xl glass p-4 text-sm h-24 sm:col-span-2" />
                 <input value={form.requiredOutput} onChange={(e) => setForm({ ...form, requiredOutput: e.target.value })} placeholder="Required output" className="h-11 rounded-full glass px-4 text-sm" />
                 <input type="number" value={form.maxScore} onChange={(e) => setForm({ ...form, maxScore: Number(e.target.value) })} placeholder="Max score" className="h-11 rounded-full glass px-4 text-sm" />
+                <input type="datetime-local" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} title="Deadline (optional)" className="h-11 rounded-full glass px-4 text-sm" />
+                <select value={form.submissionType} onChange={(e) => setForm({ ...form, submissionType: e.target.value })} className="h-11 rounded-full glass px-4 text-sm">
+                  <option className="bg-[#061236]" value="any">Accept: File + Text + Link</option>
+                  <option className="bg-[#061236]" value="file">File only</option>
+                  <option className="bg-[#061236]" value="text">Text only</option>
+                  <option className="bg-[#061236]" value="link">Link only</option>
+                </select>
                 <label className="flex items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" checked={form.isFinalProject} onChange={(e) => setForm({ ...form, isFinalProject: e.target.checked })} className="h-4 w-4" /> This is the FINAL PROJECT for the course</label>
               </div>
               <button onClick={handleCreate} className="btn-primary w-full">CREATE ASSIGNMENT</button>
@@ -140,11 +147,15 @@ export default function AssignmentReview() {
       {viewing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
           <div className="w-full max-w-[700px] max-h-[90vh] overflow-auto glass-strong rounded-[24px] p-6 space-y-4">
-            <div className="flex justify-between items-center"><h3 className="font-bold">{viewing.fileName}</h3><button onClick={() => setViewing(null)}><X className="h-5 w-5" /></button></div>
-            <div className="text-xs text-white/50">{nameOf(viewing.userId)} • {(viewing.fileSize / 1024).toFixed(0)} KB • {new Date(viewing.submittedAt).toLocaleString()}</div>
+            <div className="flex justify-between items-center"><h3 className="font-bold">{(viewing.kind || 'file') === 'file' ? viewing.fileName : (viewing.kind === 'link' ? 'Link submission' : 'Text submission')} {(viewing.late) && <span className="ml-2 px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 text-[10px]">LATE</span>}</h3><button onClick={() => setViewing(null)}><X className="h-5 w-5" /></button></div>
+            <div className="text-xs text-white/50">{nameOf(viewing.userId)} • {(viewing.kind || 'file').toUpperCase()} • {viewing.fileSize ? `${(viewing.fileSize / 1024).toFixed(0)} KB • ` : ''}{new Date(viewing.submittedAt).toLocaleString()}</div>
             {viewing.note && <div className="rounded-xl bg-white/[0.04] p-3 text-sm">"{viewing.note}"</div>}
+            {viewing.kind === 'text' && <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm whitespace-pre-line max-h-[400px] overflow-auto">{viewing.textContent}</div>}
+            {viewing.kind === 'link' && <a href={viewing.linkUrl} target="_blank" rel="noreferrer" className="block rounded-2xl border border-cyan-500/30 bg-cyan-500/5 p-4 text-cyan-300 text-sm break-all underline">{viewing.linkUrl}</a>}
             <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/30">
-              {viewing.fileType?.startsWith('image/') ? (
+              {viewing.kind === 'text' || viewing.kind === 'link' ? (
+                <div className="p-6 text-center text-sm text-white/50">Preview shown above ⬆</div>
+              ) : viewing.fileType?.startsWith('image/') ? (
                 <img src={viewing.fileData} alt="submission" className="w-full max-h-[500px] object-contain" />
               ) : viewing.fileType === 'video/mp4' ? (
                 <video src={viewing.fileData} controls className="w-full max-h-[500px]" />

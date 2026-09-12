@@ -79,6 +79,15 @@
 .lesson-callout.warning { @apply bg-amber-500/10 border-amber-500/30 text-amber-100; }
 .lesson-callout.warning strong { @apply text-amber-300; }
 
+/* ---------- DanTECH AI chat ---------- */
+.dantech-body { @apply text-[13px] leading-[1.7]; }
+.dantech-body h1 { @apply text-base mb-2; }
+.dantech-body h2 { @apply text-[15px] mt-3 mb-1.5 pb-1; }
+.dantech-body h3 { @apply text-sm mt-2 mb-1; }
+.dantech-body p { @apply my-1.5; }
+.dantech-codewrap { @apply relative my-2; }
+.dantech-copy { @apply absolute top-2 right-2 px-2.5 py-1 rounded-full bg-white/15 text-[10px] font-bold hover:bg-white/25 transition z-10; }
+
 /* ---------- Certificate print (PDF via print-to-PDF) ---------- */
 @media print {
   body * { visibility: hidden; }

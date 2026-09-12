@@ -120,6 +120,18 @@ export const CATEGORY_META = {
 export const getCategoryMeta = (cat) =>
   CATEGORY_META[cat] || { icon: 'BookOpen', gradient: 'from-cyan-500 to-blue-600' };
 
+// Structured career learning paths (admin can edit/extend from dashboard)
+export const DEFAULT_LEARNING_PATHS = [
+  { id: 'path-ai-creator', title: 'AI Creator Path', desc: 'Create viral content with AI tools — video, design & marketing.', icon: '🤖', level: 'Beginner → Advanced', courseSlugs: ['ai-video-content-creation', 'prompt-engineering-mastery', 'video-editing-capcut', 'graphic-design-canva', 'digital-marketing'] },
+  { id: 'path-web-dev', title: 'Web Developer Path', desc: 'From HTML basics to React apps and client websites.', icon: '💻', level: 'Beginner → Advanced', courseSlugs: ['frontend-web-development', 'web-design-wordpress', 'ui-ux-design-figma', 'portfolio-creation', 'freelancing-blueprint'] },
+  { id: 'path-designer', title: 'Graphic Designer Path', desc: 'Design flyers, brands and social content that sells.', icon: '🎨', level: 'Beginner → Intermediate', courseSlugs: ['graphic-design-canva', 'ui-ux-design-figma', 'portfolio-creation'] },
+  { id: 'path-video', title: 'Video Editor Path', desc: 'Edit cinematic videos and viral short-form content.', icon: '🎬', level: 'Beginner → Intermediate', courseSlugs: ['video-editing-capcut', 'ai-video-content-creation', 'portfolio-creation'] },
+  { id: 'path-marketer', title: 'Digital Marketer Path', desc: 'Grow businesses with content, ads and strategy.', icon: '📣', level: 'Beginner → Advanced', courseSlugs: ['digital-marketing', 'graphic-design-canva', 'ai-video-content-creation', 'freelancing-blueprint'] },
+  { id: 'path-uiux', title: 'UI/UX Designer Path', desc: 'Design apps and websites users love.', icon: '✏️', level: 'Beginner → Advanced', courseSlugs: ['ui-ux-design-figma', 'graphic-design-canva', 'frontend-web-development', 'portfolio-creation'] },
+  { id: 'path-mobile', title: 'Mobile Developer Path', desc: 'Build and ship real mobile applications.', icon: '📱', level: 'Beginner → Advanced', courseSlugs: ['mobile-app-development', 'ui-ux-design-figma', 'python-for-beginners', 'portfolio-creation'] },
+  { id: 'path-entrepreneur', title: 'Tech Entrepreneur Path', desc: 'Turn tech skills into a thriving business.', icon: '🚀', level: 'Beginner → Advanced', courseSlugs: ['digital-marketing', 'freelancing-blueprint', 'portfolio-creation', 'web-design-wordpress'] },
+];
+
 // Sample expansion courses for newly-covered global categories.
 // Kept small on purpose: the admin creates unlimited courses from the dashboard.
 export const seedExpansionCourses = [

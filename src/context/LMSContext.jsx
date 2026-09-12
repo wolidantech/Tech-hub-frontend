@@ -34,6 +34,14 @@ export const LMSProvider = ({ children }) => {
   const [announcements, setAnnouncements] = useState(() => getAnnouncements());
   const [courseViews, setCourseViews] = useState(() => getCourseViews());
   const [learningEvents, setLearningEvents] = useState(() => getLearningEvents());
+  const [learningPaths, setLearningPaths] = useState(() => getLearningPaths() || DEFAULT_LEARNING_PATHS);
+  const [bundles, setBundles] = useState(() => getBundles());
+  const [reviews, setReviews] = useState(() => getReviews());
+  const [posts, setPosts] = useState(() => getPosts());
+  const [comments, setComments] = useState(() => getComments());
+  const [liveClasses, setLiveClasses] = useState(() => getLiveClasses());
+  const [aiConvos, setAIConvos] = useState(() => getAIConvos());
+  const [siteSettings, setSiteSettingsState] = useState(() => ({ ...DEFAULT_SITE_SETTINGS, ...(getSiteSettings() || {}) }));
 
   useEffect(() => saveCategories(categories), [categories]);
   useEffect(() => saveQuizzes(quizzes), [quizzes]);
@@ -50,6 +58,14 @@ export const LMSProvider = ({ children }) => {
   useEffect(() => saveAnnouncements(announcements), [announcements]);
   useEffect(() => saveCourseViews(courseViews.slice(-2000)), [courseViews]);
   useEffect(() => saveLearningEvents(learningEvents.slice(-3000)), [learningEvents]);
+  useEffect(() => saveLearningPaths(learningPaths), [learningPaths]);
+  useEffect(() => saveBundles(bundles), [bundles]);
+  useEffect(() => saveReviews(reviews), [reviews]);
+  useEffect(() => savePosts(posts.slice(-1000)), [posts]);
+  useEffect(() => saveComments(comments.slice(-5000)), [comments]);
+  useEffect(() => saveLiveClasses(liveClasses), [liveClasses]);
+  useEffect(() => saveAIConvos(aiConvos.slice(-500)), [aiConvos]);
+  useEffect(() => saveSiteSettings(siteSettings), [siteSettings]);
 
   // ---------------- Audit ----------------
   const audit = (actor, action, entityType, entityId, details = {}) => {
@@ -101,6 +117,7 @@ export const LMSProvider = ({ children }) => {
     if (!quiz) throw new Error('Quiz not found');
     const prior = quizAttempts.filter((a) => a.quizId === quizId && a.userId === userId);
     if (prior.length > 0 && !quiz.allowRetake) throw new Error('Retakes are not allowed for this quiz');
+    if (quiz.attemptLimit && prior.length >= quiz.attemptLimit) throw new Error(`Attempt limit reached (${quiz.attemptLimit}). Contact your instructor.`);
     const questions = quizQuestions.filter((q) => q.quizId === quizId);
     const result = scoreQuizAttempt(questions, answers);
     const attempt = {
@@ -130,8 +147,8 @@ export const LMSProvider = ({ children }) => {
   };
 
   // ---------------- Assignments ----------------
-  const createAssignment = ({ courseId, moduleId = null, lessonId = null, title, description = '', instructions = '', requiredOutput = '', maxScore = 100, isFinalProject = false, status = 'published' }) => {
-    const a = { id: generateId(), courseId, moduleId, lessonId, title, description, instructions, requiredOutput, maxScore: Number(maxScore), isFinalProject, status, createdAt: new Date().toISOString() };
+  const createAssignment = ({ courseId, moduleId = null, lessonId = null, title, description = '', instructions = '', requiredOutput = '', maxScore = 100, isFinalProject = false, status = 'published', deadline = '', submissionType = 'any' }) => {
+    const a = { id: generateId(), courseId, moduleId, lessonId, title, description, instructions, requiredOutput, maxScore: Number(maxScore), isFinalProject, status, deadline, submissionType, createdAt: new Date().toISOString() };
     setAssignments((p) => [a, ...p]);
     return a;
   };
@@ -139,12 +156,16 @@ export const LMSProvider = ({ children }) => {
   const deleteAssignment = (id) => setAssignments((p) => p.filter((a) => a.id !== id));
   const getCourseAssignments = (courseId) => assignments.filter((a) => a.courseId === courseId && a.status === 'published');
 
-  const submitAssignment = ({ assignmentId, userId, studentName, fileData, fileName, fileType, fileSize, note = '' }) => {
+  const submitAssignment = ({ assignmentId, userId, studentName, kind = 'file', fileData = null, fileName = '', fileType = '', fileSize = 0, textContent = '', linkUrl = '', note = '' }) => {
     const asg = assignments.find((a) => a.id === assignmentId);
     if (!asg) throw new Error('Assignment not found');
+    if (kind === 'text' && !String(textContent).trim()) throw new Error('Please write your answer before submitting');
+    if (kind === 'link' && !/^https?:\/\//i.test(linkUrl)) throw new Error('Please enter a valid link starting with http');
+    if (kind === 'file' && !fileData) throw new Error('Please select a file to upload');
+    const late = asg.deadline ? new Date() > new Date(asg.deadline) : false;
     const sub = {
       id: generateId(), assignmentId, courseId: asg.courseId, userId, studentName,
-      fileData, fileName, fileType, fileSize, note,
+      kind, fileData, fileName, fileType, fileSize, textContent, linkUrl, note, late,
       status: 'submitted', score: null, feedback: '', reviewedBy: null, reviewedAt: null,
       submittedAt: new Date().toISOString(),
     };
@@ -283,6 +304,125 @@ export const LMSProvider = ({ children }) => {
     return a;
   };
 
+  // ---------------- Learning paths ----------------
+  const createPath = (data, actor) => {
+    const p = { id: generateId(), ...data, createdAt: new Date().toISOString() };
+    setLearningPaths((prev) => [...prev, p]);
+    if (actor) audit(actor, 'path.create', 'learning_path', p.id, { title: data.title });
+    return p;
+  };
+  const updatePath = (id, updates, actor) => {
+    setLearningPaths((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+    if (actor) audit(actor, 'path.update', 'learning_path', id, updates);
+  };
+  const deletePath = (id, actor) => {
+    setLearningPaths((prev) => prev.filter((p) => p.id !== id));
+    if (actor) audit(actor, 'path.delete', 'learning_path', id, {});
+  };
+
+  // ---------------- Bundles ----------------
+  const createBundle = (data, actor) => {
+    const b = { id: generateId(), published: true, ...data, createdAt: new Date().toISOString() };
+    setBundles((prev) => [b, ...prev]);
+    if (actor) audit(actor, 'bundle.create', 'bundle', b.id, { title: data.title });
+    return b;
+  };
+  const updateBundle = (id, updates, actor) => {
+    setBundles((prev) => prev.map((b) => (b.id === id ? { ...b, ...updates } : b)));
+    if (actor) audit(actor, 'bundle.update', 'bundle', id, updates);
+  };
+  const deleteBundle = (id, actor) => {
+    setBundles((prev) => prev.filter((b) => b.id !== id));
+    if (actor) audit(actor, 'bundle.delete', 'bundle', id, {});
+  };
+  const getBundleById = (id) => bundles.find((b) => b.id === id);
+
+  // ---------------- Reviews ----------------
+  const addReview = ({ courseId, userId, studentName, rating, text }) => {
+    if (reviews.some((r) => r.courseId === courseId && r.userId === userId)) throw new Error('You already reviewed this course');
+    const r = { id: generateId(), courseId, userId, studentName, rating: Math.max(1, Math.min(5, Number(rating))), text: String(text || '').slice(0, 1000), status: 'published', createdAt: new Date().toISOString() };
+    setReviews((prev) => [r, ...prev]);
+    setLearningEvents((p) => [...p, { id: generateId(), userId, courseId, kind: 'review', refId: r.id, createdAt: r.createdAt }]);
+    return r;
+  };
+  const moderateReview = (id, status, actor) => {
+    setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+    if (actor) audit(actor, `review.${status}`, 'review', id, {});
+  };
+  const deleteReview = (id, actor) => {
+    setReviews((prev) => prev.filter((r) => r.id !== id));
+    if (actor) audit(actor, 'review.delete', 'review', id, {});
+  };
+  const getCourseReviews = (courseId) => reviews.filter((r) => r.courseId === courseId && r.status === 'published');
+  const getCourseRating = (courseId, fallback = 4.8) => {
+    const rs = getCourseReviews(courseId);
+    if (!rs.length) return fallback;
+    return Math.round((rs.reduce((s, r) => s + r.rating, 0) / rs.length) * 10) / 10;
+  };
+
+  // ---------------- Community ----------------
+  const createPost = ({ courseId, lessonId = null, userId, authorName, title, body }) => {
+    const p = { id: generateId(), courseId, lessonId, userId, authorName, title: String(title || '').slice(0, 140), body: String(body || '').slice(0, 3000), pinned: false, createdAt: new Date().toISOString() };
+    setPosts((prev) => [p, ...prev]);
+    return p;
+  };
+  const togglePinPost = (id, actor) => {
+    setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, pinned: !p.pinned } : p)));
+    if (actor) audit(actor, 'community.pin', 'post', id, {});
+  };
+  const deletePost = (id, actor) => {
+    setPosts((prev) => prev.filter((p) => p.id !== id));
+    setComments((prev) => prev.filter((c) => c.postId !== id));
+    if (actor) audit(actor, 'community.delete_post', 'post', id, {});
+  };
+  const addComment = ({ postId, userId, authorName, body, isAdmin = false }) => {
+    const c = { id: generateId(), postId, userId, authorName, body: String(body || '').slice(0, 2000), isAdmin, createdAt: new Date().toISOString() };
+    setComments((prev) => [...prev, c]);
+    return c;
+  };
+  const deleteComment = (id, actor) => {
+    setComments((prev) => prev.filter((c) => c.id !== id));
+    if (actor) audit(actor, 'community.delete_comment', 'comment', id, {});
+  };
+  const getCoursePosts = (courseId) => posts.filter((p) => p.courseId === courseId).sort((a, b) => (b.pinned - a.pinned) || (new Date(b.createdAt) - new Date(a.createdAt)));
+  const getPostComments = (postId) => comments.filter((c) => c.postId === postId).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+  // ---------------- Live classes ----------------
+  const createLiveClass = (data, actor) => {
+    const l = { id: generateId(), ...data, createdAt: new Date().toISOString() };
+    setLiveClasses((prev) => [l, ...prev]);
+    if (actor) audit(actor, 'live.create', 'live_class', l.id, { title: data.title });
+    return l;
+  };
+  const updateLiveClass = (id, updates, actor) => {
+    setLiveClasses((prev) => prev.map((l) => (l.id === id ? { ...l, ...updates } : l)));
+    if (actor) audit(actor, 'live.update', 'live_class', id, updates);
+  };
+  const deleteLiveClass = (id, actor) => {
+    setLiveClasses((prev) => prev.filter((l) => l.id !== id));
+    if (actor) audit(actor, 'live.delete', 'live_class', id, {});
+  };
+  const getUpcomingClasses = (courseIds = null) => liveClasses
+    .filter((l) => new Date(`${l.date}T${l.time || '00:00'}`) >= new Date(Date.now() - 2 * 3600 * 1000))
+    .filter((l) => !courseIds || !l.courseId || courseIds.includes(l.courseId))
+    .sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+
+  // ---------------- DanTECH AI conversations ----------------
+  const saveConvo = (convo) => {
+    setAIConvos((prev) => {
+      const rest = prev.filter((c) => c.id !== convo.id);
+      return [convo, ...rest].slice(0, 500);
+    });
+  };
+  const getUserConvos = (userId) => aiConvos.filter((c) => c.userId === userId);
+  const deleteConvo = (id) => setAIConvos((prev) => prev.filter((c) => c.id !== id));
+
+  // ---------------- Site settings ----------------
+  const updateSiteSettings = (updates, actor) => {
+    setSiteSettingsState((prev) => ({ ...prev, ...updates }));
+    if (actor) audit(actor, 'settings.update', 'site_settings', 'global', updates);
+  };
+
   const adminLMSStats = useMemo(() => ({
     quizzes: quizzes.length,
     questions: quizQuestions.length,
@@ -312,6 +452,13 @@ export const LMSProvider = ({ children }) => {
       auditLogs, audit,
       announcements, sendAnnouncement,
       courseViews, trackView, learningEvents, trackEvent,
+      learningPaths, createPath, updatePath, deletePath,
+      bundles, createBundle, updateBundle, deleteBundle, getBundleById,
+      reviews, addReview, moderateReview, deleteReview, getCourseReviews, getCourseRating,
+      posts, comments, createPost, togglePinPost, deletePost, addComment, deleteComment, getCoursePosts, getPostComments,
+      liveClasses, createLiveClass, updateLiveClass, deleteLiveClass, getUpcomingClasses,
+      aiConvos, saveConvo, getUserConvos, deleteConvo,
+      siteSettings, updateSiteSettings,
       adminLMSStats,
     }}>
       {children}

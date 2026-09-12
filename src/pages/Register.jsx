@@ -27,7 +27,7 @@ export default function Register() {
     try {
       const user = await register({ fullName: form.fullName, email: form.email, phone: form.phone, password: form.password });
       toast.success(`Welcome, ${user.fullName}! Account created.`);
-      setTimeout(() => navigate(from), 600);
+      setTimeout(() => navigate('/onboarding'), 600);
     } catch (err) {
       toast.error(err.message);
     } finally {

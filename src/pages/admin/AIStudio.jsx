@@ -118,8 +118,33 @@ export default function AIStudio() {
         </div>
       );
     }
-    if (item.kind === 'lesson_text' || item.kind === 'summary') {
+    if (item.kind === 'lesson_text' || item.kind === 'summary' || item.kind === 'notes') {
       return <div className="lesson-body" dangerouslySetInnerHTML={{ __html: renderLessonMarkdown(d.markdown || '') }} />;
+    }
+    if (item.kind === 'exercise') {
+      return (
+        <div className="space-y-2 text-sm">
+          <div className="font-bold text-base">🛠 {d.title}</div>
+          <ol className="list-decimal pl-5 space-y-1 text-white/70">{(d.steps || []).map((s, i) => <li key={i}>{s}</li>)}</ol>
+          <div className="text-xs"><span className="font-bold text-cyan-300">Deliverable: </span>{d.deliverable}</div>
+          <div className="text-xs text-white/40">~{d.estimatedMinutes} mins • {d.level}</div>
+        </div>
+      );
+    }
+    if (item.kind === 'flashcards') {
+      return (
+        <div className="space-y-2 text-sm">
+          <div className="font-bold text-base">🃏 {d.title}</div>
+          {(d.cards || []).map((c, i) => (
+            <div key={i} className="rounded-xl bg-white/[0.03] border border-white/10 p-3">
+              <div className="font-bold text-xs text-purple-300">FRONT</div>
+              <div>{c.front}</div>
+              <div className="font-bold text-xs text-green-300 mt-2">BACK</div>
+              <div className="text-white/70">{c.back}</div>
+            </div>
+          ))}
+        </div>
+      );
     }
     if (item.kind === 'quiz') {
       return (

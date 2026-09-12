@@ -84,7 +84,9 @@ export const AuthProvider = ({ children }) => {
       passwordHash, // Store only hash
       role: 'student',
       createdAt: new Date().toISOString(),
-      avatar: null
+      lastLoginAt: new Date().toISOString(),
+      avatar: null,
+      onboarded: false
     };
     saveUsers([...users, newUser]);
     const sessionUser = { ...newUser, passwordHash: undefined };
@@ -97,6 +99,7 @@ export const AuthProvider = ({ children }) => {
     const users = getUsers();
     const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (!found) throw new Error('Invalid email or password');
+    if (found.banned) throw new Error('This account has been suspended. Contact support on WhatsApp 08159610509.');
 
     // Admin must use secure admin login route
     if (found.role === 'admin' && email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
@@ -129,9 +132,37 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
-    setUser(found);
-    setCurrentUser(found);
+    found.lastLoginAt = new Date().toISOString();
+    saveUsers(users);
+    setUser({ ...found });
+    setCurrentUser({ ...found });
     return found;
+  };
+
+  // Password reset (local-mode: verify email + phone ownership).
+  // Production: Supabase Auth sends a secure email link instead.
+  const resetPassword = async (email, phone, newPassword) => {
+    const users = getUsers();
+    const idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+    if (idx === -1) throw new Error('No account found with this email');
+    const u = users[idx];
+    if (u.role === 'admin') throw new Error('Admin password can only be changed from the admin dashboard');
+    if (String(u.phone || '').replace(/\D/g, '').slice(-10) !== String(phone || '').replace(/\D/g, '').slice(-10)) {
+      throw new Error('Phone number does not match our records');
+    }
+    if (!newPassword || newPassword.length < 6) throw new Error('Password must be at least 6 characters');
+    const passwordHash = await hashPassword(newPassword);
+    users[idx] = { ...u, passwordHash, password: undefined };
+    saveUsers(users);
+    return true;
+  };
+
+  const setUserBanned = (userId, banned) => {
+    const users = getUsers();
+    const idx = users.findIndex(u => u.id === userId);
+    if (idx === -1) return;
+    users[idx] = { ...users[idx], banned };
+    saveUsers(users);
   };
 
   // Dedicated secure admin login
@@ -238,8 +269,10 @@ export const AuthProvider = ({ children }) => {
       adminLogin,
       logout, 
       adminLogout,
-      updateProfile, 
+      updateProfile,
       changePassword,
+      resetPassword,
+      setUserBanned,
       isAdmin: user?.role === 'admin',
       isAdminSessionValid,
       adminEmail: ADMIN_EMAIL

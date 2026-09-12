@@ -5,6 +5,7 @@ import { CourseProvider } from './context/CourseContext';
 import { LMSProvider } from './context/LMSContext';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
+import DanTechAI from './components/dantech/DanTechAI';
 
 import Home from './pages/Home';
 import Courses from './pages/Courses';
@@ -15,6 +16,11 @@ import Contact from './pages/Contact';
 import About from './pages/About';
 import AdminLogin from './pages/AdminLogin';
 import VerifyCertificate from './pages/VerifyCertificate';
+import LearningPaths from './pages/LearningPaths';
+import CareerHub from './pages/CareerHub';
+import StudentPortfolio from './pages/StudentPortfolio';
+import Search from './pages/Search';
+import ForgotPassword from './pages/ForgotPassword';
 
 // Code-split heavy routes for faster mobile loads
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -26,6 +32,7 @@ const Certificates = lazy(() => import('./pages/Certificates'));
 const CertificateView = lazy(() => import('./pages/CertificateView'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Admin = lazy(() => import('./pages/Admin'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
 
 const RouteLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-[#020a1f]">
@@ -85,11 +92,18 @@ export default function App() {
               <Route path="/" element={<Layout><Home /></Layout>} />
               <Route path="/courses" element={<Layout><Courses /></Layout>} />
               <Route path="/course/:slug" element={<Layout><CourseDetails /></Layout>} />
+              <Route path="/courses/:slug" element={<Layout><CourseDetails /></Layout>} />
               <Route path="/login" element={<Layout><Login /></Layout>} />
               <Route path="/register" element={<Layout><Register /></Layout>} />
               <Route path="/about" element={<Layout><About /></Layout>} />
               <Route path="/contact" element={<Layout><Contact /></Layout>} />
               <Route path="/verify-certificate" element={<Layout><VerifyCertificate /></Layout>} />
+              <Route path="/certificates/verify" element={<Layout><VerifyCertificate /></Layout>} />
+              <Route path="/learning-paths" element={<Layout><LearningPaths /></Layout>} />
+              <Route path="/career-hub" element={<Layout><CareerHub /></Layout>} />
+              <Route path="/student/:id" element={<StudentPortfolio />} />
+              <Route path="/search" element={<Layout><Search /></Layout>} />
+              <Route path="/forgot-password" element={<Layout><ForgotPassword /></Layout>} />
               <Route path="/certificate/:id" element={lazyEl(<Layout><CertificateView /></Layout>)} />
 
               <Route path="/admin/login" element={<PublicAdminRoute><AdminLogin /></PublicAdminRoute>} />
@@ -101,12 +115,14 @@ export default function App() {
               <Route path="/enroll/:slug" element={lazyEl(<ProtectedRoute><Layout><Enroll /></Layout></ProtectedRoute>)} />
               <Route path="/certificates" element={lazyEl(<ProtectedRoute><Layout><Certificates /></Layout></ProtectedRoute>)} />
               <Route path="/profile" element={lazyEl(<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>)} />
+              <Route path="/onboarding" element={lazyEl(<ProtectedRoute><Onboarding /></ProtectedRoute>)} />
 
               <Route path="/admin" element={<AdminRedirect />} />
               <Route path="/admin/dashboard" element={lazyEl(<AdminRoute><Layout><Admin /></Layout></AdminRoute>)} />
 
               <Route path="*" element={<Layout><div className="min-h-[60vh] flex items-center justify-center text-center p-8"><div><h1 className="font-black text-4xl">404</h1><p className="text-white/60 mt-2">Page not found</p><a href="/" className="inline-flex mt-6 btn-primary">GO HOME</a></div></div></Layout>} />
             </Routes>
+            <DanTechAI />
           </LMSProvider>
         </CourseProvider>
       </AuthProvider>

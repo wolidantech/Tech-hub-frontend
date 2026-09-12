@@ -70,6 +70,10 @@ export function scoreQuizAttempt(questions, answers) {
       const a = [...(Array.isArray(given) ? given : [])].sort().join(',');
       const b = [...q.correctAnswers].sort().join(',');
       correct = a === b && a !== '';
+    } else if (q.type === 'short_answer') {
+      const norm = String(given || '').trim().toLowerCase();
+      const accepted = (q.acceptedAnswers || []).map((s) => String(s).trim().toLowerCase()).filter(Boolean);
+      correct = norm !== '' && accepted.some((a) => norm === a || norm.includes(a));
     } else {
       correct = Number(given) === Number(q.correctAnswer);
     }
