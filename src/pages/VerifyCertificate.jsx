@@ -1,14 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, CheckCircle2, XCircle, Award, Calendar, User, BookOpen, ShieldAlert } from 'lucide-react';
 import { useCourses } from '../context/CourseContext';
 import { formatDate } from '../lib/utils';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 export default function VerifyCertificate() {
+  const [searchParams] = useSearchParams();
   const [id, setId] = useState('');
   const [result, setResult] = useState(null);
   const [searched, setSearched] = useState(false);
   const { verifyCertificate } = useCourses();
+
+  // Support QR deep-link: /verify-certificate?code=XXX
+  useEffect(() => {
+    const code = searchParams.get('code');
+    if (code) {
+      setId(code);
+      setResult(verifyCertificate(code.trim()) || null);
+      setSearched(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleVerify = (e) => {
     e.preventDefault();

@@ -1,0 +1,16 @@
+{
+  "name": "WOLI DAN TECH HUB — Learn • Build • Grow",
+  "short_name": "WOLI DAN",
+  "description": "Learn Digital Skills. Build Real Projects. Grow Your Future.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#020a1f",
+  "theme_color": "#020a1f",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/favicon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "categories": ["education", "business"]
+}

@@ -262,6 +262,20 @@ export default function Learn() {
                 </button>
               </div>
 
+              {/* Sub-lessons checklist */}
+              {activeLesson.subLessons?.length > 0 && (
+                <div className="glass rounded-2xl p-6 space-y-3">
+                  <h3 className="font-bold flex items-center gap-2"><ListChecks className="h-4 w-4 text-green-300" /> In This Lesson ({activeLesson.subLessons.length} topics)</h3>
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    {activeLesson.subLessons.map((s) => (
+                      <div key={s.id} className="flex items-center gap-2 text-sm text-white/75 bg-white/[0.03] rounded-xl px-3 py-2.5">
+                        <CheckCircle2 className="h-4 w-4 text-green-400 shrink-0" /> {s.title}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Resources */}
               {activeLesson.resources?.length > 0 && (
                 <div className="glass rounded-2xl p-6 space-y-3">

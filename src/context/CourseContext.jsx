@@ -91,7 +91,10 @@ export const CourseProvider = ({ children }) => {
     receiptSize,
     couponCode = null,
     couponDiscount = 0,
-    originalAmount = null
+    originalAmount = null,
+    bundleId = null,
+    bundleTitle = null,
+    bundleCourseIds = []
   }) => {
     // Validate not already approved
     const existingApproved = manualPayments.find(p => p.userId === userId && p.courseId === courseId && p.status === 'approved');
@@ -107,7 +110,9 @@ export const CourseProvider = ({ children }) => {
       id: generateId(),
       userId,
       courseId,
-      courseName: course?.title || courseId,
+      courseName: bundleTitle || course?.title || courseId,
+      bundleId,
+      bundleCourseIds,
       studentName,
       email,
       phone,
@@ -171,20 +176,25 @@ export const CourseProvider = ({ children }) => {
     });
     setManualPayments(updatedPayments);
 
-    // Create enrollment if not exists
-    const existingEnrollment = enrollments.find(e => e.userId === payment.userId && e.courseId === payment.courseId);
-    if (!existingEnrollment) {
-      const enrollment = {
-        id: generateId(),
-        userId: payment.userId,
-        courseId: payment.courseId,
-        enrolledAt: new Date().toISOString(),
-        status: 'active',
-        paymentId: payment.id,
-        approvedBy: adminUser?.email
-      };
-      setEnrollments(prev => [...prev, enrollment]);
-    }
+    // Create enrollment(s) if not exists (bundles enroll all included courses)
+    const targetCourseIds = payment.bundleId && payment.bundleCourseIds?.length ? payment.bundleCourseIds : [payment.courseId];
+    const fresh = [];
+    targetCourseIds.forEach((cid) => {
+      const existingEnrollment = enrollments.find(e => e.userId === payment.userId && e.courseId === cid);
+      if (!existingEnrollment && !fresh.some((e) => e.courseId === cid)) {
+        fresh.push({
+          id: generateId(),
+          userId: payment.userId,
+          courseId: cid,
+          enrolledAt: new Date().toISOString(),
+          status: 'active',
+          paymentId: payment.id,
+          bundleId: payment.bundleId || null,
+          approvedBy: adminUser?.email
+        });
+      }
+    });
+    if (fresh.length) setEnrollments((prev) => [...prev, ...fresh]);
 
     // Notification for student
     const course = getCourseById(payment.courseId);

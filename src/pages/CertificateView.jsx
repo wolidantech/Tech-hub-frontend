@@ -101,6 +101,16 @@ export default function CertificateView() {
                     <div className="h-12 w-32 border-b border-black/20 flex items-end pb-1"><span className="font-display font-bold italic text-lg">Woli Dan</span></div>
                     <div className="text-[11px] font-bold tracking-widest text-black/40 mt-1">DIRECTOR, WOLI DAN TECH HUB</div>
                   </div>
+                  <div className="text-center">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(`${window.location.origin}/verify-certificate?code=${cert.verificationCode || cert.certificateId}`)}`}
+                      alt="Verification QR code"
+                      width="110" height="110"
+                      className="h-[110px] w-[110px] mx-auto rounded-lg border border-black/10"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                    <div className="text-[10px] font-bold tracking-widest text-black/40 mt-1">SCAN TO VERIFY</div>
+                  </div>
                   <div className="flex items-center gap-3">
                     <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center"><Verified className="h-8 w-8 text-white" /></div>
                     <div className="text-left"><div className="font-bold text-sm flex items-center gap-1"><Verified className="h-4 w-4 text-green-600" /> Verified Certificate</div><div className="text-xs text-black/50">Verify at /verify-certificate</div></div>

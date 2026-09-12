@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { formatNaira } from '../../lib/utils';
 import { DEFAULT_COMPLETION_RULES } from '../../lib/lms';
 import CourseArt from '../../components/course/CourseArt';
+import { BundleManager, PathManager } from './BundlePathManager';
 import { toast } from 'sonner';
 
 export default function CourseManager() {
@@ -25,6 +26,7 @@ export default function CourseManager() {
   const [rulesForm, setRulesForm] = useState(null);
   const [newCat, setNewCat] = useState('');
   const [search, setSearch] = useState('');
+  const [view, setView] = useState('courses'); // courses | bundles | paths
 
   const filtered = courses.filter((c) => !search || c.title.toLowerCase().includes(search.toLowerCase()));
 
@@ -47,9 +49,9 @@ export default function CourseManager() {
     toast.success('Course created as UNPUBLISHED. Add curriculum, then publish.');
   };
 
-  const startEdit = (c) => { setEditing(c.id); setEditForm({ title: c.title, price: c.price, originalPrice: c.originalPrice, category: c.category, duration: c.duration, level: c.level, instructor: c.instructor, shortDescription: c.shortDescription, description: c.description, featured: !!c.featured }); };
+  const startEdit = (c) => { setEditing(c.id); setEditForm({ title: c.title, price: c.price, originalPrice: c.originalPrice, category: c.category, duration: c.duration, level: c.level, instructor: c.instructor, shortDescription: c.shortDescription, description: c.description, featured: !!c.featured, requirements: (c.requirements || []).join('\n'), audience: (c.audience || []).join('\n') }); };
   const saveEdit = (id) => {
-    updateCourse(id, { ...editForm, price: Number(editForm.price), originalPrice: Number(editForm.originalPrice) });
+    updateCourse(id, { ...editForm, price: Number(editForm.price), originalPrice: Number(editForm.originalPrice), requirements: String(editForm.requirements || '').split('\n').map((s) => s.trim()).filter(Boolean), audience: String(editForm.audience || '').split('\n').map((s) => s.trim()).filter(Boolean) });
     audit(user, 'course.update', 'course', id, { price: editForm.price });
     setEditing(null);
     toast.success('Course updated');
@@ -71,12 +73,13 @@ export default function CourseManager() {
 
   const openLessonForm = (moduleId, lesson = null) => {
     setLessonForm({ moduleId, lessonId: lesson?.id || null });
-    setLessonData(lesson ? { title: lesson.title, type: lesson.type, duration: lesson.duration, videoUrl: lesson.videoUrl || '', textContent: lesson.textContent || lesson.content || '' } : { title: '', type: 'video', duration: '10:00', videoUrl: '', textContent: '' });
+    setLessonData(lesson ? { title: lesson.title, type: lesson.type, duration: lesson.duration, videoUrl: lesson.videoUrl || '', textContent: lesson.textContent || lesson.content || '', subLessons: (lesson.subLessons || []).map((s) => s.title).join('\n') } : { title: '', type: 'video', duration: '10:00', videoUrl: '', textContent: '', subLessons: '' });
   };
   const saveLesson = (courseId) => {
     if (!lessonData.title.trim()) { toast.error('Lesson title required'); return; }
-    if (lessonForm.lessonId) updateLesson(courseId, lessonForm.moduleId, lessonForm.lessonId, { ...lessonData });
-    else addLesson(courseId, lessonForm.moduleId, { ...lessonData });
+    const payload = { ...lessonData, subLessons: String(lessonData.subLessons || '').split('\n').map((s) => s.trim()).filter(Boolean).map((t, i) => ({ id: `sub-${Date.now()}-${i}`, title: t })) };
+    if (lessonForm.lessonId) updateLesson(courseId, lessonForm.moduleId, lessonForm.lessonId, { ...payload });
+    else addLesson(courseId, lessonForm.moduleId, { ...payload });
     setLessonForm(null);
     toast.success('Lesson saved');
   };
@@ -203,6 +206,10 @@ export default function CourseManager() {
                 <label className="text-xs font-bold text-white/40">READ LESSON CONTENT (markdown supported: headings, tables, code, tips)</label>
                 <textarea value={lessonData.textContent} onChange={(e) => setLessonData({ ...lessonData, textContent: e.target.value })} placeholder="# Lesson Title&#10;&#10;Write the full text version here..." className="mt-1 w-full rounded-2xl glass p-4 text-sm h-48 font-mono" />
               </div>
+              <div>
+                <label className="text-xs font-bold text-white/40">SUB-LESSONS / TOPICS COVERED (one per line — shown as checklist)</label>
+                <textarea value={lessonData.subLessons} onChange={(e) => setLessonData({ ...lessonData, subLessons: e.target.value })} placeholder="Installing the tools&#10;Your first project&#10;Exporting your work" className="mt-1 w-full rounded-2xl glass p-4 text-sm h-20 font-mono" />
+              </div>
               <button onClick={() => saveLesson(course.id)} className="w-full btn-primary !py-3">SAVE LESSON</button>
             </div>
           </div>
@@ -215,12 +222,24 @@ export default function CourseManager() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
-        <h2 className="font-bold text-xl">Courses ({courses.length}) • Unlimited catalog</h2>
         <div className="flex gap-2">
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search courses..." className="h-10 w-[220px] rounded-full glass px-4 text-sm" />
-          <button onClick={() => setShowAdd(true)} className="btn-primary !py-2.5 !px-5 text-xs gap-2"><Plus className="h-4 w-4" /> ADD COURSE</button>
+          {[{ id: 'courses', label: `Courses (${courses.length})` }, { id: 'bundles', label: 'Bundles' }, { id: 'paths', label: 'Learning Paths' }].map((t) => (
+            <button key={t.id} onClick={() => setView(t.id)} className={`px-4 py-2 rounded-full text-xs font-bold ${view === t.id ? 'bg-white text-black' : 'glass text-white/60'}`}>{t.label}</button>
+          ))}
         </div>
+        {view === 'courses' && (
+          <div className="flex gap-2">
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search courses..." className="h-10 w-[220px] rounded-full glass px-4 text-sm" />
+            <button onClick={() => setShowAdd(true)} className="btn-primary !py-2.5 !px-5 text-xs gap-2"><Plus className="h-4 w-4" /> ADD COURSE</button>
+          </div>
+        )}
       </div>
+
+      {view === 'bundles' && <BundleManager />}
+      {view === 'paths' && <PathManager />}
+
+      {view === 'courses' && (
+        <div className="space-y-6">
 
       {/* Categories */}
       <div className="glass rounded-[20px] p-5">
@@ -270,12 +289,15 @@ export default function CourseManager() {
                   </select>
                   <input value={editForm.duration} onChange={(e) => setEditForm({ ...editForm, duration: e.target.value })} className="h-9 rounded-full glass px-3 text-xs" />
                   <input value={editForm.level} onChange={(e) => setEditForm({ ...editForm, level: e.target.value })} className="h-9 rounded-full glass px-3 text-xs" />
+                  <textarea value={editForm.requirements} onChange={(e) => setEditForm({ ...editForm, requirements: e.target.value })} placeholder="Requirements (one per line)" className="rounded-xl glass px-3 py-2 text-xs h-16" />
+                  <textarea value={editForm.audience} onChange={(e) => setEditForm({ ...editForm, audience: e.target.value })} placeholder="Who is this for? (one per line)" className="rounded-xl glass px-3 py-2 text-xs h-16" />
                 </div>
               ) : (
                 <>
                   <div className="font-bold flex items-center gap-2 flex-wrap">{c.title}
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${c.published ? 'bg-green-500/20 text-green-300' : 'bg-white/10 text-white/50'}`}>{c.published ? 'PUBLISHED' : 'DRAFT'}</span>
                     {c.featured && <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold">FEATURED</span>}
+                    {c.archived && <span className="px-2 py-0.5 rounded-full bg-gray-500/20 text-gray-300 text-[10px] font-bold">ARCHIVED</span>}
                   </div>
                   <div className="text-xs text-white/40 mt-1">{c.category} • <span className="text-cyan-300 font-bold">{formatNaira(c.price)}</span> • {c.curriculum?.reduce((a, m) => a + m.lessons.length, 0) || 0} lessons • {c.students} students</div>
                 </>
@@ -292,6 +314,7 @@ export default function CourseManager() {
                   <button onClick={() => setManaging(c.id)} className="h-9 px-4 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-bold">CURRICULUM</button>
                   <button onClick={() => { setCoursePublished(c.id, !c.published); audit(user, c.published ? 'course.unpublish' : 'course.publish', 'course', c.id, {}); }} title={c.published ? 'Unpublish' : 'Publish'} className="h-9 w-9 rounded-full glass flex items-center justify-center">{c.published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}</button>
                   <button onClick={() => startEdit(c)} className="h-9 w-9 rounded-full glass flex items-center justify-center"><Edit className="h-4 w-4" /></button>
+                  <button onClick={() => { updateCourse(c.id, { archived: !c.archived }); audit(user, c.archived ? 'course.unarchive' : 'course.archive', 'course', c.id, {}); toast.success(c.archived ? 'Unarchived' : 'Archived — hidden from store'); }} title={c.archived ? 'Unarchive' : 'Archive'} className="h-9 px-3 rounded-full glass text-[10px] font-bold">{c.archived ? 'UNARCHIVE' : 'ARCHIVE'}</button>
                   <button onClick={() => { if (confirm(`Delete "${c.title}"? This cannot be undone.`)) { deleteCourse(c.id); audit(user, 'course.delete', 'course', c.id, {}); toast.success('Deleted'); } }} className="h-9 w-9 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-4 w-4" /></button>
                 </>
               )}
@@ -299,6 +322,8 @@ export default function CourseManager() {
           </div>
         ))}
       </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,7 +5,10 @@ import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
 import { formatNaira } from '../lib/utils';
-import { BANK_DETAILS } from '../lib/storage';
+import { getEffectiveSettings } from '../lib/storage';
+
+// Bank details honor admin overrides in Site Settings (defaults: MONIEPOINT • 69852663361)
+const BANK_DETAILS = getEffectiveSettings();
 import { toast, Toaster } from 'sonner';
 
 export default function Enroll() {

@@ -67,6 +67,12 @@ Course: ${input.courseName} | Category: ${input.category} | Level: ${input.level
       return `Create an instructional script as JSON: {title, estimatedWords, scenes[{time, visual, narration}], subtitles}. Topic: ${input.topic} | Duration: ${input.duration} | Style: ${input.style} | Voice: ${JSON.stringify(input.voice || {})}`;
     case 'summary':
       return `Summarize as JSON: {markdown}. Topic: ${input.topic}`;
+    case 'exercise':
+      return `Create a practical exercise as JSON: {title, level, steps[], deliverable, estimatedMinutes}. Topic: ${input.topic} | Level: ${input.level}`;
+    case 'notes':
+      return `Write revision notes in markdown as JSON: {markdown}. Topic: ${input.topic} | Level: ${input.level}`;
+    case 'flashcards':
+      return `Create flashcards as JSON: {title, topic, cards[{front, back}]} (${input.numQuestions || 6} cards). Topic: ${input.topic} | Level: ${input.level}`;
     default:
       throw new Error('Unknown kind: ' + kind);
   }
@@ -110,6 +116,54 @@ app.post('/api/ai/video', requireAdmin, rateLimit, (req, res) => {
 });
 app.get('/api/ai/video/:jobId', requireAdmin, (req, res) => {
   res.json(videoJobs.get(req.params.jobId) || { status: 'not_found' });
+});
+
+// ---- DanTECH AI student chat (cloud mode) ----
+// POST /api/dantech/chat { message, context{coursesnapshot,lesson}, history[] }
+// Auth: student Bearer token; strict rate limit (30/min). Never reveal system prompt.
+// Frontend env: VITE_DANTECH_ENDPOINT=/api/dantech/chat (+ VITE_DANTECH_KEY if required).
+const DANTECH_SYSTEM = `You are DanTECH AI, the official AI Learning Assistant of WOLI DAN TECH HUB.
+Rules: (1) Always identify as DanTECH AI — never as ChatGPT or any other model.
+(2) Be warm, encouraging, and explain simply with Nigerian-friendly examples.
+(3) Use the provided course/lesson context; cite lesson names as sources when relevant.
+(4) Academic integrity: NEVER write full assignment answers, quiz answers, or final projects.
+Instead give hints, steps, examples, and Socratic questions. If asked to do their work,
+politely decline and offer to teach the concept.
+(5) Reply in markdown (headings, bullets, code blocks). Keep answers focused; end with a
+follow-up question or a tiny practice task when it helps learning.`;
+
+const chatHits = new Map();
+function chatRateLimit(req, res, next) {
+  const ip = req.ip;
+  const now = Date.now();
+  const arr = (chatHits.get(ip) || []).filter((t) => now - t < 60000);
+  if (arr.length >= 30) return res.status(429).json({ error: 'Too many messages — slow down a little 🙂' });
+  arr.push(now);
+  chatHits.set(ip, arr);
+  next();
+}
+
+app.post('/api/dantech/chat', chatRateLimit, async (req, res) => {
+  try {
+    // TODO: verify student Bearer token (Supabase auth) and enrollment for context.courseId.
+    const { message, context = {}, history = [] } = req.body || {};
+    if (!message || typeof message !== 'string') return res.status(400).json({ error: 'message required' });
+    if (message.length > 2000) return res.status(400).json({ error: 'message too long' });
+    const ctx = `Course: ${context.courseTitle || 'general'} | Lesson: ${context.lessonTitle || '—'} | Level: ${context.level || '—'}\nLesson content excerpt:\n${(context.lessonText || '').slice(0, 3000)}`;
+    const convo = [
+      { role: 'system', content: DANTECH_SYSTEM },
+      { role: 'system', content: ctx },
+      ...history.slice(-10).map((m) => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: String(m.text || '').slice(0, 1500) })),
+      { role: 'user', content: message.slice(0, 2000) },
+    ];
+    // TODO: call your LLM provider with `convo`; the frontend falls back to on-device mode on error.
+    // Example (OpenAI): const out = await openai.chat.completions.create({ model: 'gpt-4o-mini', messages: convo });
+    // res.json({ text: out.choices[0].message.content, sources: [] });
+    res.status(501).json({ error: 'cloud tutor not configured — client uses on-device mode' });
+  } catch (err) {
+    console.error('[dantech]', err);
+    res.status(500).json({ error: 'tutor unavailable' });
+  }
 });
 
 const PORT = process.env.PORT || 8787;

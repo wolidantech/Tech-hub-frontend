@@ -17,6 +17,7 @@ import AIStudio from './admin/AIStudio';
 import NotificationManager from './admin/NotificationManager';
 import AuditLogViewer from './admin/AuditLogViewer';
 import CommunityManager from './admin/CommunityManager';
+import SiteSettingsPanel from './admin/SiteSettingsPanel';
 
 export default function Admin() {
   const { user, isAdmin, changePassword, adminLogout, adminEmail } = useAuth();
@@ -623,15 +624,7 @@ export default function Admin() {
                   </div>
                 </div>
 
-                <div className="glass rounded-[24px] p-6 space-y-4">
-                  <h4 className="font-bold">Bank Transfer System</h4>
-                  <div className="text-xs text-white/50 space-y-2 leading-relaxed">
-                    <div>Bank: <span className="font-bold text-white">MONIEPOINT</span></div>
-                    <div>Account: <span className="font-mono font-bold text-cyan-300">69852663361</span></div>
-                    <div>Name: <span className="font-bold text-white">LUNA ENTRY SERVICES- WOLI DAN TECH HUB</span></div>
-                    <div className="pt-2 text-[11px] text-white/30">Students transfer exact amount, upload receipt (JPG/PNG/PDF max 5MB). Admin must manually verify and approve. Only approved payments count toward revenue and grant course access.</div>
-                  </div>
-                </div>
+                <SiteSettingsPanel />
 
                 <div className="rounded-[20px] bg-red-500/10 border border-red-500/20 p-6 space-y-3">
                   <h4 className="font-bold text-red-300 flex items-center gap-2"><LogOut className="h-4 w-4" /> Danger Zone</h4>

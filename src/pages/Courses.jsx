@@ -1,22 +1,24 @@
 import { useState, useMemo } from 'react';
-import { Search, Filter, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { Search, Filter, SlidersHorizontal, Sparkles, Package } from 'lucide-react';
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
 import CourseCard from '../components/course/CourseCard';
 import { recommendCourses } from '../lib/lms';
-import { useNavigate } from 'react-router-dom';
+import { formatNaira } from '../lib/utils';
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function Courses() {
   const { courses, getUserEnrollments, getProgress } = useCourses();
-  const { categories, courseViews } = useLMS();
+  const { categories, courseViews, bundles } = useLMS();
+  const liveBundles = bundles.filter((b) => b.published !== false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [activeCat, setActiveCat] = useState('All');
   const [sort, setSort] = useState('popular');
 
-  const visible = useMemo(() => courses.filter((c) => c.published !== false), [courses]);
+  const visible = useMemo(() => courses.filter((c) => c.published !== false && !c.archived), [courses]);
 
   const filtered = useMemo(() => {
     let list = [...visible];
@@ -95,6 +97,32 @@ export default function Courses() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {recommended.map((c) => (
                 <CourseCard key={c.id} course={c} onEnroll={(course) => navigate(`/course/${course.slug}`)} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {liveBundles.length > 0 && activeCat === 'All' && !search && (
+          <div>
+            <h2 className="font-bold text-xl mb-4 flex items-center gap-2"><Package className="h-5 w-5 text-amber-300" /> Course Bundles — Save Big 🎁</h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {liveBundles.map((b) => (
+                <div key={b.id} className="rounded-[24px] glass overflow-hidden hover:border-amber-400/40 transition">
+                  <div className="bg-gradient-to-br from-amber-500/30 to-orange-600/30 p-6 text-center relative">
+                    {b.badge && <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-amber-500 text-black text-[10px] font-black">{b.badge}</span>}
+                    <div className="text-5xl">🎁</div>
+                    <h3 className="font-black text-lg mt-2">{b.title}</h3>
+                    <div className="text-xs text-white/60 mt-1">{(b.courseIds || []).length} courses included</div>
+                  </div>
+                  <div className="p-5">
+                    <p className="text-xs text-white/50 leading-relaxed line-clamp-2 min-h-[32px]">{b.description}</p>
+                    <div className="flex items-baseline gap-2 mt-2">
+                      <span className="font-black text-2xl">{formatNaira(b.price)}</span>
+                      <span className="text-sm line-through text-white/40">{formatNaira(b.originalPrice || b.price)}</span>
+                    </div>
+                    <Link to={`/enroll/bundle/${b.id}`} className="mt-4 block text-center h-11 rounded-full bg-gradient-to-r from-amber-400 to-orange-600 text-white font-bold text-sm leading-[44px]">GET THIS BUNDLE</Link>
+                  </div>
+                </div>
               ))}
             </div>
           </div>

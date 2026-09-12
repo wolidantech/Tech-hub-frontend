@@ -1,18 +1,20 @@
 import { Link } from 'react-router-dom';
 import { useMemo } from 'react';
-import { BookOpen, Award, Clock, TrendingUp, Play, CheckCircle2, BarChart3, CreditCard, DollarSign, XCircle, Sparkles, HelpCircle, PenLine, Megaphone, Flame } from 'lucide-react';
+import { BookOpen, Award, Clock, TrendingUp, Play, CheckCircle2, BarChart3, CreditCard, DollarSign, XCircle, Sparkles, HelpCircle, PenLine, Megaphone, Flame, Zap, Trophy, Medal } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { formatNaira } from '../lib/utils';
 import { bucketByDay, estimateLearningMinutes, recommendCourses } from '../lib/lms';
+import { computeGamification, buildLeaderboard, BADGES } from '../lib/gamify';
+import { getUsers } from '../lib/storage';
 import { ProgressRing, BarChart } from '../components/charts/Charts';
 import CourseArt from '../components/course/CourseArt';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { courses, getUserEnrollments, getCourseById, getProgress, getUserCertificates, getUserManualPayments, getUserPaymentSummary, getUserNotifications } = useCourses();
-  const { getUserQuizAverage, getUserAttempts, getUserSubmissions, courseViews, learningEvents, announcements } = useLMS();
+  const { courses, enrollments: allEnrollments, progressMap, getUserEnrollments, getCourseById, getProgress, getUserCertificates, getUserManualPayments, getUserPaymentSummary, getUserNotifications } = useCourses();
+  const { getUserQuizAverage, getUserAttempts, getUserSubmissions, courseViews, learningEvents, announcements, quizAttempts, submissions, getUpcomingClasses } = useLMS();
 
   const uid = user?.id || '';
   const enrollments = useMemo(() => (uid ? getUserEnrollments(uid) : []), [uid, getUserEnrollments]);
@@ -49,10 +51,25 @@ export default function Dashboard() {
     const enrolledIds = enrollments.map((e) => e.courseId);
     const completedIds = enrolledIds.filter((id) => getProgress(uid, id).progress === 100);
     const viewedIds = courseViews.filter((v) => v.userId === uid).map((v) => v.courseId);
-    return recommendCourses({ courses: courses.filter((c) => c.published !== false), enrolledIds, completedIds, viewedIds, limit: 3 });
-  }, [courses, enrollments, courseViews, uid, getProgress]);
+    return recommendCourses({ courses: courses.filter((c) => c.published !== false && !c.archived), enrolledIds, completedIds, viewedIds, interests: user?.interests || [], limit: 3 });
+  }, [courses, enrollments, courseViews, uid, getProgress, user]);
 
   const myAnnouncements = useMemo(() => announcements.filter((a) => !a.courseId || enrollments.some((e) => e.courseId === a.courseId)).slice(0, 3), [announcements, enrollments]);
+
+  // ---- Gamification ----
+  const game = useMemo(() => (uid ? computeGamification({ userId: uid, enrollments: allEnrollments, progressMap, courses, quizAttempts, submissions, learningEvents }) : null), [uid, allEnrollments, progressMap, courses, quizAttempts, submissions, learningEvents]);
+  const myBadges = useMemo(() => (game ? BADGES.filter((b) => game.badges.includes(b.id)) : []), [game]);
+  const leaderboard = useMemo(() => {
+    const students = getUsers().filter((u) => u.role !== 'admin');
+    return buildLeaderboard(students, { enrollments: allEnrollments, progressMap, courses, quizAttempts, submissions, learningEvents }).slice(0, 5);
+  }, [allEnrollments, progressMap, courses, quizAttempts, submissions, learningEvents]);
+  const myRank = leaderboard.findIndex((r) => r.userId === uid);
+
+  const upcomingLive = useMemo(() => {
+    if (!uid) return [];
+    const ids = enrollments.map((e) => e.courseId);
+    return getUpcomingClasses(ids.length ? ids : null).slice(0, 2);
+  }, [uid, enrollments, getUpcomingClasses]);
 
   if (!user) return null;
 
@@ -69,6 +86,77 @@ export default function Dashboard() {
             <Link to="/courses" className="btn-primary !py-3 !px-6 text-[13px]">BROWSE COURSES</Link>
           </div>
         </div>
+
+        {/* Live classes */}
+        {upcomingLive.length > 0 && (
+          <div className="mb-6 space-y-3">
+            {upcomingLive.map((lc) => (
+              <div key={lc.id} className="rounded-2xl bg-gradient-to-r from-red-500/20 to-orange-500/15 border border-red-500/30 p-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="h-2.5 w-2.5 rounded-full bg-red-400 animate-pulse shrink-0" />
+                  <div>
+                    <div className="font-bold text-sm">🔴 LIVE: {lc.title}</div>
+                    <div className="text-xs text-white/60">{lc.date} • {lc.time} • {lc.platform}</div>
+                  </div>
+                </div>
+                <a href={lc.meetingLink} target="_blank" rel="noreferrer" className="px-5 py-2.5 rounded-full bg-red-500 text-white font-bold text-xs">JOIN CLASS</a>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Gamification */}
+        {game && (
+          <div className="grid lg:grid-cols-[1.4fr_1fr] gap-4 mb-8">
+            <div className="glass rounded-[24px] p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 flex flex-col items-center justify-center">
+                    <span className="font-black text-xl leading-none">{game.level}</span>
+                    <span className="text-[9px] font-black">LEVEL</span>
+                  </div>
+                  <div>
+                    <div className="font-bold flex items-center gap-1.5"><Zap className="h-4 w-4 text-amber-300" /> {game.xp} XP</div>
+                    <div className="text-xs text-white/50 mt-0.5 flex items-center gap-2">
+                      <span className="flex items-center gap-1"><Flame className="h-3.5 w-3.5 text-orange-400" /> {game.streak}-day streak</span>
+                      <span>•</span><span>{game.xpToNext} XP to Level {game.level + 1}</span>
+                    </div>
+                    <div className="w-48 h-2 rounded-full bg-white/10 mt-2 overflow-hidden"><div className="h-full bg-gradient-to-r from-amber-400 to-orange-600" style={{ width: `${Math.round(game.xpProgress * 100)}%` }} /></div>
+                  </div>
+                </div>
+                <Link to={`/student/${uid}`} className="text-xs font-bold text-cyan-300">VIEW PORTFOLIO →</Link>
+              </div>
+              <div className="mt-4">
+                <div className="text-[11px] font-bold tracking-widest text-white/40 mb-2">BADGES ({myBadges.length}/{BADGES.length})</div>
+                {myBadges.length === 0 ? (
+                  <div className="text-xs text-white/40">Complete lessons and quizzes to earn badges 🏅</div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {myBadges.map((b) => (
+                      <span key={b.id} title={b.desc} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/10 text-xs font-bold">
+                        <span className="text-base">{b.icon}</span> {b.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="glass rounded-[24px] p-6">
+              <div className="font-bold flex items-center gap-2 mb-3"><Trophy className="h-4 w-4 text-amber-300" /> Leaderboard</div>
+              <div className="space-y-2">
+                {leaderboard.map((r, i) => (
+                  <div key={r.userId} className={`flex items-center gap-3 p-2.5 rounded-xl text-sm ${r.userId === uid ? 'bg-cyan-500/10 border border-cyan-500/30' : 'bg-white/[0.03]'}`}>
+                    <span className="font-black w-6 text-center">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
+                    <span className="font-bold truncate flex-1">{r.name}{r.userId === uid && ' (you)'}</span>
+                    <span className="text-xs font-bold text-amber-300">{r.xp} XP</span>
+                  </div>
+                ))}
+                {leaderboard.length === 0 && <div className="text-xs text-white/40">No activity yet.</div>}
+              </div>
+              {myRank >= 5 && <div className="text-xs text-white/40 mt-2">Your rank: #{myRank + 1}</div>}
+            </div>
+          </div>
+        )}
 
         {/* Announcements */}
         {myAnnouncements.length > 0 && (

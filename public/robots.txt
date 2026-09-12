@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /learn/
+Disallow: /my-payments
+Disallow: /my-courses
+Disallow: /enroll/
+
+Sitemap: /sitemap.xml

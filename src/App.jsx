@@ -28,6 +28,7 @@ const MyCourses = lazy(() => import('./pages/MyCourses'));
 const MyPayments = lazy(() => import('./pages/MyPayments'));
 const Learn = lazy(() => import('./pages/Learn'));
 const Enroll = lazy(() => import('./pages/Enroll'));
+const BundleEnroll = lazy(() => import('./pages/BundleEnroll'));
 const Certificates = lazy(() => import('./pages/Certificates'));
 const CertificateView = lazy(() => import('./pages/CertificateView'));
 const Profile = lazy(() => import('./pages/Profile'));
@@ -113,6 +114,7 @@ export default function App() {
               <Route path="/my-payments" element={lazyEl(<ProtectedRoute><Layout><MyPayments /></Layout></ProtectedRoute>)} />
               <Route path="/learn/:slug" element={lazyEl(<ProtectedRoute><Learn /></ProtectedRoute>)} />
               <Route path="/enroll/:slug" element={lazyEl(<ProtectedRoute><Layout><Enroll /></Layout></ProtectedRoute>)} />
+              <Route path="/enroll/bundle/:id" element={lazyEl(<ProtectedRoute><Layout><BundleEnroll /></Layout></ProtectedRoute>)} />
               <Route path="/certificates" element={lazyEl(<ProtectedRoute><Layout><Certificates /></Layout></ProtectedRoute>)} />
               <Route path="/profile" element={lazyEl(<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>)} />
               <Route path="/onboarding" element={lazyEl(<ProtectedRoute><Onboarding /></ProtectedRoute>)} />

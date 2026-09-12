@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, User, Phone, ArrowRight, Eye, EyeOff, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getEffectiveSettings } from '../lib/storage';
 import { toast, Toaster } from 'sonner';
 
 export default function Register() {
@@ -13,8 +14,11 @@ export default function Register() {
   const location = useLocation();
   const from = location.state?.from || '/dashboard';
 
+  const registrationOpen = getEffectiveSettings().allowRegistration !== false;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!registrationOpen) { toast.error('Registration is temporarily closed. Please check back soon.'); return; }
     if (form.password !== form.confirm) {
       toast.error('Passwords do not match');
       return;

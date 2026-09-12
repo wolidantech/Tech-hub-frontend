@@ -76,7 +76,7 @@ function ReviewsSection({ course, user, enrolled }) {
 export default function CourseDetails() {
   const { slug } = useParams();
   const { getCourseBySlug, isEnrolled, getManualPaymentByCourse } = useCourses();
-  const { trackView, getCourseQuizzes, getCourseAssignments } = useLMS();
+  const { trackView, getCourseQuizzes, getCourseAssignments, siteSettings } = useLMS();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [openModule, setOpenModule] = useState('m1');
@@ -204,9 +204,9 @@ export default function CourseDetails() {
 
                     <div className="rounded-2xl bg-white/[0.05] border border-white/10 p-4 space-y-2">
                       <div className="text-[11px] font-bold tracking-widest text-white/40">MANUAL BANK TRANSFER</div>
-                      <div className="text-xs"><span className="text-white/50">Bank:</span> <span className="font-bold">MONIEPOINT</span></div>
-                      <div className="text-xs"><span className="text-white/50">Account:</span> <span className="font-mono font-bold text-cyan-300">69852663361</span></div>
-                      <div className="text-xs"><span className="text-white/50">Name:</span> <span className="font-bold">LUNA ENTRY SERVICES- WOLI DAN TECH HUB</span></div>
+                      <div className="text-xs"><span className="text-white/50">Bank:</span> <span className="font-bold">{siteSettings.bankName}</span></div>
+                      <div className="text-xs"><span className="text-white/50">Account:</span> <span className="font-mono font-bold text-cyan-300">{siteSettings.accountNumber}</span></div>
+                      <div className="text-xs"><span className="text-white/50">Name:</span> <span className="font-bold">{siteSettings.accountName}</span></div>
                       <div className="text-[11px] text-white/30 mt-2">Only approved payments grant course access</div>
                     </div>
 
@@ -233,6 +233,23 @@ export default function CourseDetails() {
               ))}
             </div>
           </div>
+
+          {(course.requirements?.length > 0 || course.audience?.length > 0) && (
+            <div className="rounded-[24px] glass p-6 md:p-8 grid sm:grid-cols-2 gap-6">
+              {course.requirements?.length > 0 && (
+                <div>
+                  <h3 className="font-bold mb-4">Requirements</h3>
+                  <div className="space-y-2">{course.requirements.map((r, i) => <div key={i} className="flex gap-2 text-sm text-white/70"><AlertTriangle className="h-4 w-4 text-amber-300 shrink-0 mt-0.5" /> {r}</div>)}</div>
+                </div>
+              )}
+              {course.audience?.length > 0 && (
+                <div>
+                  <h3 className="font-bold mb-4">Who Is This For?</h3>
+                  <div className="space-y-2">{course.audience.map((a, i) => <div key={i} className="flex gap-2 text-sm text-white/70"><User className="h-4 w-4 text-green-300 shrink-0 mt-0.5" /> {a}</div>)}</div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="rounded-[24px] glass p-6 md:p-8">
             <div className="flex items-center justify-between mb-6">
