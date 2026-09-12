@@ -23,7 +23,7 @@ alter table public.courses add column if not exists audience text[] default '{}'
 alter table public.courses add column if not exists archived boolean default false;
 
 -- ---------- Lessons: sub-lessons ----------
-alter table public.lessons add column if not exists sub_lessons jsonb default '[]';
+alter table public.course_lessons add column if not exists sub_lessons jsonb default '[]';
 
 -- ---------- Quizzes: attempt limit / short answer ----------
 alter table public.quizzes add column if not exists attempt_limit int; -- null = unlimited
@@ -82,6 +82,7 @@ create or replace function public.enroll_bundle_courses(
 ) returns void language plpgsql security definer as $$
 declare c uuid;
 begin
+  if not public.is_admin() then raise exception 'Admin only'; end if;
   foreach c in array p_course_ids loop
     insert into public.enrollments (user_id, course_id, status, payment_id, approved_by)
     values (p_user_id, c, 'active', p_payment_id, p_approved_by)
@@ -115,7 +116,7 @@ create policy "admin full reviews" on public.reviews for all using (public.is_ad
 create table if not exists public.discussion_posts (
   id uuid primary key default gen_random_uuid(),
   course_id uuid not null references public.courses(id) on delete cascade,
-  lesson_id uuid references public.lessons(id) on delete set null,
+  lesson_id uuid references public.course_lessons(id) on delete set null,
   user_id uuid not null references public.profiles(id) on delete cascade,
   author_name text not null,
   title text not null,
@@ -187,7 +188,7 @@ create table if not exists public.ai_conversations (
   title text default 'New chat',
   messages jsonb default '[]',
   course_id uuid references public.courses(id) on delete set null,
-  lesson_id uuid references public.lessons(id) on delete set null,
+  lesson_id uuid references public.course_lessons(id) on delete set null,
   updated_at timestamptz default now()
 );
 alter table public.ai_conversations enable row level security;

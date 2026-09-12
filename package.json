@@ -9,11 +9,12 @@
     "preview": "vite preview --host 0.0.0.0 --port 5173"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
+    "framer-motion": "^11.5.4",
+    "lucide-react": "^0.438.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",
-    "framer-motion": "^11.5.4",
-    "lucide-react": "^0.438.0",
     "sonner": "^1.5.0"
   },
   "devDependencies": {

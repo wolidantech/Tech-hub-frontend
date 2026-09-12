@@ -3,13 +3,6 @@
 -- Run: supabase db push  (or paste into Supabase SQL editor)
 -- ============================================================
 
--- ---------- Helpers ----------
-create or replace function public.is_admin()
-returns boolean language sql stable as $$
-  select coalesce((auth.jwt() -> 'user_metadata' ->> 'role'), '') = 'admin'
-     or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin');
-$$;
-
 -- ---------- Profiles (extends auth.users) ----------
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -21,6 +14,16 @@ create table if not exists public.profiles (
   created_at timestamptz default now()
 );
 alter table public.profiles enable row level security;
+
+-- ---------- Helpers ----------
+-- NOTE: admin status comes ONLY from profiles.role (never from the JWT:
+-- user_metadata is self-editable via auth.updateUser and must not confer privilege).
+-- NOTE: language-sql bodies are validated at CREATE time, so is_admin() must
+-- be defined AFTER the profiles table it reads.
+create or replace function public.is_admin()
+returns boolean language sql stable as $$
+  select exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin');
+$$;
 create policy "users read own profile" on public.profiles for select using (auth.uid() = id or public.is_admin());
 create policy "users update own profile" on public.profiles for update using (auth.uid() = id);
 create policy "admin full profiles" on public.profiles for all using (public.is_admin());
@@ -71,6 +74,19 @@ create policy "published courses public" on public.courses for select using (pub
 create policy "admin write courses" on public.courses for insert with check (public.is_admin());
 create policy "admin update courses" on public.courses for update using (public.is_admin());
 create policy "admin delete courses" on public.courses for delete using (public.is_admin());
+
+-- ---------- Enrollments (table created early: curriculum policies reference it) ----------
+create table if not exists public.enrollments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  course_id uuid not null references public.courses(id) on delete cascade,
+  status text default 'active' check (status in ('active','removed','completed')),
+  method text,
+  coupon_code text,
+  enrolled_at timestamptz default now(),
+  unique (user_id, course_id)
+);
+create index if not exists idx_enroll_user on public.enrollments(user_id);
 
 -- ---------- Course content: modules & lessons ----------
 create table if not exists public.course_modules (
@@ -154,18 +170,7 @@ create policy "admin write lessons" on public.course_lessons for all using (publ
 create policy "admin write content" on public.course_content for all using (public.is_admin());
 create policy "admin write videos" on public.course_videos for all using (public.is_admin());
 
--- ---------- Enrollments ----------
-create table if not exists public.enrollments (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references public.profiles(id) on delete cascade,
-  course_id uuid not null references public.courses(id) on delete cascade,
-  status text default 'active' check (status in ('active','removed','completed')),
-  method text,
-  coupon_code text,
-  enrolled_at timestamptz default now(),
-  unique (user_id, course_id)
-);
-create index if not exists idx_enroll_user on public.enrollments(user_id);
+-- ---------- Enrollments (table created above, ahead of curriculum policies) ----------
 alter table public.enrollments enable row level security;
 create policy "own enrollments" on public.enrollments for select using (auth.uid() = user_id or public.is_admin());
 create policy "admin write enrollments" on public.enrollments for all using (public.is_admin());
@@ -368,6 +373,11 @@ begin
   elsif c.discount_type = 'percentage' then discount := round(course_price * c.discount_value / 100.0);
   else discount := least(c.discount_value, course_price); end if;
   due := greatest(0, course_price - discount);
+  -- Resubmission-safe: an identical redemption returns the same math without a duplicate row.
+  if exists (select 1 from public.coupon_redemptions r
+             where r.coupon_id = c.id and r.user_id = me and r.course_id = p_course_id) then
+    return jsonb_build_object('valid', true, 'discount', discount, 'amountDue', due, 'isFree', due = 0, 'duplicate', true);
+  end if;
   insert into public.coupon_redemptions (coupon_id, coupon_code, user_id, course_id, discount, amount_due)
   values (c.id, c.code, me, p_course_id, discount, due);
   update public.coupons set used_count = used_count + 1 where id = c.id;
@@ -448,18 +458,19 @@ alter table public.certificate_issues enable row level security;
 create policy "own certs" on public.certificate_issues for select using (auth.uid() = user_id or public.is_admin());
 create policy "admin issue certs" on public.certificate_issues for all using (public.is_admin());
 create policy "admin cert templates" on public.certificate_templates for all using (public.is_admin());
--- Public verification RPC (limited fields, no private data)
+-- Public verification RPC (limited fields, masked name, explicit status)
 create or replace function public.verify_certificate(p_code text)
 returns jsonb language plpgsql security definer as $$
 declare r record;
 begin
-  select certificate_id, student_name, course_name, issue_date, status
+  select certificate_id, verification_code, student_name, course_name, issue_date, status
   into r from public.certificate_issues
   where certificate_id = trim(p_code) or verification_code = trim(p_code);
-  if not found then return jsonb_build_object('valid', false); end if;
-  if r.status = 'revoked' then return jsonb_build_object('valid', false, 'revoked', true); end if;
-  return jsonb_build_object('valid', true, 'studentName', split_part(r.student_name, ' ', 1),
-    'courseName', r.course_name, 'issueDate', r.issue_date, 'certificateId', r.certificate_id,
+  if not found then return jsonb_build_object('found', false); end if;
+  return jsonb_build_object('found', true, 'status', r.status,
+    'studentName', upper(substr(trim(coalesce(r.student_name, '?')), 1, 1)) || '***',
+    'courseName', r.course_name, 'issueDate', r.issue_date,
+    'certificateId', r.certificate_id,
     'issuedBy', 'WOLI DAN TECH HUB');
 end $$;
 
@@ -509,12 +520,13 @@ create policy "own events write" on public.learning_events for insert with check
 create policy "own events read" on public.learning_events for select using (auth.uid() = user_id or public.is_admin());
 
 -- ---------- Private storage buckets ----------
-insert into storage.buckets (id, name, private) values
-  ('receipts', 'receipts', true),
-  ('submissions', 'submissions', true),
-  ('thumbnails', 'thumbnails', false),
-  ('lesson-videos', 'lesson-videos', true)
-on conflict (id) do nothing;
+-- NOTE: storage.buckets uses the `public` flag (true = publicly readable).
+insert into storage.buckets (id, name, public) values
+  ('receipts', 'receipts', false),
+  ('submissions', 'submissions', false),
+  ('thumbnails', 'thumbnails', true),
+  ('lesson-videos', 'lesson-videos', false)
+on conflict (id) do update set public = excluded.public;
 
 -- Receipts: owner + admin only (use signed URLs for viewing)
 create policy "receipts owner read" on storage.objects for select using (bucket_id = 'receipts' and (auth.uid()::text = (storage.foldername(name))[1] or public.is_admin()));
