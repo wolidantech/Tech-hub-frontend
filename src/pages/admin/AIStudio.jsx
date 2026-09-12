@@ -56,44 +56,46 @@ export default function AIStudio() {
     } catch (err) { toast.error(err.message); } finally { setGenerating(false); }
   };
 
-  // Apply approved content into the live catalog
-  const applyContent = (item) => {
+  // Apply approved content into the live catalog (course stays UNPUBLISHED until reviewed)
+  const applyContent = async (item) => {
     try {
       if (item.kind === 'course_outline') {
         const d = item.data;
         const slug = d.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
         if (courses.some((c) => c.slug === slug)) { toast.error('A course with this title already exists'); return; }
-        addCourse({
-          id: slug, slug, title: d.title.toUpperCase(), shortDescription: (d.description || '').slice(0, 120),
+        const created = await addCourse({
+          slug, title: d.title.toUpperCase(), shortDescription: (d.description || '').slice(0, 120),
           description: d.description, longDescription: d.description, category: d.category || 'General',
-          instructor: 'Woli Dan', instructorRole: 'Instructor', duration: d.duration, lessonsCount: d.modules.reduce((a, m) => a + m.lessons.length, 0),
-          level: d.level, price: 5000, originalPrice: 10000, rating: 5.0, students: 0,
-          thumbnail: 'default', color: 'from-cyan-500 to-blue-600', published: false, featured: false,
+          instructor: 'Woli Dan', instructorRole: 'Instructor', duration: d.duration,
+          level: d.level, price: 5000, originalPrice: 10000,
+          thumbnail: 'default', published: false, featured: false,
           whatYouWillLearn: d.learningObjectives || [],
-          curriculum: d.modules.map((m, i) => ({
-            id: `m${i + 1}`, title: `Module ${i + 1}: ${m.title}`,
-            lessons: m.lessons.map((l, j) => ({ id: `${slug}-m${i + 1}-l${j + 1}`, title: l.title, type: 'text', duration: l.duration || '15:00', videoUrl: '', textContent: `# ${l.title}\n\n${l.description || ''}\n\n## Key concepts\n\n${(l.keyConcepts || []).map((k) => `- ${k}`).join('\n')}` })),
-          })),
         });
-        // auto-create quizzes + final assignment from outline
-        d.modules.forEach((m, i) => {
-          if (m.quiz) createQuiz({ courseId: slug, title: `Module ${i + 1} Quiz: ${m.title}`, passingScore: m.quiz.passingScore || 70, allowRetake: true, status: 'draft' });
-        });
-        if (d.finalProject) createAssignment({ courseId: slug, title: 'Final Project', description: d.finalProject, instructions: 'Complete and submit your final project.', requiredOutput: d.finalProject, isFinalProject: true, status: 'draft' });
+        for (const [i, m] of (d.modules || []).entries()) {
+          const mod = await addModule(created.id, `Module ${i + 1}: ${m.title}`);
+          for (const l of (m.lessons || [])) {
+            await addLesson(created.id, mod.id, { title: l.title, type: 'text', duration: l.duration || '15:00', videoUrl: '', textContent: `# ${l.title}\n\n${l.description || ''}\n\n## Key concepts\n\n${(l.keyConcepts || []).map((k) => `- ${k}`).join('\n')}` });
+          }
+          // auto-create draft quiz shell (questions are added in the Quizzes tab)
+          if (m.quiz) await createQuiz({ courseId: created.id, title: `Module ${i + 1} Quiz: ${m.title}`, passingScore: m.quiz.passingScore || 70, allowRetake: true, status: 'draft' });
+        }
+        if (d.finalProject) await createAssignment({ courseId: created.id, title: 'Final Project', description: d.finalProject, instructions: 'Complete and submit your final project.', requiredOutput: d.finalProject, isFinalProject: true, status: 'draft' });
         toast.success('Course created as UNPUBLISHED with draft quizzes/assignment. Review in Courses tab.');
       } else if (item.kind === 'quiz') {
         if (!applyTarget) { toast.error('Select a target course'); return; }
-        const q = createQuiz({ courseId: applyTarget, title: item.data.title || form.topic, passingScore: item.data.passingScore || 70, allowRetake: true, status: 'draft' });
-        (item.data.questions || []).forEach((qq) => addQuestion(q.id, { type: qq.type, question: qq.question, options: qq.options, correctAnswer: qq.correctAnswer ?? 0, correctAnswers: qq.correctAnswers || [], explanation: qq.explanation || '' }));
+        const q = await createQuiz({ courseId: applyTarget, title: item.data.title || form.topic, passingScore: item.data.passingScore || 70, allowRetake: true, status: 'draft' });
+        for (const qq of (item.data.questions || [])) {
+          await addQuestion(q.id, { type: qq.type, question: qq.question, options: qq.options, correctAnswer: qq.correctAnswer ?? 0, correctAnswers: qq.correctAnswers || [], acceptedAnswers: qq.acceptedAnswers || [], explanation: qq.explanation || '' });
+        }
         toast.success(`Quiz imported as DRAFT into course (${item.data.questions?.length || 0} questions). Publish from Quizzes tab.`);
       } else if (item.kind === 'assignment') {
         if (!applyTarget) { toast.error('Select a target course'); return; }
-        createAssignment({ courseId: applyTarget, title: item.data.title, description: item.data.description, instructions: item.data.instructions, requiredOutput: item.data.requiredOutput, maxScore: 100, status: 'draft' });
+        await createAssignment({ courseId: applyTarget, title: item.data.title, description: item.data.description, instructions: item.data.instructions, requiredOutput: item.data.requiredOutput, maxScore: 100, status: 'draft' });
         toast.success('Assignment imported as DRAFT. Publish from Assignments tab.');
       } else if (item.kind === 'lesson_text') {
         toast.info('Copy the lesson text below into a lesson via Courses → Curriculum → Edit Lesson.');
       }
-      setAIStatus(item.id, 'published', user);
+      await setAIStatus(item.id, 'published', user);
       setApplyOpen(null);
     } catch (err) { toast.error(err.message); }
   };
@@ -293,12 +295,12 @@ export default function AIStudio() {
                 <button onClick={() => setPreview(preview === item.id ? null : item.id)} className="h-8 px-3 rounded-full glass text-[11px] font-bold flex items-center gap-1"><Eye className="h-3 w-3" /> {preview === item.id ? 'HIDE' : 'PREVIEW'}</button>
                 <button onClick={() => { setPreview(item.id); setEditJson(JSON.stringify(item.data, null, 2)); }} className="h-8 px-3 rounded-full glass text-[11px] font-bold">EDIT</button>
                 <button onClick={() => handleRegenerate(item)} disabled={generating} className="h-8 px-3 rounded-full glass text-[11px] font-bold flex items-center gap-1"><RefreshCw className="h-3 w-3" /> REGENERATE</button>
-                {item.status === 'draft' && <button onClick={() => { setAIStatus(item.id, 'in_review', user); toast.success('Moved to review'); }} className="h-8 px-3 rounded-full bg-amber-500/20 text-amber-300 text-[11px] font-bold">REVIEW</button>}
-                {(item.status === 'draft' || item.status === 'in_review') && <button onClick={() => { setAIStatus(item.id, 'approved', user); toast.success('Approved ✅'); }} className="h-8 px-3 rounded-full bg-blue-500/20 text-blue-300 text-[11px] font-bold flex items-center gap-1"><Check className="h-3 w-3" /> APPROVE</button>}
+                {item.status === 'draft' && <button onClick={async () => { try { await setAIStatus(item.id, 'in_review', user); toast.success('Moved to review'); } catch (err) { toast.error(err.message); } }} className="h-8 px-3 rounded-full bg-amber-500/20 text-amber-300 text-[11px] font-bold">REVIEW</button>}
+                {(item.status === 'draft' || item.status === 'in_review') && <button onClick={async () => { try { await setAIStatus(item.id, 'approved', user); toast.success('Approved ✅'); } catch (err) { toast.error(err.message); } }} className="h-8 px-3 rounded-full bg-blue-500/20 text-blue-300 text-[11px] font-bold flex items-center gap-1"><Check className="h-3 w-3" /> APPROVE</button>}
                 {item.status === 'approved' && ['course_outline', 'quiz', 'assignment'].includes(item.kind) && (
                   <button onClick={() => setApplyOpen(applyOpen === item.id ? null : item.id)} className="h-8 px-3 rounded-full bg-green-500 text-white text-[11px] font-bold flex items-center gap-1"><Upload className="h-3 w-3" /> APPLY & PUBLISH <ChevronDown className="h-3 w-3" /></button>
                 )}
-                <button onClick={() => { if (confirm('Delete this draft?')) { deleteAIContent(item.id, user); toast.success('Deleted'); } }} className="h-8 w-8 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-3.5 w-3.5" /></button>
+                <button onClick={async () => { if (confirm('Delete this draft?')) { try { await deleteAIContent(item.id, user); toast.success('Deleted'); } catch (err) { toast.error(err.message); } } }} className="h-8 w-8 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
 
               {applyOpen === item.id && (
@@ -321,7 +323,7 @@ export default function AIStudio() {
                       <div className="text-xs font-bold text-white/40">EDIT RAW CONTENT (JSON)</div>
                       <textarea value={editJson} onChange={(e) => setEditJson(e.target.value)} className="w-full h-48 rounded-xl bg-black/50 border border-white/10 p-3 font-mono text-xs" />
                       <div className="flex gap-2">
-                        <button onClick={() => { try { updateAIContent(item.id, { data: JSON.parse(editJson) }); setEditJson(''); toast.success('Draft updated'); } catch { toast.error('Invalid JSON'); } }} className="px-4 h-10 rounded-full bg-white text-black text-xs font-bold">SAVE EDITS</button>
+                        <button onClick={async () => { let parsed; try { parsed = JSON.parse(editJson); } catch { return toast.error('Invalid JSON'); } try { await updateAIContent(item.id, { data: parsed }); setEditJson(''); toast.success('Draft updated'); } catch (err) { toast.error(err.message); } }} className="px-4 h-10 rounded-full bg-white text-black text-xs font-bold">SAVE EDITS</button>
                         <button onClick={() => setEditJson('')} className="px-4 h-10 rounded-full glass text-xs font-bold">CANCEL</button>
                       </div>
                     </div>

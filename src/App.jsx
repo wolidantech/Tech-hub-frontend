@@ -113,5 +113,23 @@ export default function App() {
               <Route path="/dashboard" element={lazyEl(<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>)} />
               <Route path="/my-courses" element={lazyEl(<ProtectedRoute><Layout><MyCourses /></Layout></ProtectedRoute>)} />
               <Route path="/my-payments" element={lazyEl(<ProtectedRoute><Layout><MyPayments /></Layout></ProtectedRoute>)} />
-              <Route path="/learn/:slug" element={lazyEl(<ProtectedRoute><Learn /></Protecte
-...[truncated 1021 chars]
+              <Route path="/learn/:slug" element={lazyEl(<ProtectedRoute><Learn /></ProtectedRoute>)} />
+              <Route path="/enroll/:slug" element={lazyEl(<ProtectedRoute><Layout><Enroll /></Layout></ProtectedRoute>)} />
+              <Route path="/enroll/bundle/:id" element={lazyEl(<ProtectedRoute><Layout><BundleEnroll /></Layout></ProtectedRoute>)} />
+              <Route path="/certificates" element={lazyEl(<ProtectedRoute><Layout><Certificates /></Layout></ProtectedRoute>)} />
+              <Route path="/profile" element={lazyEl(<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>)} />
+              <Route path="/onboarding" element={lazyEl(<ProtectedRoute><Onboarding /></ProtectedRoute>)} />
+
+              <Route path="/admin" element={<AdminRedirect />} />
+              <Route path="/admin/dashboard" element={lazyEl(<AdminRoute><Layout><Admin /></Layout></AdminRoute>)} />
+
+              <Route path="*" element={<Layout><div className="min-h-[60vh] flex items-center justify-center text-center p-8"><div><h1 className="font-black text-4xl">404</h1><p className="text-white/60 mt-2">Page not found</p><a href="/" className="inline-flex mt-6 btn-primary">GO HOME</a></div></div></Layout>} />
+            </Routes>
+            <DanTechAI />
+          </LMSProvider>
+        </CourseProvider>
+      </AuthProvider>
+      </SetupGate>
+    </BrowserRouter>
+  );
+}

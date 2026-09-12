@@ -175,7 +175,7 @@ export default function CourseManager() {
                 <button onClick={() => setOpenMod(openMod === mod.id ? null : mod.id)} className="flex items-center gap-2 font-bold text-left">
                   {openMod === mod.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   <span className="text-cyan-300 text-sm">MODULE {mi + 1}</span> {mod.title}
-                  <span className="text-xs text-white/40 font-normal">{((mod.lessons || []).length} lessons)</span>
+                  <span className="text-xs text-white/40 font-normal">{(mod.lessons || []).length} lessons)</span>
                 </button>
                 <div className="flex gap-2">
                   <button onClick={async () => { const t = prompt('Rename module:', mod.title); if (t) { try { await updateModule(course.id, mod.id, { title: t }); } catch (err) { toast.error(err.message); } } }} className="h-8 w-8 rounded-full glass flex items-center justify-center"><Edit className="h-3.5 w-3.5" /></button>

@@ -851,7 +851,7 @@ export const adminDeletePath = async (id) => {
 };
 
 export const fetchBundles = async () =>
-  (await one(sb().from('bundles').select('*').order('created_at', { ascending: false })))).map(mapBundle);
+  (await one(sb().from('bundles').select('*').order('created_at', { ascending: false }))).map(mapBundle);
 
 export const adminSaveBundle = async (input, id = null) => {
   const row = {
