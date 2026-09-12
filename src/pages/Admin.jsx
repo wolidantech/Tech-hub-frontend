@@ -3,9 +3,9 @@ import { useAuth } from '../context/AuthContext';
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Users, BookOpen, DollarSign, Award, TrendingUp, Search, Edit, Trash2, Plus, Save, X, Shield, Lock, LogOut, Settings, Eye, EyeOff, CheckCircle2, XCircle, Clock, FileText, Download, AlertTriangle } from 'lucide-react';
+import { Users, BookOpen, DollarSign, Award, TrendingUp, Search, Shield, Lock, LogOut, Settings, Eye, EyeOff, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { formatNaira } from '../lib/utils';
-import { getUsers } from '../lib/storage';
+import SignedFile from '../components/common/SignedFile';
 import { toast, Toaster } from 'sonner';
 import AdminOverview from './admin/AdminOverview';
 import CourseManager from './admin/CourseManager';
@@ -22,18 +22,13 @@ import SiteSettingsPanel from './admin/SiteSettingsPanel';
 export default function Admin() {
   const { user, isAdmin, changePassword, adminLogout, adminEmail } = useAuth();
   const { 
-    courses, allPayments, allManualPayments, allEnrollments, allCertificates, stats, 
-    updateCourse, deleteCourse, addCourse,
+    allManualPayments, allEnrollments, allCertificates, stats,
     approveManualPayment, rejectManualPayment
   } = useCourses();
   const { audit } = useLMS();
   const navigate = useNavigate();
   const [tab, setTab] = useState('overview');
   const [search, setSearch] = useState('');
-  const [editing, setEditing] = useState(null);
-  const [editForm, setEditForm] = useState({ price: 0, title: '' });
-  const [showAdd, setShowAdd] = useState(false);
-  const [newCourse, setNewCourse] = useState({ title: '', slug: '', category: 'Design', price: 5000, duration: '5 hours', level: 'Beginner', instructor: 'Woli Dan', description: '' });
   
   // Change password
   const [pwdForm, setPwdForm] = useState({ current: '', new: '', confirm: '' });
@@ -48,49 +43,6 @@ export default function Admin() {
 
   if (!user) return <Navigate to="/admin/login" />;
   if (!isAdmin) return <Navigate to="/dashboard" />;
-
-  const users = getUsers().filter(u => u.role !== 'admin');
-
-  const handleEdit = (course) => {
-    setEditing(course.id);
-    setEditForm({ price: course.price, title: course.title });
-  };
-
-  const handleSave = (id) => {
-    updateCourse(id, { price: Number(editForm.price), title: editForm.title });
-    setEditing(null);
-    toast.success('Course updated');
-  };
-
-  const handleAdd = () => {
-    const slug = newCourse.slug || newCourse.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    addCourse({
-      id: slug,
-      slug,
-      title: newCourse.title.toUpperCase(),
-      shortDescription: newCourse.description || 'New course',
-      description: newCourse.description,
-      longDescription: newCourse.description,
-      category: newCourse.category,
-      instructor: newCourse.instructor,
-      instructorRole: 'Instructor',
-      duration: newCourse.duration,
-      lessonsCount: 12,
-      level: newCourse.level,
-      price: Number(newCourse.price),
-      originalPrice: Number(newCourse.price) * 2,
-      rating: 4.8,
-      students: 0,
-      thumbnail: 'design',
-      color: 'from-cyan-500 to-blue-600',
-      whatYouWillLearn: ['Skill 1', 'Skill 2', 'Skill 3'],
-      curriculum: [
-        { id: 'm1', title: 'Introduction', lessons: [{ id: `${slug}-l1`, title: 'Welcome', type: 'video', duration: '10:00', videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ' }] }
-      ]
-    });
-    setShowAdd(false);
-    toast.success('Course added');
-  };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -120,23 +72,23 @@ export default function Admin() {
     navigate('/admin/login');
   };
 
-  const handleApprove = (payment) => {
+  const handleApprove = async (payment) => {
     if (!confirm(`Are you sure you want to approve this payment?\n\nStudent: ${payment.studentName}\nCourse: ${payment.courseName}\nAmount: ${formatNaira(payment.amount)}\nReference: ${payment.reference}\n\nThis will grant course access immediately.`)) return;
     try {
-      approveManualPayment(payment.id, user);
+      await approveManualPayment(payment.id);
       toast.success(`Payment approved! ${payment.studentName} now has access to ${payment.courseName} 🎉`);
     } catch (err) {
       toast.error(err.message);
     }
   };
 
-  const handleReject = (payment) => {
+  const handleReject = async (payment) => {
     if (!rejectReason.trim()) {
       toast.error('Please enter rejection reason');
       return;
     }
     try {
-      rejectManualPayment(payment.id, rejectReason, user);
+      await rejectManualPayment(payment.id, rejectReason);
       audit(user, 'payment.reject', 'manual_payment', payment.id, { student: payment.studentName, reason: rejectReason });
       toast.success('Payment rejected');
       setShowRejectModal(null);
@@ -249,113 +201,6 @@ export default function Admin() {
         {tab === 'notify' && <NotificationManager />}
 
         {tab === 'audit' && <AuditLogViewer />}
-
-        {tab === '__legacy_courses' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="font-bold text-xl">Manage Courses • Prices Editable</h2>
-              <button onClick={() => setShowAdd(true)} className="btn-primary !py-2.5 !px-5 text-xs gap-2"><Plus className="h-4 w-4" /> ADD COURSE</button>
-            </div>
-
-            {showAdd && (
-              <div className="glass-strong rounded-[20px] p-6 space-y-4">
-                <div className="flex justify-between"><h3 className="font-bold">Add New Course</h3><button onClick={() => setShowAdd(false)}><X className="h-5 w-5" /></button></div>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <input value={newCourse.title} onChange={e => setNewCourse({ ...newCourse, title: e.target.value })} placeholder="Course Title" className="h-11 rounded-full glass px-4 text-sm" />
-                  <input value={newCourse.slug} onChange={e => setNewCourse({ ...newCourse, slug: e.target.value })} placeholder="Slug (auto from title if blank)" className="h-11 rounded-full glass px-4 text-sm" />
-                  <input value={newCourse.category} onChange={e => setNewCourse({ ...newCourse, category: e.target.value })} placeholder="Category" className="h-11 rounded-full glass px-4 text-sm" />
-                  <input type="number" value={newCourse.price} onChange={e => setNewCourse({ ...newCourse, price: e.target.value })} placeholder="Price" className="h-11 rounded-full glass px-4 text-sm" />
-                  <input value={newCourse.duration} onChange={e => setNewCourse({ ...newCourse, duration: e.target.value })} placeholder="Duration" className="h-11 rounded-full glass px-4 text-sm" />
-                  <input value={newCourse.level} onChange={e => setNewCourse({ ...newCourse, level: e.target.value })} placeholder="Level" className="h-11 rounded-full glass px-4 text-sm" />
-                </div>
-                <textarea value={newCourse.description} onChange={e => setNewCourse({ ...newCourse, description: e.target.value })} placeholder="Description" className="w-full rounded-2xl glass p-4 text-sm h-24" />
-                <button onClick={handleAdd} className="btn-primary w-full">CREATE COURSE</button>
-              </div>
-            )}
-
-            <div className="glass rounded-[20px] overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-white/[0.03] text-[11px] tracking-widest text-white/40">
-                    <tr><th className="text-left p-4">Course</th><th className="text-left p-4">Category</th><th className="text-left p-4">Price</th><th className="text-left p-4">Students</th><th className="text-left p-4">Actions</th></tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {courses.map(c => (
-                      <tr key={c.id} className="hover:bg-white/[0.02]">
-                        <td className="p-4">
-                          {editing===c.id ? (
-                            <input value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} className="h-8 rounded-full glass px-3 text-xs w-[200px]" />
-                          ) : (
-                            <div className="font-bold">{c.title}</div>
-                          )}
-                          <div className="text-xs text-white/40">{c.slug}</div>
-                        </td>
-                        <td className="p-4 text-white/60">{c.category}</td>
-                        <td className="p-4">
-                          {editing===c.id ? (
-                            <input type="number" value={editForm.price} onChange={e => setEditForm({ ...editForm, price: e.target.value })} className="h-8 rounded-full glass px-3 text-xs w-[100px]" />
-                          ) : (
-                            <span className="font-bold text-cyan-300">{formatNaira(c.price)}</span>
-                          )}
-                        </td>
-                        <td className="p-4">{c.students}</td>
-                        <td className="p-4 flex gap-2">
-                          {editing===c.id ? (
-                            <>
-                              <button onClick={() => handleSave(c.id)} className="h-8 w-8 rounded-full bg-green-500 text-white flex items-center justify-center"><Save className="h-4 w-4" /></button>
-                              <button onClick={() => setEditing(null)} className="h-8 w-8 rounded-full glass flex items-center justify-center"><X className="h-4 w-4" /></button>
-                            </>
-                          ) : (
-                            <>
-                              <button onClick={() => handleEdit(c)} className="h-8 w-8 rounded-full glass flex items-center justify-center hover:bg-white/10"><Edit className="h-4 w-4" /></button>
-                              <button onClick={() => { if(confirm('Delete course?')) { deleteCourse(c.id); toast.success('Deleted'); } }} className="h-8 w-8 rounded-full glass flex items-center justify-center hover:bg-red-500/20 text-red-300"><Trash2 className="h-4 w-4" /></button>
-                            </>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {tab === '__legacy_students' && (
-          <div className="space-y-6">
-            <div className="flex gap-4 items-center">
-              <div className="relative flex-1 max-w-[320px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search students..." className="h-10 w-full rounded-full glass pl-10 pr-4 text-sm" />
-              </div>
-              <div className="text-sm text-white/50">{users.length} students</div>
-            </div>
-
-            <div className="glass rounded-[20px] overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-white/[0.03] text-[11px] tracking-widest text-white/40">
-                    <tr><th className="text-left p-4">Student</th><th className="text-left p-4">Email</th><th className="text-left p-4">Phone</th><th className="text-left p-4">Enrolled</th><th className="text-left p-4">Joined</th></tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {users.filter(u => !search || u.fullName.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase())).map(u => {
-                      const enrolled = allEnrollments.filter(e => e.userId === u.id).length;
-                      return (
-                        <tr key={u.id} className="hover:bg-white/[0.02]">
-                          <td className="p-4 font-bold">{u.fullName}</td>
-                          <td className="p-4 text-white/60">{u.email}</td>
-                          <td className="p-4 text-white/60">{u.phone}</td>
-                          <td className="p-4"><span className="px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-bold">{enrolled} courses</span></td>
-                          <td className="p-4 text-white/40 text-xs">{new Date(u.createdAt).toLocaleDateString()}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
 
         {tab === 'payments' && (
           <div className="space-y-6">
@@ -484,19 +329,8 @@ export default function Admin() {
                     <div><span className="text-white/40 text-xs">Submitted:</span><div className="font-bold">{new Date(selectedPayment.submittedAt).toLocaleString()}</div></div>
                   </div>
 
-                  <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/30">
-                    {selectedPayment.receiptType === 'application/pdf' ? (
-                      <div className="p-12 text-center">
-                        <FileText className="h-16 w-16 mx-auto text-white/20 mb-4" />
-                        <div className="font-bold">{selectedPayment.receiptName}</div>
-                        <div className="text-xs text-white/40 mt-1">{(selectedPayment.receiptSize / 1024).toFixed(1)} KB • PDF</div>
-                        <a href={selectedPayment.receiptData} download={selectedPayment.receiptName} className="inline-flex mt-6 px-6 py-3 rounded-full bg-white text-black font-bold text-sm gap-2">
-                          <Download className="h-4 w-4" /> DOWNLOAD PDF
-                        </a>
-                      </div>
-                    ) : (
-                      <img src={selectedPayment.receiptData} alt="Receipt" className="w-full h-auto max-h-[600px] object-contain" />
-                    )}
+                  <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/30 p-4">
+                    <SignedFile bucket="receipts" path={selectedPayment.receiptPath} fileName={selectedPayment.receiptName} fileType={selectedPayment.receiptType} />
                   </div>
 
                   {selectedPayment.status === 'pending' && (

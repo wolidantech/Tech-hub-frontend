@@ -25,9 +25,9 @@ export default function SetupGate({ children }) {
           </div>
           <ol className="mt-2 text-xs text-white/60 space-y-1.5 list-decimal pl-5">
             <li>Create a Supabase project and run <span className="font-mono">supabase/migrations/*.sql</span> in order</li>
-            <li>Run the seed script: <span className="font-mono">node supabase/seed.mjs</span></li>
+            <li>Run the seed file <span className="font-mono">supabase/seed/seed_12_courses.sql</span> in the SQL Editor</li>
             <li>Set <span className="font-mono">VITE_SUPABASE_URL</span> and <span className="font-mono">VITE_SUPABASE_ANON_KEY</span> in <span className="font-mono">.env</span></li>
-            <li>See <span className="font-mono">SUPABASE_SETUP.md</span> for the full guide</li>
+            <li>Rebuild and redeploy so the new variables take effect</li>
           </ol>
         </div>
         <p className="text-[11px] text-white/30">No demo data is shown — all accounts, courses and payments live in the database.</p>
