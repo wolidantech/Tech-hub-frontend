@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Upload, FileText, CheckCircle2, Clock, AlertTriangle, Award, Link2, Type } from 'lucide-react';
 import { useLMS } from '../../context/LMSContext';
 import { validateSubmissionFile } from '../../lib/lms';
+import SignedFile from '../common/SignedFile';
 import { toast } from 'sonner';
 
 const STATUS_META = {
@@ -44,22 +45,12 @@ export default function AssignmentPanel({ assignment, user, onSubmitted }) {
 
   const handleSubmit = async (ev) => {
     ev.preventDefault();
+    if (kind === 'file' && !file) { toast.error('Please select a file to upload'); return; }
     setUploading(true);
     try {
-      let fileData = null, fileName = '', fileType = '', fileSize = 0;
-      if (kind === 'file') {
-        if (!file) { toast.error('Please select a file to upload'); setUploading(false); return; }
-        fileData = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-        fileName = file.name; fileType = file.type; fileSize = file.size;
-      }
-      submitAssignment({
+      await submitAssignment({
         assignmentId: assignment.id, userId: user.id, studentName: user.fullName,
-        kind, fileData, fileName, fileType, fileSize, textContent, linkUrl, note,
+        kind, file, textContent, linkUrl, note,
       });
       setFile(null); setTextContent(''); setLinkUrl(''); setNote('');
       toast.success(overdue ? 'Submitted late ⚠️ — instructor will review.' : 'Assignment submitted! 🎉 Awaiting review.');
@@ -131,8 +122,8 @@ export default function AssignmentPanel({ assignment, user, onSubmitted }) {
                 {sk === 'text' && s.textContent && (
                   <div className="mt-2 rounded-xl bg-white/[0.03] border border-white/10 p-3 text-sm whitespace-pre-line max-h-40 overflow-auto">{s.textContent}</div>
                 )}
-                {sk === 'file' && s.fileType?.startsWith('image/') && (
-                  <img src={s.fileData} alt={s.fileName} loading="lazy" className="mt-2 rounded-xl max-h-48 object-cover" />
+                {sk === 'file' && s.storagePath && (
+                  <SignedFile bucket="submissions" path={s.storagePath} fileType={s.fileType} fileName={s.fileName} className="mt-2" />
                 )}
                 {s.note && <div className="mt-2 text-xs text-white/50 italic">Note: {s.note}</div>}
                 {s.score != null && <div className="mt-2 text-sm flex items-center gap-2"><Award className="h-4 w-4 text-amber-300" /> Score: <span className="font-black text-lg">{s.score}/{assignment.maxScore}</span></div>}

@@ -1,30 +1,46 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MessagesSquare, Pin, Send, MessageCircle } from 'lucide-react';
 import { useLMS } from '../../context/LMSContext';
 import { toast } from 'sonner';
 
 export default function Discussions({ courseId, lessonId = null, user, title = 'Q&A & Discussions' }) {
-  const { getCoursePosts, getPostComments, createPost, addComment } = useLMS();
+  const { getCoursePosts, getPostComments, createPost, addComment, ensureCoursePosts, ensurePostComments } = useLMS();
   const [open, setOpen] = useState({});
   const [drafts, setDrafts] = useState({});
   const [newPost, setNewPost] = useState({ title: '', body: '' });
   const [showForm, setShowForm] = useState(false);
 
+  useEffect(() => { ensureCoursePosts(courseId).catch(() => {}); }, [courseId, ensureCoursePosts]);
+
   const posts = getCoursePosts(courseId).filter((p) => !lessonId || !p.lessonId || p.lessonId === lessonId);
 
-  const handlePost = () => {
-    if (!newPost.title.trim() || !newPost.body.trim()) { toast.error('Title and details required'); return; }
-    createPost({ courseId, lessonId, userId: user.id, authorName: user.fullName, title: newPost.title, body: newPost.body });
-    setNewPost({ title: '', body: '' });
-    setShowForm(false);
-    toast.success('Question posted! 🎉');
+  const toggleOpen = (postId) => {
+    const next = !open[postId];
+    setOpen({ ...open, [postId]: next });
+    if (next) ensurePostComments(postId).catch(() => {});
   };
 
-  const handleComment = (postId) => {
+  const handlePost = async () => {
+    if (!newPost.title.trim() || !newPost.body.trim()) { toast.error('Title and details required'); return; }
+    try {
+      await createPost({ courseId, lessonId, userId: user.id, authorName: user.fullName, title: newPost.title, body: newPost.body });
+      setNewPost({ title: '', body: '' });
+      setShowForm(false);
+      toast.success('Question posted! 🎉');
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleComment = async (postId) => {
     const body = (drafts[postId] || '').trim();
     if (!body) return;
-    addComment({ postId, userId: user.id, authorName: user.fullName, body, isAdmin: user.role === 'admin' });
-    setDrafts({ ...drafts, [postId]: '' });
+    try {
+      await addComment({ postId, userId: user.id, authorName: user.fullName, body, isAdmin: user.role === 'admin' });
+      setDrafts({ ...drafts, [postId]: '' });
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   return (
@@ -63,7 +79,7 @@ export default function Discussions({ courseId, lessonId = null, user, title = '
                   </div>
                   <div className="text-xs text-white/40 mt-0.5">{p.authorName} • {new Date(p.createdAt).toLocaleString()}</div>
                   <p className="text-sm text-white/70 mt-2 whitespace-pre-line">{p.body}</p>
-                  <button onClick={() => setOpen({ ...open, [p.id]: !isOpen })} className="mt-2 text-xs font-bold text-cyan-300 flex items-center gap-1">
+                  <button onClick={() => toggleOpen(p.id)} className="mt-2 text-xs font-bold text-cyan-300 flex items-center gap-1">
                     <MessageCircle className="h-3.5 w-3.5" /> {list.length} REPLIES {isOpen ? '▲' : '▼'}
                   </button>
                 </div>

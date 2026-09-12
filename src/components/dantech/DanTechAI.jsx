@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Sparkles, X, Send, Plus, Trash2, History, Copy, Check } from 'lucide-react';
+import { Sparkles, X, Send, Plus, Trash2, History } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCourses } from '../../context/CourseContext';
 import { useLMS } from '../../context/LMSContext';
 import { askDanTech, buildCourseIndex, SUGGESTED_PROMPTS, DANTECH_NAME, isCloudDanTechEnabled } from '../../lib/dantech';
 import { renderLessonMarkdown, downloadAsFile } from '../../lib/lms';
-import { generateId } from '../../lib/storage';
 
 function withCopyButtons(html) {
   return String(html).replace(
@@ -17,7 +16,7 @@ function withCopyButtons(html) {
 
 export default function DanTechAI() {
   const { user } = useAuth();
-  const { courses, getCourseBySlug, getCourseById, getProgress } = useCourses();
+  const { courses, getCourseBySlug, getCourseById, getProgress, ensureCourseDetail } = useCourses();
   const { saveConvo, getUserConvos, deleteConvo, siteSettings } = useLMS();
   const location = useLocation();
   const [open, setOpen] = useState(false);
@@ -26,15 +25,12 @@ export default function DanTechAI() {
   const [convoId, setConvoId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
-  const [copied, setCopied] = useState(false);
   const bottomRef = useRef(null);
   const boxRef = useRef(null);
 
   const enabled = siteSettings?.dantechEnabled !== false;
   const isStudent = user && user.role !== 'admin';
   const onAdmin = location.pathname.startsWith('/admin');
-  // Hide for admins/guests (when disabled, hide for all)
-  if (!enabled || !isStudent || onAdmin) return null;
 
   // ---- Lesson context (Learn page publishes current lesson to sessionStorage) ----
   const lessonCtx = useMemo(() => {
@@ -42,25 +38,40 @@ export default function DanTechAI() {
   }, [location.pathname, open]);
   const m = location.pathname.match(/^\/learn\/([\w-]+)/);
   const course = m ? getCourseBySlug(m[1]) : (lessonCtx ? getCourseById(lessonCtx.courseId) : null);
-  const allLessons = useMemo(() => (course ? course.curriculum.flatMap((mod) => mod.lessons.map((l) => ({ ...l, moduleTitle: mod.title }))) : []), [course]);
+  const courseId = course?.id || null;
+
+  // Catalog entries are light — load full curriculum for lesson-aware answers.
+  useEffect(() => {
+    if (courseId && !course?.curriculum) ensureCourseDetail(courseId).catch(() => {});
+  }, [courseId, course?.curriculum, ensureCourseDetail]);
+
+  const allLessons = useMemo(
+    () => (course?.curriculum || []).flatMap((mod) => (mod.lessons || []).map((l) => ({ ...l, moduleTitle: mod.title }))),
+    [course],
+  );
   const lesson = lessonCtx && course ? allLessons.find((l) => l.id === lessonCtx.lessonId) : null;
-  const progress = course ? getProgress(user.id, course.id) : null;
-  const nextLesson = course ? allLessons.find((l) => !progress.completedLessons.includes(l.id)) : null;
+  const progress = course && user ? getProgress(user.id, course.id) : null;
+  const nextLesson = course && progress ? allLessons.find((l) => !(progress.completedLessons || []).includes(l.id)) : null;
   const index = useMemo(() => buildCourseIndex(courses), [courses]);
-  const convos = getUserConvos(user.id);
+  const convos = user ? getUserConvos(user.id) : [];
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, thinking, open]);
 
-  const persist = (msgs, id = convoId) => {
-    const cid = id || generateId();
-    saveConvo({
-      id: cid, userId: user.id,
-      title: (msgs.find((x) => x.role === 'user')?.text || 'New chat').slice(0, 60),
-      messages: msgs.slice(-100),
-      courseId: course?.id || null, lessonId: lesson?.id || null,
-      updatedAt: new Date().toISOString(),
-    });
-    if (!convoId) setConvoId(cid);
+  // Hide for admins/guests (when disabled, hide for all). After all hooks.
+  if (!enabled || !isStudent || onAdmin) return null;
+
+  const persist = async (msgs, id = convoId) => {
+    try {
+      const saved = await saveConvo({
+        id, userId: user.id,
+        title: (msgs.find((x) => x.role === 'user')?.text || 'New chat').slice(0, 60),
+        messages: msgs.slice(-100),
+        courseId: course?.id || null, lessonId: lesson?.id || null,
+      });
+      if (!convoId) setConvoId(saved.id);
+    } catch {
+      // Chat still works — history sync is best-effort.
+    }
   };
 
   const send = async (text) => {
