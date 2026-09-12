@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, X, Trash2, HelpCircle, Edit } from 'lucide-react';
 import { useCourses } from '../../context/CourseContext';
 import { useLMS } from '../../context/LMSContext';
@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 export default function QuizManager() {
   const { user } = useAuth();
   const { courses } = useCourses();
-  const { quizzes, quizQuestions, createQuiz, updateQuiz, deleteQuiz, addQuestion, updateQuestion, deleteQuestion, quizAttempts, audit } = useLMS();
+  const { quizzes, quizQuestions, createQuiz, updateQuiz, deleteQuiz, addQuestion, updateQuestion, deleteQuestion, ensureQuizQuestions, quizAttempts, audit } = useLMS();
   const [courseFilter, setCourseFilter] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ courseId: '', title: '', description: '', passingScore: 70, allowRetake: true, isFinal: false, attemptLimit: '' });
@@ -18,27 +18,39 @@ export default function QuizManager() {
 
   const filtered = quizzes.filter((q) => !courseFilter || q.courseId === courseFilter);
 
-  const handleCreate = () => {
+  useEffect(() => {
+    if (managing) ensureQuizQuestions(managing).catch((err) => toast.error(err.message));
+  }, [managing, ensureQuizQuestions]);
+
+  const handleCreate = async () => {
     if (!form.courseId || !form.title.trim()) { toast.error('Course and title required'); return; }
-    const q = createQuiz({ ...form });
-    audit(user, 'quiz.create', 'quiz', q.id, { title: form.title });
-    setShowAdd(false);
-    setForm({ courseId: '', title: '', description: '', passingScore: 70, allowRetake: true, isFinal: false, attemptLimit: '' });
-    setManaging(q.id);
-    toast.success('Quiz created. Now add questions.');
+    try {
+      const q = await createQuiz({ ...form });
+      audit(user, 'quiz.create', 'quiz', q.id, { title: form.title });
+      setShowAdd(false);
+      setForm({ courseId: '', title: '', description: '', passingScore: 70, allowRetake: true, isFinal: false, attemptLimit: '' });
+      setManaging(q.id);
+      toast.success('Quiz created. Now add questions.');
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   const resetQForm = () => { setQForm({ type: 'multiple_choice', question: '', options: ['', '', '', ''], correctAnswer: 0, correctAnswers: [], acceptedAnswers: '', explanation: '' }); setEditingQ(null); };
 
-  const saveQuestion = () => {
+  const saveQuestion = async () => {
     if (!qForm.question.trim()) { toast.error('Question text required'); return; }
     const opts = qForm.type === 'true_false' ? ['True', 'False'] : qForm.type === 'short_answer' ? [] : qForm.options.filter((o) => o.trim());
     if (qForm.type !== 'short_answer' && opts.length < 2) { toast.error('At least 2 options required'); return; }
     if (qForm.type === 'short_answer' && !qForm.acceptedAnswers.trim()) { toast.error('Add at least one accepted answer'); return; }
     const payload = { type: qForm.type, question: qForm.question, options: opts, correctAnswer: qForm.correctAnswer, correctAnswers: qForm.correctAnswers, acceptedAnswers: qForm.acceptedAnswers.split('|').map((s) => s.trim()).filter(Boolean), explanation: qForm.explanation };
-    if (editingQ) { updateQuestion(editingQ, payload); toast.success('Question updated'); }
-    else { addQuestion(managing, payload); toast.success('Question added'); }
-    resetQForm();
+    try {
+      if (editingQ) { await updateQuestion(editingQ, payload); toast.success('Question updated'); }
+      else { await addQuestion(managing, payload); toast.success('Question added'); }
+      resetQForm();
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   const startEditQ = (q) => {
@@ -60,8 +72,8 @@ export default function QuizManager() {
           <div className="text-sm text-white/50 mt-1">{course?.title} • Passing {quiz.passingScore}% • {quiz.allowRetake ? 'Retakes allowed' : 'No retakes'} {quiz.isFinal ? '• FINAL EXAM' : ''}</div>
           <div className="text-xs text-white/40 mt-1">{questions.length} questions • {attempts.length} attempts • {attempts.filter((a) => a.passed).length} passed</div>
           <div className="flex gap-2 mt-3">
-            <button onClick={() => updateQuiz(quiz.id, { allowRetake: !quiz.allowRetake })} className="px-3 py-1.5 rounded-full glass text-xs font-bold">{quiz.allowRetake ? 'DISABLE RETAKES' : 'ALLOW RETAKES'}</button>
-            <button onClick={() => updateQuiz(quiz.id, { status: quiz.status === 'published' ? 'draft' : 'published' })} className="px-3 py-1.5 rounded-full glass text-xs font-bold">{quiz.status === 'published' ? 'UNPUBLISH' : 'PUBLISH'}</button>
+            <button onClick={async () => { try { await updateQuiz(quiz.id, { allowRetake: !quiz.allowRetake }); } catch (err) { toast.error(err.message); } }} className="px-3 py-1.5 rounded-full glass text-xs font-bold">{quiz.allowRetake ? 'DISABLE RETAKES' : 'ALLOW RETAKES'}</button>
+            <button onClick={async () => { try { await updateQuiz(quiz.id, { status: quiz.status === 'published' ? 'draft' : 'published' }); } catch (err) { toast.error(err.message); } }} className="px-3 py-1.5 rounded-full glass text-xs font-bold">{quiz.status === 'published' ? 'UNPUBLISH' : 'PUBLISH'}</button>
           </div>
         </div>
 
@@ -73,7 +85,7 @@ export default function QuizManager() {
                 <div className="font-bold text-sm">Q{i + 1}. {q.question} <span className="text-[10px] text-white/40 font-normal">({q.type.replace('_', ' ')})</span></div>
                 <div className="flex gap-1.5 shrink-0">
                   <button onClick={() => startEditQ(q)} className="h-7 w-7 rounded-full glass flex items-center justify-center"><Edit className="h-3 w-3" /></button>
-                  <button onClick={() => { if (confirm('Delete question?')) deleteQuestion(q.id); }} className="h-7 w-7 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-3 w-3" /></button>
+                  <button onClick={async () => { if (confirm('Delete question?')) { try { await deleteQuestion(q.id); } catch (err) { toast.error(err.message); } } }} className="h-7 w-7 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-3 w-3" /></button>
                 </div>
               </div>
               <div className="mt-2 grid sm:grid-cols-2 gap-1.5 text-xs">
@@ -176,7 +188,7 @@ export default function QuizManager() {
                 <div className="text-xs text-white/40 mt-1">{course?.title} • {n} questions • Pass {q.passingScore}% • {attempts.length} attempts {q.allowRetake ? '' : '• no retakes'}</div>
               </div>
               <button onClick={() => setManaging(q.id)} className="h-9 px-4 rounded-full bg-white text-black text-xs font-bold">MANAGE</button>
-              <button onClick={() => { if (confirm('Delete quiz and all its questions/attempts?')) { deleteQuiz(q.id); audit(user, 'quiz.delete', 'quiz', q.id, {}); toast.success('Deleted'); } }} className="h-9 w-9 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-4 w-4" /></button>
+              <button onClick={async () => { if (confirm('Delete quiz and all its questions/attempts?')) { try { await deleteQuiz(q.id); audit(user, 'quiz.delete', 'quiz', q.id, {}); toast.success('Deleted'); } catch (err) { toast.error(err.message); } } }} className="h-9 w-9 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-4 w-4" /></button>
             </div>
           );
         })}

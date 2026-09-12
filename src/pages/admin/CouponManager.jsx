@@ -3,7 +3,7 @@ import { Plus, X, Trash2, Ticket, Copy } from 'lucide-react';
 import { useCourses } from '../../context/CourseContext';
 import { useLMS } from '../../context/LMSContext';
 import { useAuth } from '../../context/AuthContext';
-import { generateCouponCode } from '../../lib/storage';
+import { generateCouponCode } from '../../lib/ids';
 import { formatNaira } from '../../lib/utils';
 import { toast } from 'sonner';
 
@@ -14,9 +14,9 @@ export default function CouponManager() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ code: '', courseId: 'ALL', discountType: 'percentage', discountValue: 50, maxUses: 1, expiresAt: '', minPurchase: 0, active: true, restrictEmail: '', restrictPhone: '' });
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     try {
-      const coupon = createCoupon({
+      const coupon = await createCoupon({
         code: form.code || generateCouponCode(),
         courseId: form.courseId,
         discountType: form.discountType,
@@ -114,8 +114,8 @@ export default function CouponManager() {
                     <td className="p-4"><span className={`px-2 py-1 rounded-full text-[11px] font-bold ${c.active && !expired ? 'bg-green-500/20 text-green-300' : 'bg-white/10 text-white/40'}`}>{c.active && !expired ? 'ACTIVE' : 'INACTIVE'}</span></td>
                     <td className="p-4">
                       <div className="flex gap-1.5">
-                        <button onClick={() => updateCoupon(c.id, { active: !c.active }, user)} className="h-8 px-3 rounded-full glass text-[11px] font-bold">{c.active ? 'DISABLE' : 'ENABLE'}</button>
-                        <button onClick={() => { if (confirm(`Delete coupon ${c.code}?`)) { deleteCoupon(c.id, user); toast.success('Deleted'); } }} className="h-8 w-8 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-4 w-4" /></button>
+                        <button onClick={async () => { try { await updateCoupon(c.id, { active: !c.active }, user); toast.success(c.active ? 'Disabled' : 'Enabled'); } catch (err) { toast.error(err.message); } }} className="h-8 px-3 rounded-full glass text-[11px] font-bold">{c.active ? 'DISABLE' : 'ENABLE'}</button>
+                        <button onClick={async () => { if (confirm(`Delete coupon ${c.code}?`)) { try { await deleteCoupon(c.id, user); toast.success('Deleted'); } catch (err) { toast.error(err.message); } } }} className="h-8 w-8 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-4 w-4" /></button>
                       </div>
                     </td>
                   </tr>

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { TrendingUp, Ticket, Award, Target } from 'lucide-react';
 import { useCourses } from '../../context/CourseContext';
 import { useLMS } from '../../context/LMSContext';
-import { getUsers } from '../../lib/storage';
+import { useAuth } from '../../context/AuthContext';
 import { bucketByDay } from '../../lib/lms';
 import { BarChart, Donut, Sparkline } from '../../components/charts/Charts';
 import { formatNaira } from '../../lib/utils';
@@ -10,8 +10,9 @@ import { formatNaira } from '../../lib/utils';
 export default function AdminOverview() {
   const { courses, allEnrollments, allManualPayments, allCertificates, progressMap } = useCourses();
   const { quizAttempts, submissions, couponStats, adminLMSStats, redemptions } = useLMS();
+  const { students } = useAuth();
 
-  const users = useMemo(() => getUsers().filter((u) => u.role !== 'admin'), []);
+  const users = useMemo(() => students.filter((u) => u.role !== 'admin'), [students]);
   const registrations = useMemo(() => bucketByDay(users, 'createdAt', 14), [users]);
   const enrollmentTrend = useMemo(() => bucketByDay(allEnrollments, 'enrolledAt', 14), [allEnrollments]);
   const revenueTrend = useMemo(() => {

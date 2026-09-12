@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MessagesSquare, Radio, Star, Pin, Trash2, Plus, X, Video, Bell, Eye } from 'lucide-react';
 import { useLMS } from '../../context/LMSContext';
 import { useCourses } from '../../context/CourseContext';
@@ -10,6 +10,7 @@ export default function CommunityManager() {
   const { courses, enrollments, sendNotificationToUser } = useCourses();
   const {
     posts, comments, togglePinPost, deletePost, addComment, deleteComment, getPostComments,
+    ensureCoursePosts, ensurePostComments,
     liveClasses, createLiveClass, updateLiveClass, deleteLiveClass,
     reviews, moderateReview, deleteReview, audit,
   } = useLMS();
@@ -24,32 +25,51 @@ export default function CommunityManager() {
   const courseName = (id) => courses.find((c) => c.id === id)?.title || '—';
   const filteredPosts = posts.filter((p) => !courseFilter || p.courseId === courseFilter);
 
+  useEffect(() => {
+    const ids = courseFilter ? [courseFilter] : courses.map((c) => c.id);
+    ids.forEach((id) => { ensureCoursePosts(id).catch(() => {}); });
+  }, [courseFilter, courses, ensureCoursePosts]);
+
+  useEffect(() => {
+    if (viewPost) ensurePostComments(viewPost.id).catch(() => {});
+  }, [viewPost, ensurePostComments]);
+
   const startEditLive = (lc) => {
     setEditingLive(lc.id);
     setLiveForm({ title: lc.title, courseId: lc.courseId || '', date: lc.date, time: lc.time, duration: lc.duration, platform: lc.platform, meetingLink: lc.meetingLink, description: lc.description || '', recordingUrl: lc.recordingUrl || '' });
     setShowLive(true);
   };
 
-  const saveLive = () => {
+  const saveLive = async () => {
     if (!liveForm.title.trim() || !liveForm.date || !liveForm.meetingLink.trim()) { toast.error('Title, date and meeting link required'); return; }
     if (!/^https?:\/\//i.test(liveForm.meetingLink)) { toast.error('Meeting link must start with http'); return; }
-    if (editingLive) { updateLiveClass(editingLive, liveForm, user); toast.success('Live class updated'); }
-    else { createLiveClass({ ...liveForm, duration: Number(liveForm.duration), courseId: liveForm.courseId || null }, user); toast.success('Live class scheduled 🔴'); }
-    setShowLive(false); setEditingLive(null);
-    setLiveForm({ title: '', courseId: '', date: '', time: '', duration: 60, platform: 'Zoom', meetingLink: '', description: '', recordingUrl: '' });
+    try {
+      if (editingLive) { await updateLiveClass(editingLive, { ...liveForm, courseId: liveForm.courseId || null }, user); toast.success('Live class updated'); }
+      else { await createLiveClass({ ...liveForm, duration: Number(liveForm.duration), courseId: liveForm.courseId || null }, user); toast.success('Live class scheduled 🔴'); }
+      setShowLive(false); setEditingLive(null);
+      setLiveForm({ title: '', courseId: '', date: '', time: '', duration: 60, platform: 'Zoom', meetingLink: '', description: '', recordingUrl: '' });
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
-  const notifyLive = (lc) => {
+  const notifyLive = async (lc) => {
     const targets = lc.courseId
       ? enrollments.filter((e) => e.courseId === lc.courseId && e.status !== 'removed')
       : enrollments.filter((e) => e.status !== 'removed');
     const unique = [...new Set(targets.map((e) => e.userId))];
-    unique.forEach((uid) => sendNotificationToUser(uid, {
+    try {
+      for (const uid of unique) {
+        await sendNotificationToUser(uid, {
       title: `🔴 Live class: ${lc.title}`,
       message: `Join us ${lc.date} at ${lc.time} on ${lc.platform}. Open your course to join.`,
-      type: 'live_class', courseId: lc.courseId,
-    }));
-    toast.success(`Notified ${unique.length} student(s)`);
+        type: 'live_class', courseId: lc.courseId,
+        });
+      }
+      toast.success(`Notified ${unique.length} student(s)`);
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   return (
@@ -81,8 +101,8 @@ export default function CommunityManager() {
                 </div>
                 <div className="flex gap-1.5">
                   <button onClick={() => setViewPost(p)} className="h-8 px-3 rounded-full glass text-[11px] font-bold flex items-center gap-1"><Eye className="h-3 w-3" /> VIEW</button>
-                  <button onClick={() => { togglePinPost(p.id, user); toast.success(p.pinned ? 'Unpinned' : 'Pinned 📌'); }} className="h-8 px-3 rounded-full glass text-[11px] font-bold">{p.pinned ? 'UNPIN' : 'PIN'}</button>
-                  <button onClick={() => { if (confirm('Delete this discussion and all replies?')) { deletePost(p.id, user); toast.success('Deleted'); } }} className="h-8 px-3 rounded-full bg-red-500/20 text-red-300 text-[11px] font-bold"><Trash2 className="h-3.5 w-3.5" /></button>
+                  <button onClick={async () => { try { await togglePinPost(p.id, user); toast.success(p.pinned ? 'Unpinned' : 'Pinned 📌'); } catch (err) { toast.error(err.message); } }} className="h-8 px-3 rounded-full glass text-[11px] font-bold">{p.pinned ? 'UNPIN' : 'PIN'}</button>
+                  <button onClick={async () => { if (confirm('Delete this discussion and all replies?')) { try { await deletePost(p.id, user); toast.success('Deleted'); } catch (err) { toast.error(err.message); } } }} className="h-8 px-3 rounded-full bg-red-500/20 text-red-300 text-[11px] font-bold"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               </div>
             </div>
@@ -105,7 +125,7 @@ export default function CommunityManager() {
                 <div className="flex gap-1.5 items-start">
                   <button onClick={() => notifyLive(lc)} title="Notify enrolled students" className="h-8 px-3 rounded-full bg-cyan-500/20 text-cyan-300 text-[11px] font-bold flex items-center gap-1"><Bell className="h-3 w-3" /> NOTIFY</button>
                   <button onClick={() => startEditLive(lc)} className="h-8 px-3 rounded-full glass text-[11px] font-bold">EDIT</button>
-                  <button onClick={() => { if (confirm('Delete this live class?')) { deleteLiveClass(lc.id, user); toast.success('Deleted'); } }} className="h-8 px-3 rounded-full bg-red-500/20 text-red-300 text-[11px] font-bold"><Trash2 className="h-3.5 w-3.5" /></button>
+                  <button onClick={async () => { if (confirm('Delete this live class?')) { try { await deleteLiveClass(lc.id, user); toast.success('Deleted'); } catch (err) { toast.error(err.message); } } }} className="h-8 px-3 rounded-full bg-red-500/20 text-red-300 text-[11px] font-bold"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               </div>
             </div>
@@ -150,8 +170,8 @@ export default function CommunityManager() {
                   <p className="text-sm text-white/70 mt-1">{r.text}</p>
                 </div>
                 <div className="flex gap-1.5 items-start">
-                  <button onClick={() => { moderateReview(r.id, r.status === 'published' ? 'hidden' : 'published', user); toast.success('Updated'); }} className="h-8 px-3 rounded-full glass text-[11px] font-bold">{r.status === 'published' ? 'HIDE' : 'SHOW'}</button>
-                  <button onClick={() => { if (confirm('Delete review?')) { deleteReview(r.id, user); toast.success('Deleted'); } }} className="h-8 px-3 rounded-full bg-red-500/20 text-red-300 text-[11px] font-bold"><Trash2 className="h-3.5 w-3.5" /></button>
+                  <button onClick={async () => { try { await moderateReview(r.id, r.status === 'published' ? 'hidden' : 'published', user); toast.success('Updated'); } catch (err) { toast.error(err.message); } }} className="h-8 px-3 rounded-full glass text-[11px] font-bold">{r.status === 'published' ? 'HIDE' : 'SHOW'}</button>
+                  <button onClick={async () => { if (confirm('Delete review?')) { try { await deleteReview(r.id, user); toast.success('Deleted'); } catch (err) { toast.error(err.message); } } }} className="h-8 px-3 rounded-full bg-red-500/20 text-red-300 text-[11px] font-bold"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               </div>
             </div>
@@ -169,13 +189,13 @@ export default function CommunityManager() {
               {getPostComments(viewPost.id).map((c) => (
                 <div key={c.id} className="rounded-xl bg-white/[0.04] p-3 text-sm flex justify-between gap-2">
                   <div><span className="font-bold text-xs">{c.authorName}</span> {c.isAdmin && <span className="px-1.5 py-0.5 rounded bg-purple-500/30 text-[10px] font-bold">INSTRUCTOR</span>}<div className="text-white/75">{c.body}</div></div>
-                  <button onClick={() => { deleteComment(c.id, user); toast.success('Reply deleted'); }} className="text-red-300/60 hover:text-red-300 shrink-0"><Trash2 className="h-4 w-4" /></button>
+                  <button onClick={async () => { try { await deleteComment(c.id, user); toast.success('Reply deleted'); } catch (err) { toast.error(err.message); } }} className="text-red-300/60 hover:text-red-300 shrink-0"><Trash2 className="h-4 w-4" /></button>
                 </div>
               ))}
             </div>
             <div className="flex gap-2">
               <input value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Reply as instructor..." className="flex-1 h-11 rounded-full glass px-4 text-sm" />
-              <button onClick={() => { if (!reply.trim()) return; addComment({ postId: viewPost.id, userId: user.id, authorName: user.fullName, body: reply, isAdmin: true }); setReply(''); toast.success('Replied ✓'); }} className="px-5 h-11 rounded-full bg-white text-black font-bold text-sm">REPLY</button>
+              <button onClick={async () => { if (!reply.trim()) return; try { await addComment({ postId: viewPost.id, userId: user.id, authorName: user.fullName, body: reply, isAdmin: true }); setReply(''); toast.success('Replied ✓'); } catch (err) { toast.error(err.message); } }} className="px-5 h-11 rounded-full bg-white text-black font-bold text-sm">REPLY</button>
             </div>
           </div>
         </div>

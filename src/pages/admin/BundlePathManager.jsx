@@ -18,14 +18,18 @@ export function BundleManager() {
 
   const startEdit = (b) => { setEditing(b.id); setForm({ title: b.title, description: b.description || '', courseIds: b.courseIds || [], price: b.price, originalPrice: b.originalPrice || b.price, badge: b.badge || '' }); setShowForm(true); };
 
-  const save = () => {
+  const save = async () => {
     if (!form.title.trim()) { toast.error('Title required'); return; }
     if (form.courseIds.length < 2) { toast.error('Select at least 2 courses'); return; }
     const payload = { title: form.title, description: form.description, courseIds: form.courseIds, price: Number(form.price), originalPrice: Number(form.originalPrice), badge: form.badge };
-    if (editing) { updateBundle(editing, payload, user); toast.success('Bundle updated'); }
-    else { createBundle(payload, user); toast.success('Bundle created 🎁'); }
-    setShowForm(false); setEditing(null);
-    setForm({ title: '', description: '', courseIds: [], price: 15000, originalPrice: 30000, badge: '' });
+    try {
+      if (editing) { await updateBundle(editing, payload, user); toast.success('Bundle updated'); }
+      else { await createBundle(payload, user); toast.success('Bundle created 🎁'); }
+      setShowForm(false); setEditing(null);
+      setForm({ title: '', description: '', courseIds: [], price: 15000, originalPrice: 30000, badge: '' });
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   return (
@@ -74,8 +78,8 @@ export function BundleManager() {
             </div>
             <div className="flex gap-1.5">
               <button onClick={() => startEdit(b)} className="h-9 w-9 rounded-full glass flex items-center justify-center"><Edit className="h-4 w-4" /></button>
-              <button onClick={() => { updateBundle(b.id, { published: !(b.published !== false) }, user); toast.success('Updated'); }} className="h-9 w-9 rounded-full glass flex items-center justify-center">{b.published !== false ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}</button>
-              <button onClick={() => { if (confirm('Delete bundle?')) { deleteBundle(b.id, user); toast.success('Deleted'); } }} className="h-9 w-9 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-4 w-4" /></button>
+              <button onClick={async () => { try { await updateBundle(b.id, { published: !(b.published !== false) }, user); toast.success('Updated'); } catch (err) { toast.error(err.message); } }} className="h-9 w-9 rounded-full glass flex items-center justify-center">{b.published !== false ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}</button>
+              <button onClick={async () => { if (confirm('Delete bundle?')) { try { await deleteBundle(b.id, user); toast.success('Deleted'); } catch (err) { toast.error(err.message); } } }} className="h-9 w-9 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-4 w-4" /></button>
             </div>
           </div>
         ))}
@@ -97,13 +101,17 @@ export function PathManager() {
 
   const startEdit = (p) => { setEditing(p.id); setForm({ title: p.title, desc: p.desc || '', icon: p.icon || '🎯', level: p.level || '', courseSlugs: p.courseSlugs || [] }); setShowForm(true); };
 
-  const save = () => {
+  const save = async () => {
     if (!form.title.trim()) { toast.error('Title required'); return; }
     if (form.courseSlugs.length < 2) { toast.error('Select at least 2 courses in order'); return; }
-    if (editing) { updatePath(editing, form, user); toast.success('Path updated'); }
-    else { createPath(form, user); toast.success('Learning path created 🗺'); }
-    setShowForm(false); setEditing(null);
-    setForm({ title: '', desc: '', icon: '🎯', level: 'Beginner → Advanced', courseSlugs: [] });
+    try {
+      if (editing) { await updatePath(editing, form, user); toast.success('Path updated'); }
+      else { await createPath(form, user); toast.success('Learning path created 🗺'); }
+      setShowForm(false); setEditing(null);
+      setForm({ title: '', desc: '', icon: '🎯', level: 'Beginner → Advanced', courseSlugs: [] });
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   return (
@@ -152,7 +160,7 @@ export function PathManager() {
             </div>
             <div className="flex gap-1.5">
               <button onClick={() => startEdit(p)} className="h-9 w-9 rounded-full glass flex items-center justify-center"><Edit className="h-4 w-4" /></button>
-              <button onClick={() => { if (confirm('Delete path?')) { deletePath(p.id, user); toast.success('Deleted'); } }} className="h-9 w-9 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-4 w-4" /></button>
+              <button onClick={async () => { if (confirm('Delete path?')) { try { await deletePath(p.id, user); toast.success('Deleted'); } catch (err) { toast.error(err.message); } } }} className="h-9 w-9 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-4 w-4" /></button>
             </div>
           </div>
         ))}

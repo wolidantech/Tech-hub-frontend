@@ -3,11 +3,11 @@ import { Plus, X, Trash2, PenLine, Eye, Download, FileText, CheckCircle2 } from 
 import { useCourses } from '../../context/CourseContext';
 import { useLMS } from '../../context/LMSContext';
 import { useAuth } from '../../context/AuthContext';
-import { getUsers } from '../../lib/storage';
+import SignedFile from '../../components/common/SignedFile';
 import { toast } from 'sonner';
 
 export default function AssignmentReview() {
-  const { user } = useAuth();
+  const { user, students: roster } = useAuth();
   const { courses, sendNotificationToUser } = useCourses();
   const { assignments, submissions, createAssignment, updateAssignment, deleteAssignment, reviewSubmission, audit } = useLMS();
   const [tab, setTab] = useState('review');
@@ -18,18 +18,21 @@ export default function AssignmentReview() {
   const [review, setReview] = useState({ status: 'approved', score: '', feedback: '' });
   const [viewing, setViewing] = useState(null);
 
-  const users = getUsers();
-  const nameOf = (id) => users.find((u) => u.id === id)?.fullName || id.slice(0, 8);
+  const nameOf = (id) => roster.find((u) => u.id === id)?.fullName || String(id || '').slice(0, 8);
 
   const filteredSubs = submissions.filter((s) => statusFilter === 'all' || s.status === statusFilter);
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!form.courseId || !form.title.trim()) { toast.error('Course and title required'); return; }
-    const a = createAssignment({ ...form });
+    try {
+      const a = await createAssignment({ ...form });
     audit(user, 'assignment.create', 'assignment', a.id, { title: form.title });
     setShowAdd(false);
-    setForm({ courseId: '', title: '', description: '', instructions: '', requiredOutput: '', maxScore: 100, isFinalProject: false });
-    toast.success('Assignment created & published');
+      setForm({ courseId: '', title: '', description: '', instructions: '', requiredOutput: '', maxScore: 100, isFinalProject: false, deadline: '', submissionType: 'any' });
+      toast.success('Assignment created & published');
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   const openReview = (s) => {
@@ -37,19 +40,23 @@ export default function AssignmentReview() {
     setReview({ status: s.status === 'submitted' ? 'under_review' : s.status, score: s.score ?? '', feedback: s.feedback || '' });
   };
 
-  const submitReview = () => {
+  const submitReview = async () => {
     if (!review.feedback.trim() && review.status === 'needs_revision') { toast.error('Feedback is required when requesting revision'); return; }
-    reviewSubmission({ submissionId: reviewing.id, status: review.status, score: review.score === '' ? null : Number(review.score), feedback: review.feedback, actor: user });
+    try {
+      await reviewSubmission({ submissionId: reviewing.id, status: review.status, score: review.score === '' ? null : Number(review.score), feedback: review.feedback, actor: user });
     const asg = assignments.find((a) => a.id === reviewing.assignmentId);
-    sendNotificationToUser(reviewing.userId, {
+      await sendNotificationToUser(reviewing.userId, {
       title: review.status === 'approved' ? 'Assignment Approved! ✅' : review.status === 'needs_revision' ? 'Assignment Needs Revision 📝' : 'Assignment Under Review 👀',
       message: review.status === 'approved'
         ? `Great work! Your submission for "${asg?.title}" was approved${review.score !== '' ? ` with a score of ${review.score}` : ''}. ${review.feedback}`
         : `Your submission for "${asg?.title}" was marked ${review.status.replace('_', ' ')}. Feedback: ${review.feedback}`,
-      type: 'assignment_reviewed', courseId: reviewing.courseId,
-    });
-    setReviewing(null);
-    toast.success('Review submitted — student notified');
+        type: 'assignment_reviewed', courseId: reviewing.courseId,
+      });
+      setReviewing(null);
+      toast.success('Review submitted — student notified');
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   return (
@@ -133,8 +140,8 @@ export default function AssignmentReview() {
                     <div className="font-bold text-sm">{a.title} {a.isFinalProject && <span className="ml-1 px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px]">FINAL PROJECT</span>}</div>
                     <div className="text-xs text-white/40 mt-1">{course?.title} • {n} submissions • Max {a.maxScore}</div>
                   </div>
-                  <button onClick={() => updateAssignment(a.id, { status: a.status === 'published' ? 'draft' : 'published' })} className="h-9 px-3 rounded-full glass text-xs font-bold">{a.status === 'published' ? 'UNPUBLISH' : 'PUBLISH'}</button>
-                  <button onClick={() => { if (confirm('Delete assignment?')) { deleteAssignment(a.id); audit(user, 'assignment.delete', 'assignment', a.id, {}); toast.success('Deleted'); } }} className="h-9 w-9 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-4 w-4" /></button>
+                  <button onClick={async () => { try { await updateAssignment(a.id, { status: a.status === 'published' ? 'draft' : 'published' }); } catch (err) { toast.error(err.message); } }} className="h-9 px-3 rounded-full glass text-xs font-bold">{a.status === 'published' ? 'UNPUBLISH' : 'PUBLISH'}</button>
+                  <button onClick={async () => { if (confirm('Delete assignment?')) { try { await deleteAssignment(a.id); audit(user, 'assignment.delete', 'assignment', a.id, {}); toast.success('Deleted'); } catch (err) { toast.error(err.message); } } }} className="h-9 w-9 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-4 w-4" /></button>
                 </div>
               );
             })}
@@ -152,23 +159,15 @@ export default function AssignmentReview() {
             {viewing.note && <div className="rounded-xl bg-white/[0.04] p-3 text-sm">"{viewing.note}"</div>}
             {viewing.kind === 'text' && <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm whitespace-pre-line max-h-[400px] overflow-auto">{viewing.textContent}</div>}
             {viewing.kind === 'link' && <a href={viewing.linkUrl} target="_blank" rel="noreferrer" className="block rounded-2xl border border-cyan-500/30 bg-cyan-500/5 p-4 text-cyan-300 text-sm break-all underline">{viewing.linkUrl}</a>}
-            <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/30">
-              {viewing.kind === 'text' || viewing.kind === 'link' ? (
-                <div className="p-6 text-center text-sm text-white/50">Preview shown above ⬆</div>
-              ) : viewing.fileType?.startsWith('image/') ? (
-                <img src={viewing.fileData} alt="submission" className="w-full max-h-[500px] object-contain" />
-              ) : viewing.fileType === 'video/mp4' ? (
-                <video src={viewing.fileData} controls className="w-full max-h-[500px]" />
+            {(viewing.kind || 'file') === 'file' && (
+              viewing.storagePath ? (
+                <SignedFile bucket="submissions" path={viewing.storagePath} fileType={viewing.fileType} fileName={viewing.fileName} />
               ) : (
-                <div className="p-10 text-center">
-                  <FileText className="h-12 w-12 mx-auto text-white/20 mb-3" />
-                  <div className="font-bold text-sm">{viewing.fileName}</div>
-                  <a href={viewing.fileData} download={viewing.fileName} className="inline-flex mt-4 px-5 py-2.5 rounded-full bg-white text-black font-bold text-xs gap-2"><Download className="h-4 w-4" /> DOWNLOAD TO REVIEW</a>
-                </div>
-              )}
-            </div>
+                <div className="p-6 text-center text-sm text-white/40">File unavailable.</div>
+              )
+            )}
             <div className="flex gap-2">
-              <a href={viewing.fileData} download={viewing.fileName} className="flex-1 h-11 rounded-full glass font-bold text-sm flex items-center justify-center gap-2"><Download className="h-4 w-4" /> DOWNLOAD</a>
+              <button onClick={() => setViewing(null)} className="flex-1 h-11 rounded-full glass font-bold text-sm">CLOSE</button>
               <button onClick={() => { openReview(viewing); setViewing(null); }} className="flex-1 h-11 rounded-full bg-white text-black font-bold text-sm">REVIEW NOW</button>
             </div>
           </div>

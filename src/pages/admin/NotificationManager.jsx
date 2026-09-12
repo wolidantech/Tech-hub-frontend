@@ -3,19 +3,18 @@ import { Megaphone, Send, Bell } from 'lucide-react';
 import { useCourses } from '../../context/CourseContext';
 import { useLMS } from '../../context/LMSContext';
 import { useAuth } from '../../context/AuthContext';
-import { getUsers } from '../../lib/storage';
 import { toast } from 'sonner';
 
 export default function NotificationManager() {
-  const { user } = useAuth();
-  const { courses, broadcastNotification, sendNotificationToUser } = useCourses();
+  const { user, students: roster } = useAuth();
+  const { courses, allEnrollments, broadcastNotification, sendNotificationToUser } = useCourses();
   const { announcements, sendAnnouncement, audit } = useLMS();
   const [form, setForm] = useState({ title: '', message: '', courseId: '', targetEmail: '' });
   const [mode, setMode] = useState('broadcast'); // broadcast | course | single
 
-  const students = getUsers().filter((u) => u.role !== 'admin');
+  const students = roster.filter((u) => u.role !== 'admin' && !u.banned);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!form.title.trim() || !form.message.trim()) {
       toast.error('Title and message are required');
       return;
@@ -27,7 +26,7 @@ export default function NotificationManager() {
           toast.error('Student email not found');
           return;
         }
-        sendNotificationToUser(target.id, { title: form.title, message: form.message, type: 'admin_message' });
+        await sendNotificationToUser(target.id, { title: form.title, message: form.message, type: 'admin_message' });
         audit(user, 'notification.send', 'user', target.id, { title: form.title });
         toast.success(`Notification sent to ${target.fullName}`);
       } else {
@@ -39,11 +38,11 @@ export default function NotificationManager() {
             return;
           }
           courseId = form.courseId;
-          // all enrolled students in that course — approximate with all students + filter by enrollment
-          ids = students.map((s) => s.id);
+          const enrolledIds = new Set(allEnrollments.filter((e) => e.courseId === courseId && e.status !== 'removed').map((e) => e.userId));
+          ids = students.filter((s) => enrolledIds.has(s.id)).map((s) => s.id);
         }
-        broadcastNotification(ids, { title: form.title, message: form.message, courseId });
-        sendAnnouncement({ title: form.title, message: form.message, courseId, actor: user });
+        await broadcastNotification(ids, { title: form.title, message: form.message, courseId });
+        await sendAnnouncement({ title: form.title, message: form.message, courseId, actor: user });
         audit(user, 'announcement.send', 'announcement', mode, { title: form.title, recipients: ids.length });
         toast.success(`Announcement sent to ${ids.length} students 📣`);
       }

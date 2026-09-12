@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings, Save, MessageCircle, Landmark, Bot, Globe } from 'lucide-react';
 import { useLMS } from '../../context/LMSContext';
 import { useAuth } from '../../context/AuthContext';
@@ -7,16 +7,27 @@ import { toast } from 'sonner';
 export default function SiteSettingsPanel() {
   const { siteSettings, updateSiteSettings } = useLMS();
   const { user } = useAuth();
-  const [form, setForm] = useState({ ...siteSettings });
+  const [form, setForm] = useState(null);
 
-  const save = () => {
-    if (!form.accountNumber.trim() || !form.bankName.trim() || !form.accountName.trim()) {
+  useEffect(() => {
+    if (siteSettings && !form) setForm({ ...siteSettings });
+  }, [siteSettings, form]);
+
+  const save = async () => {
+    if (!form.accountNumber?.trim() || !form.bankName?.trim() || !form.accountName?.trim()) {
       toast.error('Bank details cannot be empty');
       return;
     }
-    updateSiteSettings(form, user);
-    toast.success('Site settings saved ✓');
+    try {
+      const next = await updateSiteSettings(form, user);
+      setForm({ ...next });
+      toast.success('Site settings saved ✓');
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
+
+  if (!form) return <div className="glass rounded-[24px] p-6 text-sm text-white/40">Loading settings…</div>;
 
   const input = 'w-full h-11 rounded-full glass px-4 text-sm';
 
@@ -66,7 +77,7 @@ export default function SiteSettingsPanel() {
           <span><span className="font-bold">Allow new registrations</span><span className="block text-xs text-white/40">Turn off to close signups temporarily</span></span>
           <input type="checkbox" checked={!!form.allowRegistration} onChange={(e) => setForm({ ...form, allowRegistration: e.target.checked })} className="h-5 w-5" />
         </label>
-        <div className="text-xs text-white/40 leading-relaxed">Cloud AI: set <span className="font-mono">VITE_DANTECH_ENDPOINT</span> + <span className="font-mono">VITE_DANTECH_KEY</span> to connect DanTECH AI to your AI backend. Without them, the built-in on-device tutor is used.</div>
+        <div className="text-xs text-white/40 leading-relaxed">Cloud AI: set <span className="font-mono">VITE_DANTECH_ENDPOINT</span> to connect DanTECH AI to your secure AI backend (API keys stay server-side — never in the browser). Without it, the built-in on-device tutor is used.</div>
       </div>
 
       <button onClick={save} className="w-full btn-primary !py-3.5 gap-2"><Save className="h-4 w-4" /> SAVE SETTINGS</button>
