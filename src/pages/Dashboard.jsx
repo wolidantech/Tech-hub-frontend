@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { BookOpen, Award, Clock, TrendingUp, Play, CheckCircle2, BarChart3, CreditCard, DollarSign, XCircle, Sparkles, HelpCircle, PenLine, Megaphone, Flame, Zap, Trophy, Medal } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { formatNaira } from '../lib/utils';
 import { bucketByDay, estimateLearningMinutes, recommendCourses } from '../lib/lms';
-import { computeGamification, buildLeaderboard, BADGES } from '../lib/gamify';
-import { getUsers } from '../lib/storage';
+import { computeGamification, BADGES } from '../lib/gamify';
+import { fetchLeaderboard } from '../lib/store';
 import { ProgressRing, BarChart } from '../components/charts/Charts';
 import CourseArt from '../components/course/CourseArt';
 
@@ -59,11 +59,14 @@ export default function Dashboard() {
   // ---- Gamification ----
   const game = useMemo(() => (uid ? computeGamification({ userId: uid, enrollments: allEnrollments, progressMap, courses, quizAttempts, submissions, learningEvents }) : null), [uid, allEnrollments, progressMap, courses, quizAttempts, submissions, learningEvents]);
   const myBadges = useMemo(() => (game ? BADGES.filter((b) => game.badges.includes(b.id)) : []), [game]);
-  const leaderboard = useMemo(() => {
-    const students = getUsers().filter((u) => u.role !== 'admin');
-    return buildLeaderboard(students, { enrollments: allEnrollments, progressMap, courses, quizAttempts, submissions, learningEvents }).slice(0, 5);
-  }, [allEnrollments, progressMap, courses, quizAttempts, submissions, learningEvents]);
-  const myRank = leaderboard.findIndex((r) => r.userId === uid);
+  const [leaderboard, setLeaderboard] = useState([]);
+  useEffect(() => {
+    let alive = true;
+    fetchLeaderboard(5).then((rows) => { if (alive) setLeaderboard((rows || []).map((r, i) => ({ ...r, rank: i + 1 }))); }).catch(() => {});
+    return () => { alive = false; };
+  }, [uid]);
+  const myRankRow = leaderboard.find((r) => r.userId === uid);
+  const myRank = myRankRow ? myRankRow.rank : -1;
 
   const upcomingLive = useMemo(() => {
     if (!uid) return [];
@@ -153,7 +156,7 @@ export default function Dashboard() {
                 ))}
                 {leaderboard.length === 0 && <div className="text-xs text-white/40">No activity yet.</div>}
               </div>
-              {myRank >= 5 && <div className="text-xs text-white/40 mt-2">Your rank: #{myRank + 1}</div>}
+              {myRank > 5 && <div className="text-xs text-white/40 mt-2">Your rank: #{myRank}</div>}
             </div>
           </div>
         )}
@@ -249,7 +252,7 @@ export default function Dashboard() {
             ) : (
               <div className="grid gap-4">
                 {coursesWithProgress.map(({ course, progress }) => {
-                  const totalLessons = course.curriculum.reduce((acc, m) => acc + m.lessons.length, 0);
+                  const totalLessons = course.curriculum ? course.curriculum.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) : (course.lessonsCount || 0);
                   const qAvg = getUserQuizAverage(user.id, course.id);
                   return (
                     <div key={course.id} className="glass rounded-[20px] overflow-hidden hover:border-white/15 transition group">
@@ -263,7 +266,7 @@ export default function Dashboard() {
                               <h3 className="font-bold leading-tight group-hover:text-cyan-300 transition">{course.title}</h3>
                               <div className="mt-1 flex items-center gap-3 text-[12px] text-white/50 flex-wrap">
                                 <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {course.duration}</span>
-                                <span>{progress.completedLessons.length} / {totalLessons} lessons</span>
+                                <span>{(progress.completedLessons || []).length} / {totalLessons} lessons</span>
                                 {qAvg != null && <span className="flex items-center gap-1"><HelpCircle className="h-3 w-3" /> Quiz {qAvg}%</span>}
                                 <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-300 text-[10px] font-bold">ENROLLED</span>
                               </div>

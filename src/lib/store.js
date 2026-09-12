@@ -542,6 +542,9 @@ export const adminDeleteCoupon = async (id) => {
 export const fetchRedemptions = async () =>
   (await one(sb().from('coupon_redemptions').select('*').order('used_at', { ascending: false }).limit(5000))).map(mapRedemption);
 
+export const fetchMyRedemptions = async (userId) =>
+  (await one(sb().from('coupon_redemptions').select('*').eq('user_id', userId).order('used_at', { ascending: false }).limit(500))).map(mapRedemption);
+
 // ============================================================ PROGRESS
 export const fetchMyProgress = async (userId) =>
   one(sb().from('lesson_progress').select('*').eq('user_id', userId).limit(10000));

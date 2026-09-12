@@ -1,22 +1,26 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCourses } from '../context/CourseContext';
-import { useLMS } from '../context/LMSContext';
 import { formatNaira } from '../lib/utils';
+import { fetchMyRedemptions } from '../lib/store';
+import SignedFile from '../components/common/SignedFile';
 import { Clock, CheckCircle2, XCircle, AlertTriangle, Eye, FileText, Download, Calendar, CreditCard, Ticket } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function MyPayments() {
   const { user } = useAuth();
   const { getUserManualPayments, getUserPaymentSummary, getCourseById } = useCourses();
-  const { redemptions } = useLMS();
   const [selectedReceipt, setSelectedReceipt] = useState(null);
+  const [myRedemptions, setMyRedemptions] = useState([]);
+
+  useEffect(() => {
+    if (user) fetchMyRedemptions(user.id).then(setMyRedemptions).catch(() => {});
+  }, [user]);
 
   if (!user) return null;
 
   const payments = getUserManualPayments(user.id);
   const summary = getUserPaymentSummary(user.id);
-  const myRedemptions = redemptions.filter((r) => r.userId === user.id);
 
   const getStatusConfig = (status) => {
     switch (status) {
@@ -152,8 +156,18 @@ export default function MyPayments() {
                           START LEARNING
                         </Link>
                       )}
+                      {payment.status === 'approved' && !course && payment.bundleId && (
+                        <Link to="/my-courses" className="px-4 py-2 rounded-full bg-white text-black font-bold text-xs flex items-center justify-center gap-2">
+                          MY COURSES
+                        </Link>
+                      )}
                       {payment.status === 'rejected' && course && (
                         <Link to={`/enroll/${course.slug}`} className="px-4 py-2 rounded-full bg-gradient-to-r from-cyan-400 to-blue-600 text-white font-bold text-xs flex items-center justify-center gap-2">
+                          RETRY PAYMENT
+                        </Link>
+                      )}
+                      {payment.status === 'rejected' && !course && payment.bundleId && (
+                        <Link to={`/enroll/bundle/${payment.bundleId}`} className="px-4 py-2 rounded-full bg-gradient-to-r from-cyan-400 to-blue-600 text-white font-bold text-xs flex items-center justify-center gap-2">
                           RETRY PAYMENT
                         </Link>
                       )}
@@ -181,25 +195,16 @@ export default function MyPayments() {
                 <div className="flex justify-between"><span className="text-white/50">Date</span><span className="font-bold">{new Date(selectedReceipt.submittedAt).toLocaleString()}</span></div>
               </div>
 
-              <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/20">
-                {selectedReceipt.receiptType === 'application/pdf' ? (
-                  <div className="p-12 text-center">
-                    <FileText className="h-12 w-12 mx-auto text-white/20 mb-3" />
-                    <div className="font-bold">{selectedReceipt.receiptName}</div>
-                    <div className="text-xs text-white/40 mt-1">{(selectedReceipt.receiptSize / 1024).toFixed(1)} KB • PDF</div>
-                    <a href={selectedReceipt.receiptData} download={selectedReceipt.receiptName} className="inline-flex mt-4 px-5 py-2 rounded-full bg-white text-black font-bold text-xs gap-2">
-                      <Download className="h-4 w-4" /> DOWNLOAD PDF
-                    </a>
-                  </div>
-                ) : (
-                  <img src={selectedReceipt.receiptData} alt="Payment receipt" className="w-full h-auto max-h-[500px] object-contain" />
-                )}
-              </div>
+              {selectedReceipt.receiptPath ? (
+                <SignedFile bucket="receipts" path={selectedReceipt.receiptPath} fileType={selectedReceipt.receiptType} fileName={selectedReceipt.receiptName} />
+              ) : (
+                <div className="p-8 text-center text-sm text-white/40">
+                  <FileText className="h-10 w-10 mx-auto text-white/20 mb-2" />
+                  Receipt file unavailable.
+                </div>
+              )}
 
               <div className="flex gap-2">
-                <a href={selectedReceipt.receiptData} download={selectedReceipt.receiptName} className="flex-1 h-11 rounded-full bg-white text-black font-bold text-sm flex items-center justify-center gap-2">
-                  <Download className="h-4 w-4" /> DOWNLOAD
-                </a>
                 <button onClick={() => setSelectedReceipt(null)} className="flex-1 h-11 rounded-full glass font-bold text-sm">CLOSE</button>
               </div>
             </div>

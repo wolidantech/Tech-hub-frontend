@@ -9,7 +9,7 @@ import { readFileSync } from 'fs';
 const MIG = '/home/user/Tech-hub-frontend/supabase/migrations';
 const db = new PGlite();
 await db.exec(readFileSync('/home/user/pgcheck/stubs.sql', 'utf8'));
-for (const f of ['001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql', '004_notify_and_counts.sql']) {
+for (const f of ['001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql', '004_notify_and_counts.sql', '005_showcase_reads.sql']) {
   await db.exec(readFileSync(`${MIG}/${f}`, 'utf8'));
 }
 console.log('migrations 001-004 applied clean');
@@ -438,5 +438,16 @@ await t('H21 free redeem notifies + lessons_count maintained', async () => {
   assert(lc3.lessons_count === 3, 'lessons_count not synced on delete');
 });
 
+// ---------- H22: 005 showcase public-read policy ----------
+await t('H22 showcase policy exposes only approved public images', async () => {
+  const pol = await one(`select count(*) c from pg_policies where schemaname='storage' and tablename='objects' and policyname='showcase public read'`);
+  assert(Number(pol.c) === 1, 'showcase public read policy missing');
+  const def = await one(`select qual q from pg_policies where schemaname='storage' and tablename='objects' and policyname='showcase public read'`);
+  for (const needle of ['submissions', 'approved', 'portfolio_public', 'image/']) {
+    assert(String(def.q).includes(needle), 'showcase policy must scope to ' + needle);
+  }
+});
+
 console.log(`\n==== RESULT: ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);
+

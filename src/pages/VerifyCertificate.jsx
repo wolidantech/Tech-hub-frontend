@@ -9,24 +9,35 @@ export default function VerifyCertificate() {
   const [id, setId] = useState('');
   const [result, setResult] = useState(null);
   const [searched, setSearched] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const { verifyCertificate } = useCourses();
+
+  const runVerify = async (code) => {
+    setVerifying(true);
+    try {
+      const found = await verifyCertificate(code.trim());
+      setResult(found || null);
+    } catch {
+      setResult(null);
+    } finally {
+      setVerifying(false);
+      setSearched(true);
+    }
+  };
 
   // Support QR deep-link: /verify-certificate?code=XXX
   useEffect(() => {
     const code = searchParams.get('code');
     if (code) {
       setId(code);
-      setResult(verifyCertificate(code.trim()) || null);
-      setSearched(true);
+      runVerify(code);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleVerify = (e) => {
     e.preventDefault();
-    const found = verifyCertificate(id.trim());
-    setResult(found || null);
-    setSearched(true);
+    runVerify(id);
   };
 
   // Privacy: show first name + last initial only on public verification
@@ -52,7 +63,7 @@ export default function VerifyCertificate() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
               <input value={id} onChange={(e) => setId(e.target.value)} placeholder="Certificate ID or Verification Code (e.g. WDTH-2026-ABC123)" className="w-full h-[56px] rounded-full glass pl-12 pr-4 font-mono text-sm placeholder:font-sans placeholder:text-white/40 focus:outline-none focus:border-cyan-400/50 focus:bg-white/[0.08] transition" required />
             </div>
-            <button type="submit" className="w-full btn-primary !py-4">VERIFY CERTIFICATE</button>
+            <button type="submit" disabled={verifying} className="w-full btn-primary !py-4 disabled:opacity-50">{verifying ? 'VERIFYING…' : 'VERIFY CERTIFICATE'}</button>
           </form>
 
           {searched && (

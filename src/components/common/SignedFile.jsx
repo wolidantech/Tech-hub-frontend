@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Download, FileText, Loader2 } from 'lucide-react';
-import { signedUrl } from '../../lib/supabase';
+import { signedUrl, publicUrl } from '../../lib/supabase';
 
-/** Resolve a private-storage path to a time-limited signed URL. */
+// Buckets flagged public in migrations (readable without auth).
+const PUBLIC_BUCKETS = new Set(['avatars', 'thumbnails']);
+
+/** Resolve a storage path to a viewable URL (public URL for public buckets, signed URL otherwise). */
 export function useSignedUrl(bucket, path, expiresIn = 3600) {
-  const [url, setUrl] = useState(null);
-  const [loading, setLoading] = useState(Boolean(path));
+  const [url, setUrl] = useState(() => (PUBLIC_BUCKETS.has(bucket) && path ? publicUrl(bucket, path) : null));
+  const [loading, setLoading] = useState(Boolean(path) && !PUBLIC_BUCKETS.has(bucket));
   useEffect(() => {
     let alive = true;
     if (!path) { setUrl(null); setLoading(false); return; }
+    if (PUBLIC_BUCKETS.has(bucket)) { setUrl(publicUrl(bucket, path)); setLoading(false); return; }
     setLoading(true);
     signedUrl(bucket, path, expiresIn).then((u) => {
       if (!alive) return;

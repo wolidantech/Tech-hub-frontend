@@ -58,7 +58,7 @@ function LessonVideo({ lesson }) {
     let alive = true;
     setSigned(null);
     if (lesson.videoStoragePath) {
-      signedUrl('course-videos', lesson.videoStoragePath)
+      signedUrl('lesson-videos', lesson.videoStoragePath)
         .then((u) => { if (alive) setSigned(u); })
         .catch(() => {});
     }

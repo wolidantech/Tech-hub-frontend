@@ -3,15 +3,28 @@ import { Award, Download, Verified, Calendar, User, BookOpen, ArrowLeft, Share2 
 import { useCourses } from '../context/CourseContext';
 import { useAuth } from '../context/AuthContext';
 import { formatDate } from '../lib/utils';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 
 export default function CertificateView() {
   const { id } = useParams();
   const { verifyCertificate, getCourseById } = useCourses();
   const { user } = useAuth();
   const certRef = useRef(null);
+  const [cert, setCert] = useState(undefined); // undefined = loading
 
-  const cert = verifyCertificate(id);
+  useEffect(() => {
+    let alive = true;
+    verifyCertificate(id).then((c) => { if (alive) setCert(c || null); }).catch(() => { if (alive) setCert(null); });
+    return () => { alive = false; };
+  }, [id, verifyCertificate]);
+
+  if (cert === undefined) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-4">
+        <div className="h-10 w-10 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
   if (!cert) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center p-4">

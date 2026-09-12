@@ -4,6 +4,7 @@ import { User, Mail, Phone, Lock, Award, BookOpen, Save, Camera, Share2, Eye } f
 import { useAuth } from '../context/AuthContext';
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
+import SignedFile from '../components/common/SignedFile';
 import { toast, Toaster } from 'sonner';
 
 export default function Profile() {
@@ -22,25 +23,30 @@ export default function Profile() {
   const enrollments = getUserEnrollments(user.id);
   const certs = getUserCertificates(user.id);
 
-  const handlePhoto = (e) => {
+  const handlePhoto = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) return toast.error('Only images allowed');
-    if (file.size > 1 * 1024 * 1024) return toast.error('Max 1MB for profile photo');
-    const reader = new FileReader();
-    reader.onload = () => { updateProfile({ avatar: reader.result }); toast.success('Profile photo updated 📸'); };
-    reader.readAsDataURL(file);
+    try {
+      await updateProfile({ avatarFile: file });
+      toast.success('Profile photo updated 📸');
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    updateProfile({
-      fullName: form.fullName, email: form.email, phone: form.phone, bio: form.bio.slice(0, 500),
-      skills: form.skills.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 20),
-      interests: form.interests,
-      portfolioPublic: form.portfolioPublic, showCertificates: form.showCertificates, showProjects: form.showProjects,
-    });
-    toast.success('Profile updated successfully');
+    try {
+      await updateProfile({
+        fullName: form.fullName, phone: form.phone, bio: form.bio.slice(0, 500),
+        skills: form.skills.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 20),
+        interests: form.interests,
+        portfolioPublic: form.portfolioPublic, showCertificates: form.showCertificates, showProjects: form.showProjects,
+      });
+      toast.success('Profile updated successfully');
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   const handlePwd = async (e) => {
@@ -67,7 +73,7 @@ export default function Profile() {
             <div className="glass rounded-[24px] p-8 text-center">
               <div className="relative inline-block">
                 {user.avatar ? (
-                  <img src={user.avatar} alt="avatar" className="h-24 w-24 rounded-full object-cover mx-auto border-4 border-cyan-400/40" />
+                  <SignedFile bucket="avatars" path={user.avatar} fileType="image/jpeg" imgClassName="h-24 w-24 rounded-full object-cover mx-auto border-4 border-cyan-400/40" />
                 ) : (
                   <div className="h-24 w-24 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-black text-3xl mx-auto shadow-[0_0_30px_rgba(34,211,238,0.4)]">{user.fullName.charAt(0).toUpperCase()}</div>
                 )}
@@ -114,7 +120,7 @@ export default function Profile() {
                 </div>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-                  <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full h-[52px] rounded-full glass pl-11 pr-4 text-sm focus:outline-none focus:border-cyan-400/50" placeholder="Email" />
+                  <input type="email" value={form.email} disabled title="Email is your login identity and cannot be changed here" className="w-full h-[52px] rounded-full glass pl-11 pr-4 text-sm bg-white/[0.03] text-white/50" placeholder="Email" />
                 </div>
                 <div className="relative">
                   <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />

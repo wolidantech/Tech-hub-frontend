@@ -21,10 +21,14 @@ export default function Onboarding() {
 
   const toggle = (list, set, v) => set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
-  const finish = () => {
-    updateProfile({ interests, skillLevel, careerGoals: goals, onboarded: true });
-    toast.success('Welcome aboard! 🎉 Recommendations ready.');
-    navigate('/dashboard');
+  const finish = async () => {
+    try {
+      await updateProfile({ interests, skillLevel, careerGoals: goals, onboarded: true });
+      toast.success('Welcome aboard! 🎉 Recommendations ready.');
+      navigate('/dashboard');
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   return (

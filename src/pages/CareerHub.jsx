@@ -1,19 +1,17 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Briefcase, FileText, Rocket, Star, Users, ArrowRight, BadgeCheck } from 'lucide-react';
-import { useCourses } from '../context/CourseContext';
-import { useLMS } from '../context/LMSContext';
-import { getUsers } from '../lib/storage';
+import { fetchShowcase } from '../lib/store';
+import SignedFile from '../components/common/SignedFile';
 
 export default function CareerHub() {
-  const { courses } = useCourses();
-  const { submissions, assignments } = useLMS();
-  const users = getUsers().filter((u) => u.role !== 'admin');
+  const [showcase, setShowcase] = useState(null);
 
-  // Public project showcase: approved submissions from students with public portfolios
-  const showcase = submissions
-    .filter((s) => s.status === 'approved')
-    .filter((s) => users.find((u) => u.id === s.userId)?.portfolioPublic !== false)
-    .slice(0, 6);
+  useEffect(() => {
+    let alive = true;
+    fetchShowcase(6).then((rows) => { if (alive) setShowcase(rows || []); }).catch(() => { if (alive) setShowcase([]); });
+    return () => { alive = false; };
+  }, []);
 
   const guides = [
     { icon: FileText, title: 'CV & Resume Guide', desc: 'Tech CV templates, what recruiters scan for, and how to present certificates + projects.', tag: 'Free Guide' },
@@ -51,29 +49,28 @@ export default function CareerHub() {
         <div className="glass rounded-[24px] p-6 md:p-8">
           <h2 className="font-bold text-xl flex items-center gap-2"><BadgeCheck className="h-5 w-5 text-green-400" /> Student Project Showcase</h2>
           <p className="text-sm text-white/50 mt-1">Real work by WOLI DAN TECH HUB students. Your approved projects can appear here too.</p>
-          {showcase.length === 0 ? (
+          {showcase === null ? (
+            <div className="mt-6 text-center py-10 text-white/40 text-sm">Loading showcase…</div>
+          ) : showcase.length === 0 ? (
             <div className="mt-6 text-center py-10 text-white/40 text-sm">
               No public projects yet — complete assignments and enable your public portfolio in Profile Settings.
               <div className="mt-4"><Link to="/courses" className="inline-flex btn-primary !py-2.5">START A COURSE</Link></div>
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-              {showcase.map((s) => {
-                const owner = users.find((u) => u.id === s.userId);
-                const asg = assignments.find((a) => a.id === s.assignmentId);
-                const course = courses.find((c) => c.id === s.courseId);
-                return (
-                  <div key={s.id} className="rounded-2xl bg-white/[0.03] border border-white/10 overflow-hidden">
-                    {s.fileType?.startsWith('image/') && <img src={s.fileData} alt={s.fileName} loading="lazy" className="h-40 w-full object-cover" />}
-                    <div className="p-4">
-                      <div className="font-bold text-sm">{asg?.title || s.fileName}</div>
-                      <div className="text-xs text-white/50 mt-1">by {owner?.fullName} • {course?.title}</div>
-                      {s.score != null && <div className="text-xs text-amber-300 font-bold mt-1">⭐ Score: {s.score}</div>}
-                      <Link to={`/student/${s.userId}`} className="inline-flex mt-2 text-xs font-bold text-cyan-300">View portfolio <ArrowRight className="h-3 w-3 ml-1" /></Link>
-                    </div>
+              {showcase.map((s) => (
+                <div key={s.id} className="rounded-2xl bg-white/[0.03] border border-white/10 overflow-hidden">
+                  {s.storagePath && (
+                    <SignedFile bucket="submissions" path={s.storagePath} fileType={s.fileType} fileName={s.fileName} kind="image" imgClassName="h-40 w-full object-cover" />
+                  )}
+                  <div className="p-4">
+                    <div className="font-bold text-sm">{s.assignmentTitle || s.fileName}</div>
+                    <div className="text-xs text-white/50 mt-1">by {s.ownerName} • {s.courseName}</div>
+                    {s.score != null && <div className="text-xs text-amber-300 font-bold mt-1">⭐ Score: {s.score}</div>}
+                    <Link to={`/student/${s.ownerId}`} className="inline-flex mt-2 text-xs font-bold text-cyan-300">View portfolio <ArrowRight className="h-3 w-3 ml-1" /></Link>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
         </div>
