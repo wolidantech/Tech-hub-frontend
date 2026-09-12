@@ -1,18 +1,27 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Clock, BookOpen, BarChart3, User, Star, CheckCircle2, Play, Award, ArrowRight, Shield, Zap, Globe, AlertTriangle } from 'lucide-react';
 import { useCourses } from '../context/CourseContext';
+import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
 import { formatNaira, getCourseThumbnailGradient } from '../lib/utils';
-import { useState } from 'react';
+import CourseArt from '../components/course/CourseArt';
+import { useState, useEffect } from 'react';
 
 export default function CourseDetails() {
   const { slug } = useParams();
   const { getCourseBySlug, isEnrolled, getManualPaymentByCourse } = useCourses();
+  const { trackView, getCourseQuizzes, getCourseAssignments } = useLMS();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [openModule, setOpenModule] = useState('m1');
 
   const course = getCourseBySlug(slug);
+
+  useEffect(() => {
+    if (course) trackView(user?.id || 'anon', course.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
+
   if (!course) return <div className="p-20 text-center">Course not found</div>;
 
   const enrolled = user ? isEnrolled(user.id, course.id) : false;
@@ -77,12 +86,9 @@ export default function CourseDetails() {
             <div className="lg:sticky lg:top-[100px]">
               <div className="rounded-[24px] glass-strong p-[1px]">
                 <div className="rounded-[23px] bg-[#0a1a4a]/80 backdrop-blur-xl overflow-hidden">
-                  <div className={`h-[220px] bg-gradient-to-br ${gradient} relative p-6 flex flex-col justify-end`}>
-                    <div className="absolute inset-0 bg-black/20" />
-                    <div className="relative">
-                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 backdrop-blur text-xs font-bold"><Play className="h-3 w-3" /> PREVIEW COURSE</div>
-                      <h3 className="mt-3 font-black text-2xl leading-none">{course.title.slice(0, 20)}</h3>
-                    </div>
+                  <div className="relative">
+                    <CourseArt course={course} className="h-[240px]" />
+                    <div className="absolute bottom-4 left-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 backdrop-blur text-xs font-bold"><Play className="h-3 w-3" /> PREVIEW COURSE</div>
                   </div>
                   <div className="p-6 space-y-5">
                     <div className="flex items-baseline gap-3">
@@ -119,6 +125,8 @@ export default function CourseDetails() {
                       {[
                         `${course.duration} on-demand video`,
                         `${totalLessons} lessons`,
+                        quizCount > 0 ? `${quizCount} quizzes with auto-grading` : 'Quizzes & assessments',
+                        assignmentCount > 0 ? `${assignmentCount} practical assignments` : 'Practical assignments',
                         'Downloadable resources',
                         'Lifetime access',
                         'Certificate of completion',

@@ -1,14 +1,15 @@
 import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { coursesData, enrichCourses } from '../data/courses';
+import { seedExpansionCourses } from '../data/catalog';
 import { 
   getCustomCourses, saveCustomCourses, 
   getEnrollments, saveEnrollments, 
   getPayments, savePayments, 
   getManualPayments, saveManualPayments,
-  getProgressMap, saveProgressMap, 
-  getCertificates, saveCertificates, 
-  generateId, generateCertId, generatePaymentRef,
-  getNotifications, saveNotifications
+    getProgressMap, saveProgressMap,
+  getCertificates, saveCertificates,
+  generateId, generateCertId, generatePaymentRef, generateVerificationCode,
+  getNotifications, saveNotifications, getCompletionRules
 } from '../lib/storage';
 
 const CourseContext = createContext(null);
@@ -21,7 +22,12 @@ export const useCourses = () => {
 export const CourseProvider = ({ children }) => {
   const [courses, setCourses] = useState(() => {
     const custom = getCustomCourses();
-    return custom ? custom : enrichCourses(coursesData);
+    const base = custom ? custom : enrichCourses(coursesData);
+    // Merge seed expansion courses once (skip if id already exists)
+    const ids = new Set(base.map(c => c.id));
+    const merged = [...base, ...seedExpansionCourses.filter(c => !ids.has(c.id))];
+    // Default: published unless explicitly false
+    return merged.map(c => ({ published: true, ...c }));
   });
   const [enrollments, setEnrollments] = useState(() => getEnrollments());
   const [payments, setPayments] = useState(() => getPayments());
@@ -41,7 +47,7 @@ export const CourseProvider = ({ children }) => {
   const getCourseBySlug = (slug) => courses.find(c => c.slug === slug);
   const getCourseById = (id) => courses.find(c => c.id === id);
 
-  const isEnrolled = (userId, courseId) => enrollments.some(e => e.userId === userId && e.courseId === courseId);
+  const isEnrolled = (userId, courseId) => enrollments.some(e => e.userId === userId && e.courseId === courseId && e.status !== 'removed');
 
   // Legacy auto enroll (for backward compat, but new flow uses manual)
   const enrollUser = (userId, courseId, amount) => {
@@ -82,7 +88,10 @@ export const CourseProvider = ({ children }) => {
     receiptData, // base64
     receiptName,
     receiptType,
-    receiptSize
+    receiptSize,
+    couponCode = null,
+    couponDiscount = 0,
+    originalAmount = null
   }) => {
     // Validate not already approved
     const existingApproved = manualPayments.find(p => p.userId === userId && p.courseId === courseId && p.status === 'approved');
@@ -304,7 +313,10 @@ export const CourseProvider = ({ children }) => {
   };
 
   const getUserCertificates = (userId) => certificates.filter(c => c.userId === userId);
-  const verifyCertificate = (certId) => certificates.find(c => c.certificateId === certId);
+  const verifyCertificate = (certId) => {
+    const q = String(certId || '').trim();
+    return certificates.find(c => c.certificateId === q || c.verificationCode === q);
+  };
 
   const getUserNotifications = (userId) => notifications.filter(n => n.userId === userId).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
   const markNotificationRead = (notifId) => {
@@ -331,6 +343,94 @@ export const CourseProvider = ({ children }) => {
   const deleteCourse = (id) => {
     setCourses(prev => prev.filter(c => c.id !== id));
   };
+
+  // ===== ADMIN STUDENT-DASHBOARD CONTROL =====
+  // All sensitive actions should be paired with an audit() call from LMSContext by the caller.
+
+  const grantEnrollment = (userId, courseId, meta = {}) => {
+    if (isEnrolled(userId, courseId)) {
+      // restore if removed
+      setEnrollments(prev => prev.map(e => (e.userId === userId && e.courseId === courseId) ? { ...e, status: 'active', restoredAt: new Date().toISOString(), ...meta } : e));
+      return;
+    }
+    const enrollment = { id: generateId(), userId, courseId, enrolledAt: new Date().toISOString(), status: 'active', ...meta };
+    setEnrollments(prev => [...prev, enrollment]);
+    return enrollment;
+  };
+
+  const setEnrollmentStatus = (userId, courseId, status) => {
+    setEnrollments(prev => prev.map(e => (e.userId === userId && e.courseId === courseId) ? { ...e, status } : e));
+  };
+
+  const resetProgress = (userId, courseId) => {
+    const key = `${userId}_${courseId}`;
+    setProgressMap(prev => ({ ...prev, [key]: { completedLessons: [], progress: 0, lastLessonId: null } }));
+  };
+
+  const adminSetLesson = (userId, courseId, lessonId, complete) => {
+    const key = `${userId}_${courseId}`;
+    const current = progressMap[key] || { completedLessons: [], progress: 0, lastLessonId: null };
+    const course = getCourseById(courseId);
+    const total = course ? course.curriculum.reduce((acc, m) => acc + m.lessons.length, 0) : 1;
+    const completed = complete
+      ? [...new Set([...current.completedLessons, lessonId])]
+      : current.completedLessons.filter(id => id !== lessonId);
+    setProgressMap({ ...progressMap, [key]: { completedLessons: completed, progress: Math.round((completed.length / total) * 100), lastLessonId: lessonId } });
+  };
+
+  const issueCertificateManual = ({ userId, studentName, courseId, courseName, issuedBy }) => {
+    const existing = certificates.find(c => c.userId === userId && c.courseId === courseId && c.status !== 'revoked');
+    if (existing) return existing;
+    const cert = {
+      id: generateId(), certificateId: generateCertId(),
+      verificationCode: `WDTH-${Math.random().toString(36).slice(2, 6).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
+      userId, studentName, courseId, courseName,
+      issueDate: new Date().toISOString(), issuedBy: issuedBy || 'WOLI DAN TECH HUB', status: 'valid', manual: true,
+    };
+    setCertificates(prev => [...prev, cert]);
+    return cert;
+  };
+
+  const revokeCertificate = (certId) => {
+    setCertificates(prev => prev.map(c => (c.id === certId || c.certificateId === certId) ? { ...c, status: 'revoked', revokedAt: new Date().toISOString() } : c));
+  };
+
+  const sendNotificationToUser = (userId, { title, message, type = 'announcement', courseId = null }) => {
+    const notif = { id: generateId(), userId, type, title, message, courseId, createdAt: new Date().toISOString(), read: false };
+    setNotifications(prev => [...prev, notif]);
+    return notif;
+  };
+
+  const broadcastNotification = (userIds, payload) => {
+    const notifs = userIds.map(userId => ({ id: generateId(), userId, type: 'announcement', courseId: null, createdAt: new Date().toISOString(), read: false, ...payload }));
+    setNotifications(prev => [...notifs, ...prev]);
+    return notifs;
+  };
+
+  // Curriculum builder helpers (admin manages content without touching code)
+  const addModule = (courseId, title) => {
+    const mod = { id: `m-${generateId()}`, title, lessons: [] };
+    setCourses(prev => prev.map(c => (c.id === courseId ? { ...c, curriculum: [...(c.curriculum || []), mod] } : c)));
+    return mod;
+  };
+  const updateModule = (courseId, moduleId, updates) => {
+    setCourses(prev => prev.map(c => (c.id === courseId ? { ...c, curriculum: c.curriculum.map(m => (m.id === moduleId ? { ...m, ...updates } : m)) } : c)));
+  };
+  const deleteModule = (courseId, moduleId) => {
+    setCourses(prev => prev.map(c => (c.id === courseId ? { ...c, curriculum: c.curriculum.filter(m => m.id !== moduleId) } : c)));
+  };
+  const addLesson = (courseId, moduleId, lesson) => {
+    const l = { id: `${courseId}-${generateId()}`, type: 'video', duration: '10:00', videoUrl: '', textContent: '', resources: [], ...lesson };
+    setCourses(prev => prev.map(c => (c.id === courseId ? { ...c, curriculum: c.curriculum.map(m => (m.id === moduleId ? { ...m, lessons: [...m.lessons, l] } : m)), lessonsCount: (c.lessonsCount || 0) + 1 } : c)));
+    return l;
+  };
+  const updateLesson = (courseId, moduleId, lessonId, updates) => {
+    setCourses(prev => prev.map(c => (c.id === courseId ? { ...c, curriculum: c.curriculum.map(m => (m.id === moduleId ? { ...m, lessons: m.lessons.map(l => (l.id === lessonId ? { ...l, ...updates } : l)) } : m)) } : c)));
+  };
+  const deleteLesson = (courseId, moduleId, lessonId) => {
+    setCourses(prev => prev.map(c => (c.id === courseId ? { ...c, curriculum: c.curriculum.map(m => (m.id === moduleId ? { ...m, lessons: m.lessons.filter(l => l.id !== lessonId) } : m)), lessonsCount: Math.max(0, (c.lessonsCount || 1) - 1) } : c)));
+  };
+  const setCoursePublished = (courseId, published) => updateCourse(courseId, { published });
 
   const stats = useMemo(() => {
     const totalStudents = new Set([...enrollments.map(e => e.userId), ...manualPayments.map(p => p.userId)]).size;
@@ -406,6 +506,12 @@ export const CourseProvider = ({ children }) => {
       addCourse,
       updateCourse,
       deleteCourse,
+      setCoursePublished,
+      addModule, updateModule, deleteModule,
+      addLesson, updateLesson, deleteLesson,
+      grantEnrollment, setEnrollmentStatus, resetProgress, adminSetLesson,
+      issueCertificateManual, revokeCertificate,
+      sendNotificationToUser, broadcastNotification,
       stats,
       allPayments: payments,
       allManualPayments: manualPayments,

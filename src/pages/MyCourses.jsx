@@ -29,7 +29,7 @@ export default function MyCourses() {
               return (
                 <div key={course.id} className="glass rounded-[20px] p-5">
                   <div className="flex gap-4">
-                    <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center font-black shrink-0">{course.title.slice(0,2)}</div>
+                    <div className="h-20 w-20 rounded-2xl overflow-hidden shrink-0"><CourseArt course={course} className="h-20" /></div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold leading-tight">{course.title}</h3>
                       <div className="text-xs text-white/50 mt-1 flex gap-3"><span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {course.duration}</span><span>{progress.completedLessons.length}/{total} lessons</span></div>

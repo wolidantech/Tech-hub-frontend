@@ -1,11 +1,21 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCourses } from '../context/CourseContext';
+import { useLMS } from '../context/LMSContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Users, BookOpen, DollarSign, Award, TrendingUp, Search, Edit, Trash2, Plus, Save, X, Shield, Lock, LogOut, Settings, Eye, EyeOff, CheckCircle2, XCircle, Clock, FileText, Download, AlertTriangle } from 'lucide-react';
 import { formatNaira } from '../lib/utils';
 import { getUsers } from '../lib/storage';
 import { toast, Toaster } from 'sonner';
+import AdminOverview from './admin/AdminOverview';
+import CourseManager from './admin/CourseManager';
+import StudentControl from './admin/StudentControl';
+import QuizManager from './admin/QuizManager';
+import AssignmentReview from './admin/AssignmentReview';
+import CouponManager from './admin/CouponManager';
+import AIStudio from './admin/AIStudio';
+import NotificationManager from './admin/NotificationManager';
+import AuditLogViewer from './admin/AuditLogViewer';
 
 export default function Admin() {
   const { user, isAdmin, changePassword, adminLogout, adminEmail } = useAuth();
@@ -124,6 +134,7 @@ export default function Admin() {
     }
     try {
       rejectManualPayment(payment.id, rejectReason, user);
+      audit(user, 'payment.reject', 'manual_payment', payment.id, { student: payment.studentName, reason: rejectReason });
       toast.success('Payment rejected');
       setShowRejectModal(null);
       setRejectReason('');
@@ -154,7 +165,7 @@ export default function Admin() {
           </div>
           <div className="flex flex-wrap gap-2 items-center">
             <div className="flex gap-2 flex-wrap">
-              {['overview','courses','students','payments','certificates','settings'].map(t => (
+              {['overview','courses','students','quizzes','assignments','coupons','ai-studio','payments','certificates','notify','audit','settings'].map(t => (
                 <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 rounded-full text-xs font-bold tracking-wide capitalize flex items-center gap-1.5 ${tab===t?'bg-white text-black':'glass text-white/60 hover:text-white'}`}>
                   {t === 'settings' && <Settings className="h-3.5 w-3.5" />}
                   {t === 'payments' && stats.pendingPayments > 0 && <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />}
@@ -180,6 +191,8 @@ export default function Admin() {
               <div className="glass rounded-[20px] p-5"><div className="flex items-center justify-between mb-2"><Award className="h-5 w-5 text-orange-400" /><span className="text-[11px] tracking-widest text-white/40 font-bold">COMPLETED</span></div><div className="font-black text-2xl">{stats.completedCourses}</div><div className="text-xs text-white/40">Courses completed</div></div>
               <div className="glass rounded-[20px] p-5"><div className="flex items-center justify-between mb-2"><Award className="h-5 w-5 text-pink-400" /><span className="text-[11px] tracking-widest text-white/40 font-bold">CERTIFICATES</span></div><div className="font-black text-2xl">{stats.certificatesIssued}</div><div className="text-xs text-white/40">Issued</div></div>
             </div>
+
+            <AdminOverview />
 
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="glass rounded-[20px] p-6">
@@ -216,7 +229,23 @@ export default function Admin() {
           </div>
         )}
 
-        {tab === 'courses' && (
+        {tab === 'courses' && <CourseManager />}
+
+        {tab === 'students' && <StudentControl />}
+
+        {tab === 'quizzes' && <QuizManager />}
+
+        {tab === 'assignments' && <AssignmentReview />}
+
+        {tab === 'coupons' && <CouponManager />}
+
+        {tab === 'ai-studio' && <AIStudio />}
+
+        {tab === 'notify' && <NotificationManager />}
+
+        {tab === 'audit' && <AuditLogViewer />}
+
+        {tab === '__legacy_courses' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="font-bold text-xl">Manage Courses • Prices Editable</h2>
@@ -287,7 +316,7 @@ export default function Admin() {
           </div>
         )}
 
-        {tab === 'students' && (
+        {tab === '__legacy_students' && (
           <div className="space-y-6">
             <div className="flex gap-4 items-center">
               <div className="relative flex-1 max-w-[320px]">

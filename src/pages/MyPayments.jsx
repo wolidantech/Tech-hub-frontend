@@ -1,19 +1,22 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCourses } from '../context/CourseContext';
+import { useLMS } from '../context/LMSContext';
 import { formatNaira } from '../lib/utils';
-import { Clock, CheckCircle2, XCircle, AlertTriangle, Eye, FileText, Download, Calendar, CreditCard } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, AlertTriangle, Eye, FileText, Download, Calendar, CreditCard, Ticket } from 'lucide-react';
 import { useState } from 'react';
 
 export default function MyPayments() {
   const { user } = useAuth();
   const { getUserManualPayments, getUserPaymentSummary, getCourseById } = useCourses();
+  const { redemptions } = useLMS();
   const [selectedReceipt, setSelectedReceipt] = useState(null);
 
   if (!user) return null;
 
   const payments = getUserManualPayments(user.id);
   const summary = getUserPaymentSummary(user.id);
+  const myRedemptions = redemptions.filter((r) => r.userId === user.id);
 
   const getStatusConfig = (status) => {
     switch (status) {
@@ -59,7 +62,31 @@ export default function MyPayments() {
           </div>
         </div>
 
-        {payments.length === 0 ? (
+        {myRedemptions.length > 0 && (
+          <div className="space-y-3 mb-8">
+            <h2 className="font-bold text-lg flex items-center gap-2"><Ticket className="h-5 w-5 text-cyan-300" /> Coupon Enrollments</h2>
+            {myRedemptions.map((r) => {
+              const course = getCourseById(r.courseId);
+              return (
+                <div key={r.id} className="glass rounded-[20px] p-5 flex flex-wrap items-center justify-between gap-4 border border-cyan-500/20 bg-cyan-500/5">
+                  <div className="flex gap-4 items-center">
+                    <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shrink-0"><Ticket className="h-6 w-6" /></div>
+                    <div>
+                      <div className="font-bold">{course?.title || r.courseId}</div>
+                      <div className="text-xs text-white/50 mt-1">Coupon <span className="font-mono text-cyan-300 font-bold">{r.couponCode}</span> • Saved {formatNaira(r.discount)} • {new Date(r.usedAt).toLocaleDateString()}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="px-3 py-1 rounded-full bg-green-500/20 border border-green-500/30 text-green-300 text-[11px] font-bold">COUPON APPROVED</span>
+                    {course && <Link to={`/learn/${course.slug}`} className="px-4 py-2 rounded-full bg-white text-black font-bold text-xs">START LEARNING</Link>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {payments.length === 0 && myRedemptions.length === 0 ? (
           <div className="glass rounded-[24px] p-16 text-center">
             <CreditCard className="h-12 w-12 mx-auto text-white/20 mb-4" />
             <h3 className="font-bold text-lg">No payments yet</h3>
