@@ -1,35 +1,118 @@
-// Supabase adapter (optional, progressive enhancement).
-// If VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY are set, the app can sync with
-// Supabase; otherwise it runs fully on the local store (existing behavior).
-// This keeps the repo deployable with zero config while being backend-ready.
-//
-// Tables/RLS: see supabase/migrations/001_lms_core.sql
+// Supabase client + storage + error surface.
+// The database is the ONLY source of truth. There is no localStorage fallback
+// for domain data: if Supabase is not configured, SetupGate blocks the app
+// with setup instructions instead of running on mock data.
+import { createClient } from '@supabase/supabase-js';
+import { ALLOWED_SUBMISSION_TYPES, MAX_SUBMISSION_BYTES } from './lms';
 
-let client = null;
+const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY || '';
 
-export function isSupabaseEnabled() {
-  return Boolean(import.meta.env?.VITE_SUPABASE_URL && import.meta.env?.VITE_SUPABASE_ANON_KEY);
+export const isSupabaseConfigured = () => Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+
+/** Shared client (null when unconfigured — SetupGate prevents reaching here). */
+export const supabase = isSupabaseConfigured()
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+export function requireSb() {
+  if (!supabase) throw new Error('Backend not configured. The administrator must set up Supabase first.');
+  return supabase;
 }
 
-export async function getSupabase() {
-  if (client) return client;
-  if (!isSupabaseEnabled()) return null;
+// ---------- User-safe errors (never leak DB internals/keys) ----------
+export function friendlyError(err, fallback = 'Something went wrong. Please try again.') {
+  if (!err) return fallback;
+  const msg = String(err.message || '');
+  const code = String(err.code || '');
+  if (import.meta.env?.DEV) console.error('[store]', code, msg, err.details || '', err.hint || '');
+  // SQL RAISE EXCEPTION messages are author-written and safe to display.
+  if (code === 'P0001') return msg || fallback;
+  if (code === 'PGRST116') return 'Not found';
+  if (code === '23505') {
+    if (/review/i.test(msg)) return 'You already reviewed this course';
+    if (/coupon/i.test(msg)) return 'That coupon code already exists';
+    if (/enrollment/i.test(msg)) return 'Already enrolled in this course';
+    return 'This already exists';
+  }
+  if (code === '23503') return 'Related record not found. Please refresh and retry.';
+  if (code === '23514') return 'Invalid value. Please check your input.';
+  if (code === '22P02') return 'Invalid ID. Please refresh and retry.';
+  if (code === '42501' || /permission denied/i.test(msg) || /violates row-level security/i.test(msg)) {
+    return 'You do not have permission to do that.';
+  }
+  if (/jwt expired|invalid jwt|token expired/i.test(msg)) return 'Session expired. Please log in again.';
+  if (/Failed to fetch|NetworkError|network request failed/i.test(msg)) return 'Network error. Check your connection and retry.';
+  if (/Invalid login credentials/i.test(msg)) return 'Invalid email or password';
+  if (/User already registered/i.test(msg)) return 'Email already registered. Try logging in instead.';
+  if (/rate limit|too many requests|over_request_rate_limit/i.test(msg + code)) return 'Too many attempts. Please wait a moment and retry.';
+  if (/password/i.test(msg) && /weak|short|least/i.test(msg)) return 'Password is too weak. Use at least 6 characters.';
+  return fallback;
+}
+
+// ---------- Validated uploads (buckets must exist per migrations 001-003) ----------
+const MB = 1024 * 1024;
+const IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+const BUCKET_RULES = {
+  receipts: { maxBytes: 5 * MB, types: ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'], label: 'JPG, PNG or PDF up to 5MB' },
+  submissions: { maxBytes: MAX_SUBMISSION_BYTES, types: ALLOWED_SUBMISSION_TYPES, label: 'JPG, PNG, PDF, MP4, ZIP, DOCX, PPTX, XLSX up to 25MB' },
+  avatars: { maxBytes: 2 * MB, types: IMAGE_TYPES, label: 'Image up to 2MB' },
+  thumbnails: { maxBytes: 5 * MB, types: IMAGE_TYPES, label: 'Image up to 5MB' },
+  resources: { maxBytes: 25 * MB, types: null, label: 'File up to 25MB' },
+  'lesson-videos': { maxBytes: 500 * MB, types: ['video/mp4', 'video/webm', 'video/quicktime'], label: 'MP4/WEBM video up to 500MB' },
+  certificates: { maxBytes: 5 * MB, types: ['application/pdf', ...IMAGE_TYPES], label: 'PDF or image up to 5MB' },
+};
+
+const safeName = (name) => String(name || 'file').replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 80);
+
+export function validateUpload(bucket, file) {
+  const rules = BUCKET_RULES[bucket];
+  if (!rules) return { ok: false, error: 'Unknown upload target' };
+  if (!file) return { ok: false, error: 'No file selected' };
+  if (rules.types && !rules.types.includes(file.type)) return { ok: false, error: `Unsupported file. Allowed: ${rules.label}` };
+  if (file.size > rules.maxBytes) return { ok: false, error: `File too large. Max: ${rules.label.split('up to ').pop()}` };
+  return { ok: true };
+}
+
+/** Upload a file to private storage. Returns the storage path. */
+export async function uploadFile(bucket, folder, file) {
+  const check = validateUpload(bucket, file);
+  if (!check.ok) throw new Error(check.error);
+  const sb = requireSb();
+  const path = `${folder}/${Date.now()}_${safeName(file.name)}`;
+  const { error } = await sb.storage.from(bucket).upload(path, file, { upsert: false });
+  if (error) throw new Error(friendlyError(error, 'Upload failed. Please try again.'));
+  return path;
+}
+
+/** Signed URL for private buckets. Returns null (never throws) on failure. */
+export async function signedUrl(bucket, path, expiresIn = 3600) {
+  if (!path) return null;
   try {
-    const { createClient } = await import('@supabase/supabase-js');
-    client = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
-    return client;
-  } catch (e) {
-    console.warn('[supabase] @supabase/supabase-js not installed. Run: npm i @supabase/supabase-js');
+    const sb = requireSb();
+    const { data, error } = await sb.storage.from(bucket).createSignedUrl(path, expiresIn);
+    if (error || !data?.signedUrl) return null;
+    return data.signedUrl;
+  } catch {
     return null;
   }
 }
 
-// Signed URL helper for private storage buckets (receipts, submissions, videos).
-// Falls back to the local data-URL value when Supabase is not configured.
-export async function getSignedUrl(bucket, path, localFallback = null, expiresIn = 3600) {
-  const sb = await getSupabase();
-  if (!sb) return localFallback;
-  const { data, error } = await sb.storage.from(bucket).createSignedUrl(path, expiresIn);
-  if (error) return localFallback;
-  return data.signedUrl;
+export function publicUrl(bucket, path) {
+  if (!path) return null;
+  try {
+    return requireSb().storage.from(bucket).getPublicUrl(path).data.publicUrl;
+  } catch {
+    return null;
+  }
+}
+
+// ---------- Realtime (payments, notifications, reviews, announcements) ----------
+export function subscribeChanges({ channel, table, schema = 'public', event = '*', filter = null, callback }) {
+  const sb = requireSb();
+  const ch = sb.channel(channel);
+  const opts = { event, schema, table };
+  if (filter) opts.filter = filter;
+  ch.on('postgres_changes', opts, callback).subscribe();
+  return () => { sb.removeChannel(ch); };
 }

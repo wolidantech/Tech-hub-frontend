@@ -1,12 +1,12 @@
 # Migration verification (PGlite)
 
-Behaviorally verifies `supabase/migrations/001-003` in throwaway Postgres (PGlite):
+Behaviorally verifies `supabase/migrations/001-004` in throwaway Postgres (PGlite):
 
 ```
 cd supabase/verify && npm install && npm run verify
 ```
 
-Expected: `39 passed, 0 failed`.
+Expected: `40 passed, 0 failed`.
 
 Caveat: PGlite runs as superuser so RLS *enforcement* cannot be tested here.
 RLS is verified at policy-definition level (`pg_policies` assertions) and all

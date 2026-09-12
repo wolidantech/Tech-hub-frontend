@@ -9,10 +9,10 @@ import { readFileSync } from 'fs';
 const MIG = '/home/user/Tech-hub-frontend/supabase/migrations';
 const db = new PGlite();
 await db.exec(readFileSync('/home/user/pgcheck/stubs.sql', 'utf8'));
-for (const f of ['001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql']) {
+for (const f of ['001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql', '004_notify_and_counts.sql']) {
   await db.exec(readFileSync(`${MIG}/${f}`, 'utf8'));
 }
-console.log('migrations 001-003 applied clean');
+console.log('migrations 001-004 applied clean');
 
 const ADMIN = '11111111-1111-1111-1111-111111111111';
 const STU = '22222222-2222-2222-2222-222222222222';
@@ -417,6 +417,25 @@ await t('H20 rating sync + discussion lesson FK + view events', async () => {
   await q(`insert into learning_events (user_id, course_id, kind) values ('${STU2}','${COURSE}','course_view')`);
   const v = await one(`select count(*) c from learning_events where user_id='${STU2}' and kind='course_view'`);
   assert(Number(v.c) === 1, 'view event not recorded');
+});
+
+// ---------- H21: 004 free-redeem notification + lessons_count ----------
+await t('H21 free redeem notifies + lessons_count maintained', async () => {
+  await q(`insert into coupons (code, discount_type, discount_value, active) values ('FREETEST','free',100,true)`);
+  await as(STU2);
+  const r = await one(`select redeem_coupon('FREETEST','${COURSE}') r`);
+  assert(r.r.valid === true && r.r.isFree === true, 'free redeem wrong');
+  const nt = await one(`select count(*) c from student_notifications where user_id='${STU2}' and type='coupon_approved'`);
+  assert(Number(nt.c) === 1, 'coupon_approved notification missing');
+  const lc = await one(`select lessons_count from courses where id='${COURSE}'`);
+  assert(lc.lessons_count === 3, 'lessons_count wrong: ' + lc.lessons_count);
+  const mod = await one(`select id from course_modules where course_id='${COURSE}'`);
+  await q(`insert into course_lessons (course_id, module_id, title, position) values ('${COURSE}','${mod.id}','L4',3)`);
+  const lc2 = await one(`select lessons_count from courses where id='${COURSE}'`);
+  assert(lc2.lessons_count === 4, 'lessons_count not synced on insert');
+  await q(`delete from course_lessons where course_id='${COURSE}' and title='L4'`);
+  const lc3 = await one(`select lessons_count from courses where id='${COURSE}'`);
+  assert(lc3.lessons_count === 3, 'lessons_count not synced on delete');
 });
 
 console.log(`\n==== RESULT: ${pass} passed, ${fail} failed ====`);

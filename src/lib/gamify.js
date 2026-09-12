@@ -1,7 +1,9 @@
-// Gamification: XP, badges, streaks, leaderboard — computed from real activity.
-// XP rules: lesson 10 • quiz pass 20 • assignment approved 30 • course complete 100 • review 5
+// Gamification: XP, badges, streaks — computed from real activity.
+// XP rules mirror the server xp_events ledger EXACTLY (see migration 003 §9):
+// lesson 10 • quiz pass 20 • assignment approved 30 • course complete 100 • review 5.
+// Streaks are displayed and earn badges but award no XP (keeps client == ledger).
 
-export const XP_RULES = { lesson: 10, quizPass: 20, assignmentApproved: 30, courseComplete: 100, review: 5, streakDay: 5 };
+export const XP_RULES = { lesson: 10, quizPass: 20, assignmentApproved: 30, courseComplete: 100, review: 5 };
 
 export const BADGES = [
   { id: 'first-course', name: 'First Course', desc: 'Enrolled in your first course', icon: '🎓', check: ({ enrollments }) => enrollments.length >= 1 },
@@ -53,7 +55,7 @@ export function computeGamification({ userId, enrollments, progressMap, courses,
   const myReviews = reviews.filter((r) => r.userId === userId).length;
   const myEvents = learningEvents.filter((e) => e.userId === userId);
   const streak = calcStreak(myEvents);
-  const xp = lessons * XP_RULES.lesson + quizzesPassed * XP_RULES.quizPass + approvedCount * XP_RULES.assignmentApproved + completedCount * XP_RULES.courseComplete + myReviews * XP_RULES.review + Math.min(streak, 30) * XP_RULES.streakDay;
+  const xp = lessons * XP_RULES.lesson + quizzesPassed * XP_RULES.quizPass + approvedCount * XP_RULES.assignmentApproved + completedCount * XP_RULES.courseComplete + myReviews * XP_RULES.review;
 
   const ctx = { enrollments: myEnrollments, lessonsByCategory, quizzesPassed, approvedCount, streak, completedCount, xp };
   const badges = BADGES.filter((b) => { try { return b.check(ctx); } catch { return false; } }).map((b) => b.id);
