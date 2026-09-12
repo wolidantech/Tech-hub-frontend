@@ -1,15 +1,34 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import {
-  getCategories, saveCategories, getQuizzes, saveQuizzes, getQuizQuestions, saveQuizQuestions,
-  getQuizAttempts, saveQuizAttempts, getAssignments, saveAssignments, getSubmissions, saveSubmissions,
-  getCoupons, saveCoupons, getRedemptions, saveRedemptions, getAIJobs, saveAIJobs,
-  getAIContent, saveAIContent, getCompletionRules, saveCompletionRules, getAuditLogs, saveAuditLogs,
-  getAnnouncements, saveAnnouncements, getCourseViews, saveCourseViews, getLearningEvents, saveLearningEvents,
-  generateId, generateVerificationCode, generateCertId,
-} from '../lib/storage';
-import { DEFAULT_CATEGORIES } from '../data/catalog';
-import { validateCoupon, scoreQuizAttempt, AI_CONTENT_STATUSES } from '../lib/lms';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { useAuth } from './AuthContext';
+import { useCourses } from './CourseContext';
+import { subscribeChanges } from '../lib/supabase';
+import { AI_CONTENT_STATUSES } from '../lib/lms';
 import { generate as aiGenerate, getActiveProviderName } from '../lib/ai';
+import {
+  fetchCategories, adminCreateCategory, adminRenameCategory, adminDeleteCategory,
+  fetchQuizzes, fetchQuizQuestionsAdmin, fetchQuizQuestionsRpc, fetchQuizReviewRpc,
+  submitAttemptRpc, fetchMyAttempts, fetchAllAttempts, adminDeleteAttempts,
+  adminCreateQuiz, adminUpdateQuiz, adminDeleteQuiz,
+  adminAddQuestion, adminUpdateQuestion, adminDeleteQuestion,
+  fetchAssignments, fetchMySubmissions, fetchAllSubmissions, submitSubmissionRow,
+  uploadSubmissionFile, reviewSubmissionRow,
+  adminCreateAssignment, adminUpdateAssignment, adminDeleteAssignment,
+  validateCouponRpc, redeemCouponRpc, fetchCoupons, adminCreateCoupon, adminUpdateCoupon,
+  adminDeleteCoupon, fetchRedemptions,
+  fetchAIJobs, createAIJob, updateAIJob, fetchAIContent, createAIContent,
+  updateAIContentRow, deleteAIContentRow,
+  fetchRules, saveRules, logAudit, fetchAuditLogs,
+  fetchAnnouncements, createAnnouncement, deleteAnnouncement,
+  logEvent, fetchMyEvents, fetchAllEvents,
+  fetchPaths, adminSavePath, adminDeletePath,
+  fetchBundles, adminSaveBundle, adminDeleteBundle,
+  fetchCourseReviews, fetchAllReviews, addReviewRow, moderateReview as moderateReviewRow, deleteReview as deleteReviewRow,
+  fetchPosts, createPostRow, adminTogglePin, adminDeletePost,
+  fetchComments, createCommentRow, adminDeleteComment,
+  fetchLiveClasses, adminSaveLive, adminDeleteLive,
+  fetchMyConvos, saveConvoRow, deleteConvoRow,
+  fetchSettings, updateSettings,
+} from '../lib/store';
 
 const LMSContext = createContext(null);
 export const useLMS = () => {
@@ -19,120 +38,203 @@ export const useLMS = () => {
 };
 
 export const LMSProvider = ({ children }) => {
-  const [categories, setCategories] = useState(() => getCategories() || DEFAULT_CATEGORIES);
-  const [quizzes, setQuizzes] = useState(() => getQuizzes());
-  const [quizQuestions, setQuizQuestions] = useState(() => getQuizQuestions());
-  const [quizAttempts, setQuizAttempts] = useState(() => getQuizAttempts());
-  const [assignments, setAssignments] = useState(() => getAssignments());
-  const [submissions, setSubmissions] = useState(() => getSubmissions());
-  const [coupons, setCoupons] = useState(() => getCoupons());
-  const [redemptions, setRedemptions] = useState(() => getRedemptions());
-  const [aiJobs, setAIJobs] = useState(() => getAIJobs());
-  const [aiContent, setAIContent] = useState(() => getAIContent());
-  const [completionRules, setCompletionRules] = useState(() => getCompletionRules());
-  const [auditLogs, setAuditLogs] = useState(() => getAuditLogs());
-  const [announcements, setAnnouncements] = useState(() => getAnnouncements());
-  const [courseViews, setCourseViews] = useState(() => getCourseViews());
-  const [learningEvents, setLearningEvents] = useState(() => getLearningEvents());
-  const [learningPaths, setLearningPaths] = useState(() => getLearningPaths() || DEFAULT_LEARNING_PATHS);
-  const [bundles, setBundles] = useState(() => getBundles());
-  const [reviews, setReviews] = useState(() => getReviews());
-  const [posts, setPosts] = useState(() => getPosts());
-  const [comments, setComments] = useState(() => getComments());
-  const [liveClasses, setLiveClasses] = useState(() => getLiveClasses());
-  const [aiConvos, setAIConvos] = useState(() => getAIConvos());
-  const [siteSettings, setSiteSettingsState] = useState(() => ({ ...DEFAULT_SITE_SETTINGS, ...(getSiteSettings() || {}) }));
+  const { user } = useAuth();
+  const { getCourseBySlug, getCourseById } = useCourses();
+  const isAdmin = user?.role === 'admin';
 
-  useEffect(() => saveCategories(categories), [categories]);
-  useEffect(() => saveQuizzes(quizzes), [quizzes]);
-  useEffect(() => saveQuizQuestions(quizQuestions), [quizQuestions]);
-  useEffect(() => saveQuizAttempts(quizAttempts), [quizAttempts]);
-  useEffect(() => saveAssignments(assignments), [assignments]);
-  useEffect(() => saveSubmissions(submissions), [submissions]);
-  useEffect(() => saveCoupons(coupons), [coupons]);
-  useEffect(() => saveRedemptions(redemptions), [redemptions]);
-  useEffect(() => saveAIJobs(aiJobs), [aiJobs]);
-  useEffect(() => saveAIContent(aiContent), [aiContent]);
-  useEffect(() => saveCompletionRules(completionRules), [completionRules]);
-  useEffect(() => saveAuditLogs(auditLogs.slice(-500)), [auditLogs]);
-  useEffect(() => saveAnnouncements(announcements), [announcements]);
-  useEffect(() => saveCourseViews(courseViews.slice(-2000)), [courseViews]);
-  useEffect(() => saveLearningEvents(learningEvents.slice(-3000)), [learningEvents]);
-  useEffect(() => saveLearningPaths(learningPaths), [learningPaths]);
-  useEffect(() => saveBundles(bundles), [bundles]);
-  useEffect(() => saveReviews(reviews), [reviews]);
-  useEffect(() => savePosts(posts.slice(-1000)), [posts]);
-  useEffect(() => saveComments(comments.slice(-5000)), [comments]);
-  useEffect(() => saveLiveClasses(liveClasses), [liveClasses]);
-  useEffect(() => saveAIConvos(aiConvos.slice(-500)), [aiConvos]);
-  useEffect(() => saveSiteSettings(siteSettings), [siteSettings]);
+  const [categories, setCategories] = useState([]);
+  const [quizzes, setQuizzes] = useState([]);
+  const [quizQuestions, setQuizQuestions] = useState([]);
+  const [quizAttempts, setQuizAttempts] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
+  const [coupons, setCoupons] = useState([]);
+  const [redemptions, setRedemptions] = useState([]);
+  const [aiJobs, setAIJobs] = useState([]);
+  const [aiContent, setAIContent] = useState([]);
+  const [completionRules, setCompletionRules] = useState({});
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [learningEvents, setLearningEvents] = useState([]);
+  const [learningPaths, setLearningPaths] = useState([]);
+  const [bundles, setBundles] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const [comments, setComments] = useState([]);
+  const [liveClasses, setLiveClasses] = useState([]);
+  const [aiConvos, setAIConvos] = useState([]);
+  const [siteSettings, setSiteSettingsState] = useState(null);
+  const [lmsLoading, setLmsLoading] = useState(true);
+
+  // ---------- Public bootstrap ----------
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLmsLoading(true);
+      try {
+        const [cats, anns, paths, bunds, live, settings, rules] = await Promise.all([
+          fetchCategories().catch(() => []),
+          fetchAnnouncements().catch(() => []),
+          fetchPaths().catch(() => []),
+          fetchBundles().catch(() => []),
+          fetchLiveClasses().catch(() => []),
+          fetchSettings().catch(() => null),
+          fetchRules().catch(() => ({})),
+        ]);
+        if (!alive) return;
+        setCategories(cats); setAnnouncements(anns); setLearningPaths(paths);
+        setBundles(bunds); setLiveClasses(live);
+        if (settings) setSiteSettingsState(settings);
+        setCompletionRules(rules);
+      } finally {
+        if (alive) setLmsLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  // ---------- Role-scoped data ----------
+  useEffect(() => {
+    if (!user) {
+      setQuizAttempts([]); setSubmissions([]); setLearningEvents([]);
+      setCoupons([]); setRedemptions([]); setAIJobs([]); setAIContent([]);
+      setAuditLogs([]); setAIConvos([]); setReviews([]); setQuizQuestions([]);
+      setQuizzes([]); setAssignments([]); setPosts([]); setComments([]);
+      return;
+    }
+    let alive = true;
+    (async () => {
+      try {
+        // RLS automatically scopes quizzes/assignments to enrolled courses for students.
+        const [qz, asg] = await Promise.all([fetchQuizzes().catch(() => []), fetchAssignments().catch(() => [])]);
+        if (!alive) return;
+        setQuizzes(qz); setAssignments(asg);
+        if (user.role === 'admin') {
+          const [att, sub, ev, coup, red, jobs, content, logs, revs] = await Promise.all([
+            fetchAllAttempts().catch(() => []), fetchAllSubmissions().catch(() => []),
+            fetchAllEvents().catch(() => []), fetchCoupons().catch(() => []),
+            fetchRedemptions().catch(() => []), fetchAIJobs().catch(() => []),
+            fetchAIContent().catch(() => []), fetchAuditLogs().catch(() => []),
+            fetchAllReviews().catch(() => []),
+          ]);
+          if (!alive) return;
+          setQuizAttempts(att); setSubmissions(sub); setLearningEvents(ev);
+          setCoupons(coup); setRedemptions(red); setAIJobs(jobs); setAIContent(content);
+          setAuditLogs(logs); setReviews(revs);
+        } else {
+          const [att, sub, ev, convos] = await Promise.all([
+            fetchMyAttempts(user.id).catch(() => []), fetchMySubmissions(user.id).catch(() => []),
+            fetchMyEvents(user.id).catch(() => []), fetchMyConvos(user.id).catch(() => []),
+          ]);
+          if (!alive) return;
+          setQuizAttempts(att); setSubmissions(sub); setLearningEvents(ev); setAIConvos(convos);
+        }
+      } catch (err) {
+        console.error('[lms] failed to load:', err.message);
+      }
+    })();
+    return () => { alive = false; };
+  }, [user]);
+
+  // ---------- Realtime: announcements (+ admin review queues) ----------
+  useEffect(() => {
+    if (!user) return undefined;
+    const unsubs = [];
+    try {
+      unsubs.push(subscribeChanges({
+        channel: 'announcements', table: 'announcements',
+        callback: () => { fetchAnnouncements().then(setAnnouncements).catch(() => {}); },
+      }));
+      if (user.role === 'admin') {
+        unsubs.push(subscribeChanges({
+          channel: 'admin-subs', table: 'assignment_submissions',
+          callback: () => { fetchAllSubmissions().then(setSubmissions).catch(() => {}); },
+        }));
+        unsubs.push(subscribeChanges({
+          channel: 'admin-rev', table: 'reviews',
+          callback: () => { fetchAllReviews().then(setReviews).catch(() => {}); },
+        }));
+      }
+    } catch { /* realtime unavailable */ }
+    return () => unsubs.forEach((u) => { try { u(); } catch {} });
+  }, [user]);
 
   // ---------------- Audit ----------------
-  const audit = (actor, action, entityType, entityId, details = {}) => {
-    const entry = { id: generateId(), actorEmail: actor?.email || 'system', actorName: actor?.fullName || 'System', action, entityType, entityId, details, createdAt: new Date().toISOString() };
-    setAuditLogs((prev) => [entry, ...prev].slice(0, 500));
-    return entry;
-  };
+  const audit = useCallback(async (actor, action, entityType, entityId, details = {}) => {
+    await logAudit({
+      actorEmail: actor?.email || 'system', actorName: actor?.fullName || 'System',
+      action, entityType, entityId, details,
+    });
+  }, []);
 
   // ---------------- Categories ----------------
-  const addCategory = (name, actor) => {
-    const n = (name || '').trim();
-    if (!n) throw new Error('Category name required');
-    if (categories.includes(n)) throw new Error('Category already exists');
-    setCategories((p) => [...p, n]);
-    if (actor) audit(actor, 'category.create', 'category', n, {});
+  const addCategory = async (name, actor) => {
+    await adminCreateCategory(name);
+    setCategories((p) => [...p, String(name).trim()]);
+    if (actor) audit(actor, 'category.create', 'category', name, {});
   };
-  const renameCategory = (oldName, newName, actor) => {
+  const renameCategory = async (oldName, newName, actor) => {
+    await adminRenameCategory(oldName, newName);
     setCategories((p) => p.map((c) => (c === oldName ? newName : c)));
     if (actor) audit(actor, 'category.rename', 'category', oldName, { newName });
   };
-  const deleteCategory = (name, actor) => {
+  const deleteCategory = async (name, actor) => {
+    await adminDeleteCategory(name);
     setCategories((p) => p.filter((c) => c !== name));
     if (actor) audit(actor, 'category.delete', 'category', name, {});
   };
 
   // ---------------- Quizzes ----------------
-  const createQuiz = ({ courseId, moduleId = null, lessonId = null, title, description = '', passingScore = 70, allowRetake = true, isFinal = false, status = 'published' }) => {
-    const q = { id: generateId(), courseId, moduleId, lessonId, title, description, passingScore: Number(passingScore), allowRetake, isFinal, status, createdAt: new Date().toISOString() };
+  const createQuiz = async (input) => {
+    const q = await adminCreateQuiz(input);
     setQuizzes((p) => [q, ...p]);
     return q;
   };
-  const updateQuiz = (id, updates) => setQuizzes((p) => p.map((q) => (q.id === id ? { ...q, ...updates } : q)));
-  const deleteQuiz = (id) => {
+  const updateQuiz = async (id, updates) => {
+    const q = await adminUpdateQuiz(id, updates);
+    setQuizzes((p) => p.map((x) => (x.id === id ? q : x)));
+    return q;
+  };
+  const deleteQuiz = async (id) => {
+    await adminDeleteQuiz(id);
     setQuizzes((p) => p.filter((q) => q.id !== id));
     setQuizQuestions((p) => p.filter((q) => q.quizId !== id));
   };
-  const addQuestion = (quizId, { type = 'multiple_choice', question, options = [], correctAnswer = 0, correctAnswers = [], explanation = '' }) => {
-    const qq = { id: generateId(), quizId, type, question, options, correctAnswer, correctAnswers, explanation, createdAt: new Date().toISOString() };
-    setQuizQuestions((p) => [...p, qq]);
-    return qq;
+  const addQuestion = async (quizId, q) => {
+    const created = await adminAddQuestion(quizId, q);
+    setQuizQuestions((p) => [...p, created]);
+    return created;
   };
-  const updateQuestion = (id, updates) => setQuizQuestions((p) => p.map((q) => (q.id === id ? { ...q, ...updates } : q)));
-  const deleteQuestion = (id) => setQuizQuestions((p) => p.filter((q) => q.id !== id));
-  const getQuizWithQuestions = (quizId) => ({ ...quizzes.find((q) => q.id === quizId), questions: quizQuestions.filter((q) => q.quizId === quizId) });
-  const getCourseQuizzes = (courseId) => quizzes.filter((q) => q.courseId === courseId && q.status === 'published');
+  const updateQuestion = async (id, updates) => {
+    const q = await adminUpdateQuestion(id, updates);
+    setQuizQuestions((p) => p.map((x) => (x.id === id ? q : x)));
+    return q;
+  };
+  const deleteQuestion = async (id) => {
+    await adminDeleteQuestion(id);
+    setQuizQuestions((p) => p.filter((q) => q.id !== id));
+  };
+  // Admin: load full questions (with answers) for one quiz into cache.
+  const ensureQuizQuestions = useCallback(async (quizId) => {
+    const rows = await fetchQuizQuestionsAdmin(quizId);
+    setQuizQuestions((prev) => [...prev.filter((q) => q.quizId !== quizId), ...rows]);
+    return rows;
+  }, []);
+  // Student: questions WITHOUT answers (secure RPC). Never exposes answer keys.
+  const fetchQuizForTaker = useCallback(async (quizId) => fetchQuizQuestionsRpc(quizId), []);
+  // Student: questions WITH answers — only after attempting (secure RPC).
+  const fetchQuizReview = useCallback(async (quizId) => fetchQuizReviewRpc(quizId), []);
+  const getCourseQuizzes = useCallback((courseId) =>
+    quizzes.filter((q) => q.courseId === courseId && q.status === 'published'), [quizzes]);
 
-  const submitQuizAttempt = ({ quizId, userId, answers }) => {
-    const quiz = quizzes.find((q) => q.id === quizId);
-    if (!quiz) throw new Error('Quiz not found');
-    const prior = quizAttempts.filter((a) => a.quizId === quizId && a.userId === userId);
-    if (prior.length > 0 && !quiz.allowRetake) throw new Error('Retakes are not allowed for this quiz');
-    if (quiz.attemptLimit && prior.length >= quiz.attemptLimit) throw new Error(`Attempt limit reached (${quiz.attemptLimit}). Contact your instructor.`);
-    const questions = quizQuestions.filter((q) => q.quizId === quizId);
-    const result = scoreQuizAttempt(questions, answers);
-    const attempt = {
-      id: generateId(), quizId, courseId: quiz.courseId, userId, answers,
-      score: result.score, earned: result.earned, total: result.total,
-      passed: result.score >= quiz.passingScore, details: result.details,
-      attemptNo: prior.length + 1, createdAt: new Date().toISOString(),
-    };
+  const submitQuizAttempt = async ({ quizId, userId, answers }) => {
+    const attempt = await submitAttemptRpc(quizId, answers);
     setQuizAttempts((p) => [attempt, ...p]);
-    setLearningEvents((p) => [...p, { id: generateId(), userId, courseId: quiz.courseId, kind: 'quiz_attempt', refId: attempt.id, createdAt: attempt.createdAt }]);
     return attempt;
   };
-  const getUserAttempts = (userId, quizId = null) => quizAttempts.filter((a) => a.userId === userId && (!quizId || a.quizId === quizId));
-  const getUserQuizAverage = (userId, courseId) => {
-    // Best attempt per quiz, averaged
+  const getUserAttempts = useCallback((userId, quizId = null) =>
+    quizAttempts.filter((a) => a.userId === userId && (!quizId || a.quizId === quizId)), [quizAttempts]);
+  const getUserQuizAverage = useCallback((userId, courseId) => {
     const courseQuizIds = quizzes.filter((q) => q.courseId === courseId).map((q) => q.id);
     const best = {};
     quizAttempts.filter((a) => a.userId === userId && courseQuizIds.includes(a.quizId)).forEach((a) => {
@@ -140,95 +242,102 @@ export const LMSProvider = ({ children }) => {
     });
     const vals = Object.values(best);
     return vals.length ? Math.round(vals.reduce((s, v) => s + v, 0) / vals.length) : null;
-  };
-  const resetQuizAttempts = (userId, quizId, actor) => {
+  }, [quizzes, quizAttempts]);
+  const resetQuizAttempts = async (userId, quizId, actor) => {
+    await adminDeleteAttempts(userId, quizId);
     setQuizAttempts((p) => p.filter((a) => !(a.userId === userId && a.quizId === quizId)));
     if (actor) audit(actor, 'quiz.reset_attempts', 'quiz', quizId, { userId });
   };
 
   // ---------------- Assignments ----------------
-  const createAssignment = ({ courseId, moduleId = null, lessonId = null, title, description = '', instructions = '', requiredOutput = '', maxScore = 100, isFinalProject = false, status = 'published', deadline = '', submissionType = 'any' }) => {
-    const a = { id: generateId(), courseId, moduleId, lessonId, title, description, instructions, requiredOutput, maxScore: Number(maxScore), isFinalProject, status, deadline, submissionType, createdAt: new Date().toISOString() };
+  const createAssignment = async (input) => {
+    const a = await adminCreateAssignment(input);
     setAssignments((p) => [a, ...p]);
     return a;
   };
-  const updateAssignment = (id, updates) => setAssignments((p) => p.map((a) => (a.id === id ? { ...a, ...updates } : a)));
-  const deleteAssignment = (id) => setAssignments((p) => p.filter((a) => a.id !== id));
-  const getCourseAssignments = (courseId) => assignments.filter((a) => a.courseId === courseId && a.status === 'published');
+  const updateAssignment = async (id, updates) => {
+    const a = await adminUpdateAssignment(id, updates);
+    setAssignments((p) => p.map((x) => (x.id === id ? a : x)));
+    return a;
+  };
+  const deleteAssignment = async (id) => {
+    await adminDeleteAssignment(id);
+    setAssignments((p) => p.filter((a) => a.id !== id));
+  };
+  const getCourseAssignments = useCallback((courseId) =>
+    assignments.filter((a) => a.courseId === courseId && a.status === 'published'), [assignments]);
 
-  const submitAssignment = ({ assignmentId, userId, studentName, kind = 'file', fileData = null, fileName = '', fileType = '', fileSize = 0, textContent = '', linkUrl = '', note = '' }) => {
+  const submitAssignment = async ({ assignmentId, userId, studentName, kind = 'file', file = null, textContent = '', linkUrl = '', note = '' }) => {
     const asg = assignments.find((a) => a.id === assignmentId);
     if (!asg) throw new Error('Assignment not found');
     if (kind === 'text' && !String(textContent).trim()) throw new Error('Please write your answer before submitting');
     if (kind === 'link' && !/^https?:\/\//i.test(linkUrl)) throw new Error('Please enter a valid link starting with http');
-    if (kind === 'file' && !fileData) throw new Error('Please select a file to upload');
+    if (kind === 'file' && !file) throw new Error('Please select a file to upload');
+    let storagePath = null;
+    let fileName = '';
+    let fileType = '';
+    let fileSize = 0;
+    if (kind === 'file' && file) {
+      storagePath = await uploadSubmissionFile(userId, file);
+      fileName = file.name; fileType = file.type; fileSize = file.size;
+    }
     const late = asg.deadline ? new Date() > new Date(asg.deadline) : false;
-    const sub = {
-      id: generateId(), assignmentId, courseId: asg.courseId, userId, studentName,
-      kind, fileData, fileName, fileType, fileSize, textContent, linkUrl, note, late,
-      status: 'submitted', score: null, feedback: '', reviewedBy: null, reviewedAt: null,
-      submittedAt: new Date().toISOString(),
-    };
+    const sub = await submitSubmissionRow({
+      assignmentId, courseId: asg.courseId, userId, studentName, kind,
+      storagePath, fileName, fileType, fileSize, textContent, linkUrl, note, late,
+    });
+    logEvent({ userId, courseId: asg.courseId, kind: 'assignment_submit', refId: sub.id });
     setSubmissions((p) => [sub, ...p]);
-    setLearningEvents((p) => [...p, { id: generateId(), userId, courseId: asg.courseId, kind: 'assignment_submit', refId: sub.id, createdAt: sub.submittedAt }]);
     return sub;
   };
-  const reviewSubmission = ({ submissionId, status, score = null, feedback = '', actor }) => {
-    if (!['under_review', 'approved', 'needs_revision'].includes(status)) throw new Error('Invalid status');
-    setSubmissions((p) => p.map((s) => (s.id === submissionId ? { ...s, status, score, feedback, reviewedBy: actor?.email, reviewedAt: new Date().toISOString() } : s)));
+
+  const reviewSubmission = async ({ submissionId, status, score = null, feedback = '', actor }) => {
+    const updated = await reviewSubmissionRow(submissionId, { status, score, feedback, reviewedBy: actor?.email || '' });
+    setSubmissions((p) => p.map((s) => (s.id === submissionId ? updated : s)));
     if (actor) audit(actor, `submission.${status}`, 'submission', submissionId, { score });
-    return submissions.find((s) => s.id === submissionId);
+    return updated;
   };
-  const getUserSubmissions = (userId, courseId = null) => submissions.filter((s) => s.userId === userId && (!courseId || s.courseId === courseId));
-  const countApprovedAssignments = (userId, courseId) => submissions.filter((s) => s.userId === userId && s.courseId === courseId && s.status === 'approved').length;
-  const isFinalProjectApproved = (userId, courseId) => {
+
+  const getUserSubmissions = useCallback((userId, courseId = null) =>
+    submissions.filter((s) => s.userId === userId && (!courseId || s.courseId === courseId)), [submissions]);
+  const countApprovedAssignments = useCallback((userId, courseId) =>
+    submissions.filter((s) => s.userId === userId && s.courseId === courseId && s.status === 'approved').length,
+  [submissions]);
+  const isFinalProjectApproved = useCallback((userId, courseId) => {
     const finals = assignments.filter((a) => a.courseId === courseId && a.isFinalProject).map((a) => a.id);
     if (!finals.length) return false;
     return submissions.some((s) => s.userId === userId && finals.includes(s.assignmentId) && s.status === 'approved');
-  };
+  }, [assignments, submissions]);
 
   // ---------------- Coupons ----------------
-  const createCoupon = ({ code, courseId = 'ALL', discountType = 'percentage', discountValue = 10, maxUses = 100, expiresAt = null, minPurchase = 0, active = true, restrictedTo = {}, actor }) => {
-    const c = (code || '').trim().toUpperCase();
-    if (!c) throw new Error('Coupon code required');
-    if (coupons.some((x) => x.code === c)) throw new Error('Coupon code already exists');
-    const coupon = {
-      id: generateId(), code: c, courseId, discountType,
-      discountValue: Number(discountValue), maxUses: maxUses == null ? null : Number(maxUses),
-      usedCount: 0, expiresAt, minPurchase: Number(minPurchase), active,
-      restrictedTo, createdBy: actor?.email || 'admin', createdAt: new Date().toISOString(),
-    };
+  const createCoupon = async (input) => {
+    const actor = input.actor;
+    const coupon = await adminCreateCoupon(input, actor?.email);
     setCoupons((p) => [coupon, ...p]);
-    if (actor) audit(actor, 'coupon.create', 'coupon', coupon.id, { code: c, courseId, discountType, discountValue });
+    if (actor) audit(actor, 'coupon.create', 'coupon', coupon.id, { code: coupon.code });
     return coupon;
   };
-  const updateCoupon = (id, updates, actor) => {
-    setCoupons((p) => p.map((c) => (c.id === id ? { ...c, ...updates } : c)));
+  const updateCoupon = async (id, updates, actor) => {
+    const coupon = await adminUpdateCoupon(id, updates);
+    setCoupons((p) => p.map((c) => (c.id === id ? coupon : c)));
     if (actor) audit(actor, 'coupon.update', 'coupon', id, updates);
+    return coupon;
   };
-  const deleteCoupon = (id, actor) => {
+  const deleteCoupon = async (id, actor) => {
+    await adminDeleteCoupon(id);
     setCoupons((p) => p.filter((c) => c.id !== id));
     if (actor) audit(actor, 'coupon.delete', 'coupon', id, {});
   };
-  const getCouponByCode = (code) => coupons.find((c) => c.code === String(code || '').trim().toUpperCase());
+  const getCouponByCode = useCallback((code) =>
+    coupons.find((c) => c.code === String(code || '').trim().toUpperCase()), [coupons]);
 
-  const validateCouponForUser = (code, { courseId, coursePrice, user }) => {
-    const coupon = getCouponByCode(code);
-    const redemptionCount = redemptions.filter((r) => r.couponId === coupon?.id).length;
-    return { coupon, ...validateCoupon(coupon, { courseId, coursePrice, user, redemptionCount }) };
-  };
+  // Server-side validation (no redemption). Students can call this safely.
+  const validateCouponForUser = useCallback(async (code, { courseId }) =>
+    validateCouponRpc(code, courseId), []);
 
-  const recordRedemption = ({ couponId, userId, courseId, discount, amountDue }) => {
-    const coupon = coupons.find((c) => c.id === couponId);
-    if (!coupon) throw new Error('Coupon not found');
-    const redemption = {
-      id: generateId(), couponId, couponCode: coupon.code, userId, courseId,
-      discount, amountDue, usedAt: new Date().toISOString(),
-    };
-    setRedemptions((p) => [redemption, ...p]);
-    setCoupons((p) => p.map((c) => (c.id === couponId ? { ...c, usedCount: (c.usedCount || 0) + 1 } : c)));
-    return redemption;
-  };
+  // Server-side redemption. FREE coupons instantly enroll (server enrolls + notifies).
+  const recordRedemption = useCallback(async ({ code, couponCode, courseId }) =>
+    redeemCouponRpc(code || couponCode, courseId), []);
 
   const couponStats = useMemo(() => ({
     total: coupons.length,
@@ -239,188 +348,252 @@ export const LMSProvider = ({ children }) => {
 
   // ---------------- AI Content Studio ----------------
   const runAIGeneration = async (kind, input, { actor, targetCourseId = null } = {}) => {
-    const job = { id: generateId(), kind, input, status: 'running', provider: getActiveProviderName(), createdBy: actor?.email, createdAt: new Date().toISOString() };
+    const job = await createAIJob({ kind, input, provider: getActiveProviderName(), createdBy: actor?.email });
     setAIJobs((p) => [job, ...p]);
     try {
       const out = await aiGenerate(kind, input);
-      const content = {
-        id: generateId(), jobId: job.id, kind, input,
+      const content = await createAIContent({
+        jobId: job.id, kind, input,
         title: input.courseName || input.topic || input.title || `${kind} draft`,
-        data: out.data, provider: out.provider,
-        status: 'draft', // DRAFT ONLY — admin review required
-        targetCourseId, createdBy: actor?.email, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-      };
+        data: out.data, provider: out.provider, status: 'draft',
+        targetCourseId, createdBy: actor?.email,
+      });
       setAIContent((p) => [content, ...p]);
-      setAIJobs((p) => p.map((j) => (j.id === job.id ? { ...j, status: 'completed', contentId: content.id } : j)));
+      await updateAIJob(job.id, { status: 'completed' });
+      setAIJobs((p) => p.map((j) => (j.id === job.id ? { ...j, status: 'completed' } : j)));
       if (actor) audit(actor, 'ai.generate', 'ai_content', content.id, { kind, provider: out.provider });
       return content;
     } catch (err) {
+      await updateAIJob(job.id, { status: 'failed', error: err.message }).catch(() => {});
       setAIJobs((p) => p.map((j) => (j.id === job.id ? { ...j, status: 'failed', error: err.message } : j)));
       throw err;
     }
   };
-  const updateAIContent = (id, updates) => setAIContent((p) => p.map((c) => (c.id === id ? { ...c, ...updates, updatedAt: new Date().toISOString() } : c)));
-  const setAIStatus = (id, status, actor) => {
+  const updateAIContent = async (id, updates) => {
+    const c = await updateAIContentRow(id, updates);
+    setAIContent((p) => p.map((x) => (x.id === id ? c : x)));
+    return c;
+  };
+  const setAIStatus = async (id, status, actor) => {
     if (!AI_CONTENT_STATUSES.includes(status)) throw new Error('Invalid status');
-    // Publishing requires prior approval
     const item = aiContent.find((c) => c.id === id);
     if (status === 'published' && item?.status !== 'approved') throw new Error('Content must be APPROVED before publishing');
-    setAIContent((p) => p.map((c) => (c.id === id ? { ...c, status, updatedAt: new Date().toISOString() } : c)));
+    const c = await updateAIContentRow(id, { status });
+    setAIContent((p) => p.map((x) => (x.id === id ? c : x)));
     if (actor) audit(actor, `ai.${status}`, 'ai_content', id, {});
   };
-  const deleteAIContent = (id, actor) => {
+  const deleteAIContent = async (id, actor) => {
+    await deleteAIContentRow(id);
     setAIContent((p) => p.filter((c) => c.id !== id));
     if (actor) audit(actor, 'ai.delete', 'ai_content', id, {});
   };
 
   // ---------------- Completion rules ----------------
-  const setCourseRules = (courseId, rules, actor) => {
+  const setCourseRules = async (courseId, rules, actor) => {
+    await saveRules(courseId, rules);
     setCompletionRules((p) => ({ ...p, [courseId]: { ...(p[courseId] || {}), ...rules } }));
     if (actor) audit(actor, 'completion_rules.update', 'course', courseId, rules);
   };
 
-  // ---------------- Certificates helpers (records live in CourseContext) ----------------
-  const buildCertificateRecord = ({ userId, studentName, courseId, courseName, issuedBy }) => ({
-    id: generateId(),
-    certificateId: generateCertId(),
-    verificationCode: generateVerificationCode(),
-    userId, studentName, courseId, courseName,
-    issueDate: new Date().toISOString(),
-    issuedBy: issuedBy || 'WOLI DAN TECH HUB',
-    status: 'valid',
-  });
-
   // ---------------- Views / events / announcements ----------------
-  const trackView = (userId, courseId) => {
-    setCourseViews((p) => [...p, { id: generateId(), userId: userId || 'anon', courseId, createdAt: new Date().toISOString() }].slice(-2000));
-  };
-  const trackEvent = (userId, courseId, kind, refId = null) => {
-    setLearningEvents((p) => [...p, { id: generateId(), userId, courseId, kind, refId, createdAt: new Date().toISOString() }].slice(-3000));
-  };
-  const sendAnnouncement = ({ title, message, courseId = null, actor }) => {
-    const a = { id: generateId(), title, message, courseId, createdBy: actor?.email, createdAt: new Date().toISOString() };
+  const trackView = useCallback((userId, courseId) => {
+    if (!userId) return;
+    logEvent({ userId, courseId, kind: 'course_view' });
+  }, []);
+  const trackEvent = useCallback((userId, courseId, kind, refId = null) => {
+    if (!userId) return;
+    logEvent({ userId, courseId, kind, refId });
+  }, []);
+  const courseViews = useMemo(() => learningEvents
+    .filter((e) => e.kind === 'course_view')
+    .map((e) => ({ id: e.id, userId: e.userId, courseId: e.courseId, createdAt: e.createdAt })),
+  [learningEvents]);
+
+  const sendAnnouncement = async ({ title, message, courseId = null, actor }) => {
+    const a = await createAnnouncement({ title, message, courseId, createdBy: actor?.email });
     setAnnouncements((p) => [a, ...p]);
     if (actor) audit(actor, 'announcement.send', 'announcement', a.id, { courseId });
     return a;
   };
+  const removeAnnouncement = async (id, actor) => {
+    await deleteAnnouncement(id);
+    setAnnouncements((p) => p.filter((a) => a.id !== id));
+    if (actor) audit(actor, 'announcement.delete', 'announcement', id, {});
+  };
 
   // ---------------- Learning paths ----------------
-  const createPath = (data, actor) => {
-    const p = { id: generateId(), ...data, createdAt: new Date().toISOString() };
+  const resolvePathCourseIds = useCallback((data) => {
+    if (data.courseIds?.length) return data.courseIds;
+    return (data.courseSlugs || []).map((s) => getCourseBySlug(s)?.id || getCourseById(s)?.id).filter(Boolean);
+  }, [getCourseBySlug, getCourseById]);
+
+  const withSlugs = useCallback((p) => ({
+    ...p,
+    courseSlugs: (p.courseIds || []).map((id) => getCourseById(id)?.slug).filter(Boolean),
+  }), [getCourseById]);
+
+  const pathsWithSlugs = useMemo(() => learningPaths.map(withSlugs), [learningPaths, withSlugs]);
+
+  const createPath = async (data, actor) => {
+    const p = withSlugs(await adminSavePath({ ...data, courseIds: resolvePathCourseIds(data) }));
     setLearningPaths((prev) => [...prev, p]);
     if (actor) audit(actor, 'path.create', 'learning_path', p.id, { title: data.title });
     return p;
   };
-  const updatePath = (id, updates, actor) => {
-    setLearningPaths((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+  const updatePath = async (id, updates, actor) => {
+    const patch = { ...updates };
+    if (updates.courseSlugs) patch.courseIds = resolvePathCourseIds(updates);
+    const p = withSlugs(await adminSavePath(patch, id));
+    setLearningPaths((prev) => prev.map((x) => (x.id === id ? { ...x, ...p } : x)));
     if (actor) audit(actor, 'path.update', 'learning_path', id, updates);
+    return p;
   };
-  const deletePath = (id, actor) => {
+  const deletePath = async (id, actor) => {
+    await adminDeletePath(id);
     setLearningPaths((prev) => prev.filter((p) => p.id !== id));
     if (actor) audit(actor, 'path.delete', 'learning_path', id, {});
   };
 
   // ---------------- Bundles ----------------
-  const createBundle = (data, actor) => {
-    const b = { id: generateId(), published: true, ...data, createdAt: new Date().toISOString() };
+  const createBundle = async (data, actor) => {
+    const b = await adminSaveBundle(data);
     setBundles((prev) => [b, ...prev]);
     if (actor) audit(actor, 'bundle.create', 'bundle', b.id, { title: data.title });
     return b;
   };
-  const updateBundle = (id, updates, actor) => {
-    setBundles((prev) => prev.map((b) => (b.id === id ? { ...b, ...updates } : b)));
+  const updateBundle = async (id, updates, actor) => {
+    const b = await adminSaveBundle(updates, id);
+    setBundles((prev) => prev.map((x) => (x.id === id ? { ...x, ...b } : x)));
     if (actor) audit(actor, 'bundle.update', 'bundle', id, updates);
+    return b;
   };
-  const deleteBundle = (id, actor) => {
+  const deleteBundle = async (id, actor) => {
+    await adminDeleteBundle(id);
     setBundles((prev) => prev.filter((b) => b.id !== id));
     if (actor) audit(actor, 'bundle.delete', 'bundle', id, {});
   };
-  const getBundleById = (id) => bundles.find((b) => b.id === id);
+  const getBundleById = useCallback((id) => bundles.find((b) => b.id === id), [bundles]);
 
   // ---------------- Reviews ----------------
-  const addReview = ({ courseId, userId, studentName, rating, text }) => {
-    if (reviews.some((r) => r.courseId === courseId && r.userId === userId)) throw new Error('You already reviewed this course');
-    const r = { id: generateId(), courseId, userId, studentName, rating: Math.max(1, Math.min(5, Number(rating))), text: String(text || '').slice(0, 1000), status: 'published', createdAt: new Date().toISOString() };
+  const ensureCourseReviews = useCallback(async (courseId) => {
+    if (isAdmin) return reviews.filter((r) => r.courseId === courseId);
+    const rows = await fetchCourseReviews(courseId);
+    setReviews((prev) => [...prev.filter((r) => r.courseId !== courseId), ...rows]);
+    return rows;
+  }, [isAdmin, reviews]);
+  const addReview = async ({ courseId, userId, studentName, rating, text }) => {
+    const r = await addReviewRow({ courseId, userId, studentName, rating, text });
     setReviews((prev) => [r, ...prev]);
-    setLearningEvents((p) => [...p, { id: generateId(), userId, courseId, kind: 'review', refId: r.id, createdAt: r.createdAt }]);
     return r;
   };
-  const moderateReview = (id, status, actor) => {
+  const moderateReview = async (id, status, actor) => {
+    await moderateReviewRow(id, status);
     setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
     if (actor) audit(actor, `review.${status}`, 'review', id, {});
   };
-  const deleteReview = (id, actor) => {
+  const deleteReview = async (id, actor) => {
+    await deleteReviewRow(id);
     setReviews((prev) => prev.filter((r) => r.id !== id));
     if (actor) audit(actor, 'review.delete', 'review', id, {});
   };
-  const getCourseReviews = (courseId) => reviews.filter((r) => r.courseId === courseId && r.status === 'published');
-  const getCourseRating = (courseId, fallback = 4.8) => {
-    const rs = getCourseReviews(courseId);
+  const getCourseReviews = useCallback((courseId) =>
+    reviews.filter((r) => r.courseId === courseId && r.status === 'published'), [reviews]);
+  const getCourseRating = useCallback((courseId, fallback = 4.8) => {
+    const rs = reviews.filter((r) => r.courseId === courseId && r.status === 'published');
     if (!rs.length) return fallback;
     return Math.round((rs.reduce((s, r) => s + r.rating, 0) / rs.length) * 10) / 10;
-  };
+  }, [reviews]);
 
   // ---------------- Community ----------------
-  const createPost = ({ courseId, lessonId = null, userId, authorName, title, body }) => {
-    const p = { id: generateId(), courseId, lessonId, userId, authorName, title: String(title || '').slice(0, 140), body: String(body || '').slice(0, 3000), pinned: false, createdAt: new Date().toISOString() };
+  const ensureCoursePosts = useCallback(async (courseId) => {
+    const rows = await fetchPosts(courseId);
+    setPosts((prev) => [...prev.filter((p) => p.courseId !== courseId), ...rows]);
+    return rows;
+  }, []);
+  const ensurePostComments = useCallback(async (postId) => {
+    const rows = await fetchComments(postId);
+    setComments((prev) => [...prev.filter((c) => c.postId !== postId), ...rows]);
+    return rows;
+  }, []);
+  const createPost = async ({ courseId, lessonId = null, userId, authorName, title, body }) => {
+    const p = await createPostRow({ courseId, lessonId, userId, authorName, title, body });
     setPosts((prev) => [p, ...prev]);
     return p;
   };
-  const togglePinPost = (id, actor) => {
+  const togglePinPost = async (id, actor) => {
+    const post = posts.find((p) => p.id === id);
+    await adminTogglePin(id, !(post?.pinned));
     setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, pinned: !p.pinned } : p)));
     if (actor) audit(actor, 'community.pin', 'post', id, {});
   };
-  const deletePost = (id, actor) => {
+  const deletePost = async (id, actor) => {
+    await adminDeletePost(id);
     setPosts((prev) => prev.filter((p) => p.id !== id));
     setComments((prev) => prev.filter((c) => c.postId !== id));
     if (actor) audit(actor, 'community.delete_post', 'post', id, {});
   };
-  const addComment = ({ postId, userId, authorName, body, isAdmin = false }) => {
-    const c = { id: generateId(), postId, userId, authorName, body: String(body || '').slice(0, 2000), isAdmin, createdAt: new Date().toISOString() };
+  const addComment = async ({ postId, userId, authorName, body, isAdmin: admin = false }) => {
+    const c = await createCommentRow({ postId, userId, authorName, body, isAdmin: admin });
     setComments((prev) => [...prev, c]);
     return c;
   };
-  const deleteComment = (id, actor) => {
+  const deleteComment = async (id, actor) => {
+    await adminDeleteComment(id);
     setComments((prev) => prev.filter((c) => c.id !== id));
     if (actor) audit(actor, 'community.delete_comment', 'comment', id, {});
   };
-  const getCoursePosts = (courseId) => posts.filter((p) => p.courseId === courseId).sort((a, b) => (b.pinned - a.pinned) || (new Date(b.createdAt) - new Date(a.createdAt)));
-  const getPostComments = (postId) => comments.filter((c) => c.postId === postId).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const getCoursePosts = useCallback((courseId) =>
+    posts.filter((p) => p.courseId === courseId)
+      .sort((a, b) => (b.pinned - a.pinned) || (new Date(b.createdAt) - new Date(a.createdAt))), [posts]);
+  const getPostComments = useCallback((postId) =>
+    comments.filter((c) => c.postId === postId).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)), [comments]);
 
   // ---------------- Live classes ----------------
-  const createLiveClass = (data, actor) => {
-    const l = { id: generateId(), ...data, createdAt: new Date().toISOString() };
+  const createLiveClass = async (data, actor) => {
+    const l = await adminSaveLive(data);
     setLiveClasses((prev) => [l, ...prev]);
     if (actor) audit(actor, 'live.create', 'live_class', l.id, { title: data.title });
     return l;
   };
-  const updateLiveClass = (id, updates, actor) => {
-    setLiveClasses((prev) => prev.map((l) => (l.id === id ? { ...l, ...updates } : l)));
+  const updateLiveClass = async (id, updates, actor) => {
+    const l = await adminSaveLive(updates, id);
+    setLiveClasses((prev) => prev.map((x) => (x.id === id ? l : x)));
     if (actor) audit(actor, 'live.update', 'live_class', id, updates);
+    return l;
   };
-  const deleteLiveClass = (id, actor) => {
+  const deleteLiveClass = async (id, actor) => {
+    await adminDeleteLive(id);
     setLiveClasses((prev) => prev.filter((l) => l.id !== id));
     if (actor) audit(actor, 'live.delete', 'live_class', id, {});
   };
-  const getUpcomingClasses = (courseIds = null) => liveClasses
+  const getUpcomingClasses = useCallback((courseIds = null) => liveClasses
     .filter((l) => new Date(`${l.date}T${l.time || '00:00'}`) >= new Date(Date.now() - 2 * 3600 * 1000))
     .filter((l) => !courseIds || !l.courseId || courseIds.includes(l.courseId))
-    .sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+    .sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`)), [liveClasses]);
 
   // ---------------- DanTECH AI conversations ----------------
-  const saveConvo = (convo) => {
+  const saveConvo = async (convo) => {
+    const saved = await saveConvoRow(convo);
     setAIConvos((prev) => {
-      const rest = prev.filter((c) => c.id !== convo.id);
-      return [convo, ...rest].slice(0, 500);
+      const rest = prev.filter((c) => c.id !== saved.id);
+      return [saved, ...rest].slice(0, 100);
     });
+    return saved;
   };
-  const getUserConvos = (userId) => aiConvos.filter((c) => c.userId === userId);
-  const deleteConvo = (id) => setAIConvos((prev) => prev.filter((c) => c.id !== id));
+  const getUserConvos = useCallback((userId) => aiConvos.filter((c) => c.userId === userId), [aiConvos]);
+  const deleteConvo = async (id) => {
+    await deleteConvoRow(id);
+    setAIConvos((prev) => prev.filter((c) => c.id !== id));
+  };
 
   // ---------------- Site settings ----------------
-  const updateSiteSettings = (updates, actor) => {
-    setSiteSettingsState((prev) => ({ ...prev, ...updates }));
+  const updateSiteSettings = async (updates, actor) => {
+    const current = siteSettings || {};
+    const prevSocials = { facebook: current.facebook, instagram: current.instagram, twitter: current.twitter, youtube: current.youtube };
+    const next = await updateSettings(updates, prevSocials);
+    setSiteSettingsState(next);
     if (actor) audit(actor, 'settings.update', 'site_settings', 'global', updates);
+    return next;
   };
 
   const adminLMSStats = useMemo(() => ({
@@ -438,24 +611,27 @@ export const LMSProvider = ({ children }) => {
 
   return (
     <LMSContext.Provider value={{
+      lmsLoading,
       categories, addCategory, renameCategory, deleteCategory,
       quizzes, quizQuestions, quizAttempts,
       createQuiz, updateQuiz, deleteQuiz, addQuestion, updateQuestion, deleteQuestion,
-      getQuizWithQuestions, getCourseQuizzes, submitQuizAttempt, getUserAttempts, getUserQuizAverage, resetQuizAttempts,
+      ensureQuizQuestions, fetchQuizForTaker, fetchQuizReview,
+      getCourseQuizzes, submitQuizAttempt, getUserAttempts, getUserQuizAverage, resetQuizAttempts,
       assignments, submissions,
       createAssignment, updateAssignment, deleteAssignment, getCourseAssignments,
       submitAssignment, reviewSubmission, getUserSubmissions, countApprovedAssignments, isFinalProjectApproved,
       coupons, redemptions, createCoupon, updateCoupon, deleteCoupon, getCouponByCode,
       validateCouponForUser, recordRedemption, couponStats,
       aiJobs, aiContent, runAIGeneration, updateAIContent, setAIStatus, deleteAIContent,
-      completionRules, setCourseRules, buildCertificateRecord,
+      completionRules, setCourseRules,
       auditLogs, audit,
-      announcements, sendAnnouncement,
+      announcements, sendAnnouncement, removeAnnouncement,
       courseViews, trackView, learningEvents, trackEvent,
-      learningPaths, createPath, updatePath, deletePath,
+      learningPaths: pathsWithSlugs, createPath, updatePath, deletePath,
       bundles, createBundle, updateBundle, deleteBundle, getBundleById,
-      reviews, addReview, moderateReview, deleteReview, getCourseReviews, getCourseRating,
-      posts, comments, createPost, togglePinPost, deletePost, addComment, deleteComment, getCoursePosts, getPostComments,
+      reviews, addReview, moderateReview, deleteReview, getCourseReviews, getCourseRating, ensureCourseReviews,
+      posts, comments, createPost, togglePinPost, deletePost, addComment, deleteComment,
+      getCoursePosts, getPostComments, ensureCoursePosts, ensurePostComments,
       liveClasses, createLiveClass, updateLiveClass, deleteLiveClass, getUpcomingClasses,
       aiConvos, saveConvo, getUserConvos, deleteConvo,
       siteSettings, updateSiteSettings,

@@ -30,7 +30,11 @@ export default function BundleEnroll() {
   if (!bundle || bundle.published === false) return <div className="p-20 text-center">Bundle not found</div>;
   if (!user) return <div className="p-20 text-center"><Link to="/login" className="btn-primary">LOGIN TO CONTINUE</Link></div>;
 
-  const bank = { bankName: siteSettings.bankName, accountNumber: siteSettings.accountNumber, accountName: siteSettings.accountName };
+  const bank = {
+    bankName: siteSettings?.bankName || 'MONIEPOINT',
+    accountNumber: siteSettings?.accountNumber || '69852663361',
+    accountName: siteSettings?.accountName || 'LUNA ENTRY SERVICES',
+  };
   const bundleCourses = (bundle.courseIds || []).map((cid) => getCourseById(cid)).filter(Boolean);
   const alreadyAll = bundleCourses.length > 0 && bundleCourses.every((c) => isEnrolled(user.id, c.id));
 
@@ -55,21 +59,15 @@ export default function BundleEnroll() {
     if (!form.reference.trim()) { toast.error('Transaction reference is required'); return; }
     setSubmitting(true);
     try {
-      const receiptData = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(receiptFile);
-      });
-      const payment = submitManualPayment({
+      const payment = await submitManualPayment({
         userId: user.id,
-        courseId: `bundle:${bundle.id}`,
+        courseId: null,
         studentName: form.studentName, email: form.email, phone: form.phone,
         amount: form.amount || bundle.price,
         transactionDate: form.transactionDate,
         reference: form.reference,
-        receiptData, receiptName: receiptFile.name, receiptType: receiptFile.type, receiptSize: receiptFile.size,
-        bundleId: bundle.id, bundleTitle: `🎁 ${bundle.title}`, bundleCourseIds: bundle.courseIds,
+        receiptFile,
+        bundleId: bundle.id, bundleCourseIds: bundle.courseIds,
       });
       setSuccess(payment);
       toast.success('Bundle payment submitted! Pending review.');
@@ -80,7 +78,7 @@ export default function BundleEnroll() {
     }
   };
 
-  const existingBundlePayment = getUserManualPayments(user.id).find((p) => p.courseId === `bundle:${bundle.id}` && (p.status === 'pending' || p.status === 'approved'));
+  const existingBundlePayment = getUserManualPayments(user.id).find((p) => p.bundleId === bundle.id && (p.status === 'pending' || p.status === 'approved'));
   if (existingBundlePayment?.status === 'approved' || alreadyAll) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center p-4">

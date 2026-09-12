@@ -1,16 +1,17 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { coursesData, enrichCourses } from '../data/courses';
-import { seedExpansionCourses } from '../data/catalog';
-import { 
-  getCustomCourses, saveCustomCourses, 
-  getEnrollments, saveEnrollments, 
-  getPayments, savePayments, 
-  getManualPayments, saveManualPayments,
-    getProgressMap, saveProgressMap,
-  getCertificates, saveCertificates,
-  generateId, generateCertId, generatePaymentRef, generateVerificationCode,
-  getNotifications, saveNotifications, getCompletionRules
-} from '../lib/storage';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { useAuth } from './AuthContext';
+import { subscribeChanges } from '../lib/supabase';
+import {
+  fetchCourses, fetchCourseDetail, adminCreateCourse, adminUpdateCourse, adminDeleteCourse,
+  adminCreateModule, adminUpdateModule, adminDeleteModule,
+  adminCreateLesson, adminUpdateLesson, adminDeleteLesson,
+  fetchMyEnrollments, fetchAllEnrollments, adminGrantEnrollment, adminSetEnrollmentStatus,
+  submitPaymentRow, fetchMyPayments, fetchAllPayments, approvePaymentRpc, rejectPaymentRpc, uploadReceipt,
+  fetchMyProgress, fetchAllProgress, buildProgressMap, markLessonDb, unmarkLessonDb, resetProgressDb,
+  fetchMyCertificates, fetchAllCertificates, verifyCertificateRpc, issueCertificateRpc, revokeCertificateRpc,
+  fetchMyNotifications, markNotificationRead, markAllNotificationsRead,
+  sendNotificationRow, broadcastNotifications, fetchBundles, fetchAdminStats, logEvent,
+} from '../lib/store';
 
 const CourseContext = createContext(null);
 export const useCourses = () => {
@@ -20,456 +21,394 @@ export const useCourses = () => {
 };
 
 export const CourseProvider = ({ children }) => {
-  const [courses, setCourses] = useState(() => {
-    const custom = getCustomCourses();
-    const base = custom ? custom : enrichCourses(coursesData);
-    // Merge seed expansion courses once (skip if id already exists)
-    const ids = new Set(base.map(c => c.id));
-    const merged = [...base, ...seedExpansionCourses.filter(c => !ids.has(c.id))];
-    // Default: published unless explicitly false
-    return merged.map(c => ({ published: true, ...c }));
-  });
-  const [enrollments, setEnrollments] = useState(() => getEnrollments());
-  const [payments, setPayments] = useState(() => getPayments());
-  const [manualPayments, setManualPayments] = useState(() => getManualPayments());
-  const [progressMap, setProgressMap] = useState(() => getProgressMap());
-  const [certificates, setCertificates] = useState(() => getCertificates());
-  const [notifications, setNotifications] = useState(() => getNotifications());
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
 
-  useEffect(() => { saveCustomCourses(courses); }, [courses]);
-  useEffect(() => { saveEnrollments(enrollments); }, [enrollments]);
-  useEffect(() => { savePayments(payments); }, [payments]);
-  useEffect(() => { saveManualPayments(manualPayments); }, [manualPayments]);
-  useEffect(() => { saveProgressMap(progressMap); }, [progressMap]);
-  useEffect(() => { saveCertificates(certificates); }, [certificates]);
-  useEffect(() => { saveNotifications(notifications); }, [notifications]);
+  const [courses, setCourses] = useState([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [detailIds, setDetailIds] = useState(() => new Set());
+  const [enrollments, setEnrollments] = useState([]);
+  const [manualPayments, setManualPayments] = useState([]);
+  const [progressRows, setProgressRows] = useState([]);
+  const [certificates, setCertificates] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [bundleNames, setBundleNames] = useState({});
+  const [dataLoading, setDataLoading] = useState(false);
+  const [adminStats, setAdminStats] = useState(null);
 
-  const getCourseBySlug = (slug) => courses.find(c => c.slug === slug);
-  const getCourseById = (id) => courses.find(c => c.id === id);
+  // ---------- Catalog (public) ----------
+  const refreshCourses = useCallback(async () => {
+    setCoursesLoading(true);
+    try {
+      const list = await fetchCourses();
+      setCourses((prev) => {
+        // Preserve already-loaded curriculum details across refreshes
+        const details = new Map(prev.filter((c) => c.curriculum).map((c) => [c.id, c.curriculum]));
+        return list.map((c) => (details.has(c.id) ? { ...c, curriculum: details.get(c.id) } : c));
+      });
+      try {
+        const bundles = await fetchBundles();
+        setBundleNames(Object.fromEntries(bundles.map((b) => [b.id, b.title])));
+      } catch { /* non-fatal: bundle names fall back */ }
+    } catch (err) {
+      console.error('[courses] failed to load catalog:', err.message);
+    } finally {
+      setCoursesLoading(false);
+    }
+  }, []);
 
-  const isEnrolled = (userId, courseId) => enrollments.some(e => e.userId === userId && e.courseId === courseId && e.status !== 'removed');
+  useEffect(() => { refreshCourses(); }, [refreshCourses]);
 
-  // Legacy auto enroll (for backward compat, but new flow uses manual)
-  const enrollUser = (userId, courseId, amount) => {
-    if (isEnrolled(userId, courseId)) return;
-    const enrollment = {
-      id: generateId(),
-      userId,
-      courseId,
-      enrolledAt: new Date().toISOString(),
-      status: 'active'
-    };
-    const payment = {
-      id: generateId(),
-      userId,
-      courseId,
-      amount,
-      reference: generatePaymentRef(),
-      status: 'successful',
-      method: 'Paystack',
-      date: new Date().toISOString()
-    };
-    setEnrollments(prev => [...prev, enrollment]);
-    setPayments(prev => [...prev, payment]);
-    return { enrollment, payment };
-  };
+  // Full curriculum + content for one course (cached). Visitors get titles only
+  // for lessons (RLS withholds bodies/videos until enrolled).
+  const ensureCourseDetail = useCallback(async (courseId) => {
+    if (!courseId) return null;
+    let found = null;
+    setCourses((prev) => {
+      found = prev.find((c) => c.id === courseId && c.curriculum);
+      return prev;
+    });
+    if (found) return found;
+    const detail = await fetchCourseDetail(courseId);
+    setCourses((prev) => prev.map((c) => (c.id === courseId ? detail : c)));
+    setDetailIds((prev) => new Set(prev).add(courseId));
+    return detail;
+  }, []);
+
+  // ---------- Per-user / admin data ----------
+  const refreshMine = useCallback(async () => {
+    if (!user) {
+      setEnrollments([]); setManualPayments([]); setProgressRows([]);
+      setCertificates([]); setNotifications([]); setAdminStats(null);
+      return;
+    }
+    setDataLoading(true);
+    try {
+      if (user.role === 'admin') {
+        const [en, pay, prog, certs] = await Promise.all([
+          fetchAllEnrollments(), fetchAllPayments(), fetchAllProgress(), fetchAllCertificates(),
+        ]);
+        setEnrollments(en); setManualPayments(pay); setProgressRows(prog); setCertificates(certs);
+        try { setAdminStats(await fetchAdminStats()); } catch (e) { console.error('[courses] admin stats failed:', e.message); }
+      } else {
+        const [en, pay, prog, certs, notifs] = await Promise.all([
+          fetchMyEnrollments(user.id), fetchMyPayments(user.id), fetchMyProgress(user.id),
+          fetchMyCertificates(user.id), fetchMyNotifications(user.id),
+        ]);
+        setEnrollments(en); setManualPayments(pay); setProgressRows(prog);
+        setCertificates(certs); setNotifications(notifs);
+      }
+    } catch (err) {
+      console.error('[courses] failed to load user data:', err.message);
+    } finally {
+      setDataLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => { refreshMine(); }, [refreshMine]);
+
+  // Preload curriculum details for enrolled courses (Learn, DanTECH, progress %).
+  useEffect(() => {
+    if (!user || user.role === 'admin' || !enrollments.length) return;
+    const ids = [...new Set(enrollments.filter((e) => e.status !== 'removed').map((e) => e.courseId))];
+    ids.forEach((id) => { ensureCourseDetail(id).catch(() => {}); });
+  }, [user, enrollments, ensureCourseDetail]);
+
+  // ---------- Realtime ----------
+  useEffect(() => {
+    if (!user) return undefined;
+    const unsubs = [];
+    try {
+      const mine = `user_id=eq.${user.id}`;
+      unsubs.push(subscribeChanges({
+        channel: `notif-${user.id}`, table: 'student_notifications', filter: mine,
+        callback: () => { fetchMyNotifications(user.id).then(setNotifications).catch(() => {}); },
+      }));
+      unsubs.push(subscribeChanges({
+        channel: `pay-${user.id}`, table: 'manual_payments', filter: isAdmin ? null : mine,
+        callback: () => {
+          (isAdmin ? fetchAllPayments() : fetchMyPayments(user.id)).then(setManualPayments).catch(() => {});
+          (isAdmin ? fetchAllEnrollments() : fetchMyEnrollments(user.id)).then(setEnrollments).catch(() => {});
+        },
+      }));
+      unsubs.push(subscribeChanges({
+        channel: `cert-${user.id}`, table: 'certificate_issues', filter: isAdmin ? null : mine,
+        callback: () => {
+          (isAdmin ? fetchAllCertificates() : fetchMyCertificates(user.id)).then(setCertificates).catch(() => {});
+        },
+      }));
+    } catch { /* realtime unavailable: polling via refresh UI still works */ }
+    return () => unsubs.forEach((u) => { try { u(); } catch {} });
+  }, [user, isAdmin]);
+
+  // ---------- Derived ----------
+  const totalsByCourse = useMemo(() => {
+    const t = {};
+    courses.forEach((c) => {
+      t[c.id] = c.curriculum
+        ? c.curriculum.reduce((a, m) => a + (m.lessons?.length || 0), 0)
+        : (c.lessonsCount || 0);
+    });
+    return t;
+  }, [courses]);
+
+  const progressMap = useMemo(
+    () => buildProgressMap(progressRows, totalsByCourse),
+    [progressRows, totalsByCourse],
+  );
+
+  const paymentsEnriched = useMemo(() => manualPayments.map((p) => {
+    if (p.courseId) {
+      const c = courses.find((x) => x.id === p.courseId);
+      return { ...p, courseName: c?.title || p.courseId };
+    }
+    if (p.bundleId) return { ...p, courseName: bundleNames[p.bundleId] ? `Bundle: ${bundleNames[p.bundleId]}` : `Bundle ${p.bundleId.slice(0, 8)}` };
+    return { ...p, courseName: 'Course' };
+  }), [manualPayments, courses, bundleNames]);
+
+  const getCourseBySlug = useCallback((slug) => courses.find((c) => c.slug === slug), [courses]);
+  const getCourseById = useCallback((id) => courses.find((c) => c.id === id), [courses]);
+  const isEnrolled = useCallback((userId, courseId) =>
+    enrollments.some((e) => e.userId === userId && e.courseId === courseId && e.status !== 'removed'),
+  [enrollments]);
 
   // ===== MANUAL BANK TRANSFER SYSTEM =====
-
-  const submitManualPayment = ({
-    userId,
-    courseId,
-    studentName,
-    email,
-    phone,
-    amount,
-    transactionDate,
-    reference,
-    receiptData, // base64
-    receiptName,
-    receiptType,
-    receiptSize,
-    couponCode = null,
-    couponDiscount = 0,
-    originalAmount = null,
-    bundleId = null,
-    bundleTitle = null,
-    bundleCourseIds = []
+  const submitManualPayment = async ({
+    userId, courseId, studentName, email, phone, amount, transactionDate, reference,
+    receiptFile, receiptName, receiptType, receiptSize,
+    couponCode = null, couponDiscount = 0, originalAmount = null,
+    bundleId = null, bundleCourseIds = [],
   }) => {
-    // Validate not already approved
-    const existingApproved = manualPayments.find(p => p.userId === userId && p.courseId === courseId && p.status === 'approved');
-    if (existingApproved) throw new Error('You already have an approved payment for this course');
-
-    // Check pending exists - allow resubmit if rejected, but block if pending
-    const existingPending = manualPayments.find(p => p.userId === userId && p.courseId === courseId && p.status === 'pending');
-    if (existingPending) throw new Error('You already have a pending payment for this course. Please wait for review.');
-
-    const course = getCourseById(courseId);
-
-    const manualPayment = {
-      id: generateId(),
-      userId,
-      courseId,
-      courseName: bundleTitle || course?.title || courseId,
-      bundleId,
-      bundleCourseIds,
-      studentName,
-      email,
-      phone,
-      amount: Number(amount),
-      transactionDate,
-      reference,
-      receiptData, // base64 string (secure, only admin and owner can view)
-      receiptName,
-      receiptType,
-      receiptSize,
-      status: 'pending', // pending | approved | rejected
-      paymentMethod: 'Manual Bank Transfer',
-      bankDetails: {
-        bankName: 'MONIEPOINT',
-        accountNumber: '69852663361',
-        accountName: 'LUNA ENTRY SERVICES- WOLI DAN TECH HUB'
-      },
-      submittedAt: new Date().toISOString(),
-      approvedBy: null,
-      approvedAt: null,
-      rejectedReason: null,
-      rejectedAt: null,
-      rejectedBy: null
-    };
-
-    setManualPayments(prev => [...prev, manualPayment]);
-
-    // Add notification
-    const notif = {
-      id: generateId(),
-      userId,
-      type: 'payment_submitted',
-      title: 'Payment Submitted for Review',
-      message: `Your payment for ${course?.title} is being reviewed. Status: PENDING REVIEW`,
-      courseId,
-      paymentId: manualPayment.id,
-      createdAt: new Date().toISOString(),
-      read: false
-    };
-    setNotifications(prev => [...prev, notif]);
-
-    return manualPayment;
-  };
-
-  const approveManualPayment = (paymentId, adminUser) => {
-    const payment = manualPayments.find(p => p.id === paymentId);
-    if (!payment) throw new Error('Payment not found');
-    if (payment.status === 'approved') throw new Error('Already approved');
-
-    // Update payment status
-    const updatedPayments = manualPayments.map(p => {
-      if (p.id === paymentId) {
-        return {
-          ...p,
-          status: 'approved',
-          approvedBy: adminUser?.email || adminUser?.fullName || 'Admin',
-          approvedAt: new Date().toISOString()
-        };
-      }
-      return p;
-    });
-    setManualPayments(updatedPayments);
-
-    // Create enrollment(s) if not exists (bundles enroll all included courses)
-    const targetCourseIds = payment.bundleId && payment.bundleCourseIds?.length ? payment.bundleCourseIds : [payment.courseId];
-    const fresh = [];
-    targetCourseIds.forEach((cid) => {
-      const existingEnrollment = enrollments.find(e => e.userId === payment.userId && e.courseId === cid);
-      if (!existingEnrollment && !fresh.some((e) => e.courseId === cid)) {
-        fresh.push({
-          id: generateId(),
-          userId: payment.userId,
-          courseId: cid,
-          enrolledAt: new Date().toISOString(),
-          status: 'active',
-          paymentId: payment.id,
-          bundleId: payment.bundleId || null,
-          approvedBy: adminUser?.email
-        });
-      }
-    });
-    if (fresh.length) setEnrollments((prev) => [...prev, ...fresh]);
-
-    // Notification for student
-    const course = getCourseById(payment.courseId);
-    const notif = {
-      id: generateId(),
-      userId: payment.userId,
-      type: 'payment_approved',
-      title: 'Payment Approved! 🎉',
-      message: `Your payment for ${course?.title || payment.courseName} has been approved. You can now access your course from your Student Dashboard. WOLI DAN TECH HUB - Learn • Build • Grow`,
-      courseId: payment.courseId,
-      paymentId: payment.id,
-      createdAt: new Date().toISOString(),
-      read: false
-    };
-    setNotifications(prev => [...prev, notif]);
-
-    return updatedPayments.find(p => p.id === paymentId);
-  };
-
-  const rejectManualPayment = (paymentId, reason, adminUser) => {
-    const payment = manualPayments.find(p => p.id === paymentId);
-    if (!payment) throw new Error('Payment not found');
-    if (!reason) throw new Error('Rejection reason is required');
-
-    const updatedPayments = manualPayments.map(p => {
-      if (p.id === paymentId) {
-        return {
-          ...p,
-          status: 'rejected',
-          rejectedReason: reason,
-          rejectedBy: adminUser?.email || adminUser?.fullName || 'Admin',
-          rejectedAt: new Date().toISOString()
-        };
-      }
-      return p;
-    });
-    setManualPayments(updatedPayments);
-
-    const course = getCourseById(payment.courseId);
-    const notif = {
-      id: generateId(),
-      userId: payment.userId,
-      type: 'payment_rejected',
-      title: 'Payment Could Not Be Verified',
-      message: `Your payment for ${course?.title || payment.courseName} could not be verified. Reason: ${reason}. Please contact WOLI DAN TECH HUB if you believe this was an error.`,
-      courseId: payment.courseId,
-      paymentId: payment.id,
-      createdAt: new Date().toISOString(),
-      read: false
-    };
-    setNotifications(prev => [...prev, notif]);
-
-    return updatedPayments.find(p => p.id === paymentId);
-  };
-
-  const getUserManualPayments = (userId) => manualPayments.filter(p => p.userId === userId).sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
-  const getManualPaymentByCourse = (userId, courseId) => manualPayments.filter(p => p.userId === userId && p.courseId === courseId).sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0];
-  const getAllManualPayments = () => manualPayments.slice().sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
-  const getPendingManualPayments = () => manualPayments.filter(p => p.status === 'pending');
-
-  const getUserEnrollments = (userId) => enrollments.filter(e => e.userId === userId);
-  const getUserPayments = (userId) => payments.filter(p => p.userId === userId);
-
-  const getProgress = (userId, courseId) => {
-    const key = `${userId}_${courseId}`;
-    return progressMap[key] || { completedLessons: [], progress: 0, lastLessonId: null };
-  };
-
-  const markLessonComplete = (userId, courseId, lessonId) => {
-    // Security: only allow if enrolled
-    if (!isEnrolled(userId, courseId)) throw new Error('Not enrolled');
-
-    const key = `${userId}_${courseId}`;
-    const current = progressMap[key] || { completedLessons: [], progress: 0, lastLessonId: null };
-    if (current.completedLessons.includes(lessonId)) return current;
-
-    const course = getCourseById(courseId);
-    const totalLessons = course.curriculum.reduce((acc, m) => acc + m.lessons.length, 0);
-    const completed = [...current.completedLessons, lessonId];
-    const progress = Math.round((completed.length / totalLessons) * 100);
-
-    const updated = { completedLessons: completed, progress, lastLessonId: lessonId };
-    const newMap = { ...progressMap, [key]: updated };
-    setProgressMap(newMap);
-
-    if (progress === 100) {
-      const existing = certificates.find(c => c.userId === userId && c.courseId === courseId);
-      if (!existing) {
-        const cert = {
-          id: generateId(),
-          certificateId: generateCertId(),
-          userId,
-          courseId,
-          courseName: course.title,
-          studentName: '',
-          issueDate: new Date().toISOString(),
-        };
-        setCertificates(prev => [...prev, cert]);
-
-        const notif = {
-          id: generateId(),
-          userId,
-          type: 'course_completed',
-          title: 'Course Completed! 🎓',
-          message: `Congratulations! You completed ${course.title}. Your certificate is ready.`,
-          courseId,
-          createdAt: new Date().toISOString(),
-          read: false
-        };
-        setNotifications(prev => [...prev, notif]);
-      }
+    if (!receiptFile) throw new Error('Please upload your payment receipt');
+    if (!String(reference || '').trim()) throw new Error('Transaction reference is required');
+    const receiptPath = await uploadReceipt(userId, receiptFile);
+    try {
+      const payment = await submitPaymentRow({
+        userId, courseId: courseId || null, studentName, email, phone, amount,
+        transactionDate, reference: String(reference).trim(), receiptPath,
+        couponCode, couponDiscount, originalAmount, bundleId, bundleCourseIds,
+      });
+      setManualPayments((prev) => [payment, ...prev]);
+      return payment;
+    } catch (err) {
+      // Best-effort orphan cleanup is handled by storage lifecycle; surface the error.
+      throw err;
     }
-
-    return updated;
   };
 
-  const unmarkLesson = (userId, courseId, lessonId) => {
+  const approveManualPayment = async (paymentId) => {
+    await approvePaymentRpc(paymentId);
+    const [pay, en] = await Promise.all([fetchAllPayments(), fetchAllEnrollments()]);
+    setManualPayments(pay);
+    setEnrollments(en);
+    refreshCourses().catch(() => {});
+    return pay.find((p) => p.id === paymentId);
+  };
+
+  const rejectManualPayment = async (paymentId, reason) => {
+    await rejectPaymentRpc(paymentId, reason);
+    const pay = await fetchAllPayments();
+    setManualPayments(pay);
+    return pay.find((p) => p.id === paymentId);
+  };
+
+  const getUserManualPayments = useCallback((userId) =>
+    paymentsEnriched.filter((p) => p.userId === userId)
+      .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt)), [paymentsEnriched]);
+  const getManualPaymentByCourse = useCallback((userId, courseId) =>
+    paymentsEnriched.filter((p) => p.userId === userId && p.courseId === courseId)
+      .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0], [paymentsEnriched]);
+  const getAllManualPayments = useCallback(() =>
+    paymentsEnriched.slice().sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt)), [paymentsEnriched]);
+  const getPendingManualPayments = useCallback(() => paymentsEnriched.filter((p) => p.status === 'pending'), [paymentsEnriched]);
+  const getUserEnrollments = useCallback((userId) => enrollments.filter((e) => e.userId === userId), [enrollments]);
+  const getUserPayments = useCallback((userId) => getUserManualPayments(userId), [getUserManualPayments]);
+
+  const getProgress = useCallback((userId, courseId) =>
+    progressMap[`${userId}_${courseId}`] || { completedLessons: [], progress: 0, lastLessonId: null },
+  [progressMap]);
+
+  const markLessonComplete = async (userId, courseId, lessonId) => {
+    if (!isEnrolled(userId, courseId)) throw new Error('Not enrolled');
     const key = `${userId}_${courseId}`;
     const current = progressMap[key];
-    if (!current) return;
-    const completed = current.completedLessons.filter(id => id !== lessonId);
-    const course = getCourseById(courseId);
-    const total = course.curriculum.reduce((acc, m) => acc + m.lessons.length, 0);
-    const progress = total ? Math.round((completed.length / total) * 100) : 0;
-    setProgressMap({ ...progressMap, [key]: { ...current, completedLessons: completed, progress } });
+    if (current?.completedLessons.includes(lessonId)) return current;
+    await markLessonDb(userId, courseId, lessonId);
+    logEvent({ userId, courseId, kind: 'lesson_complete', refId: lessonId });
+    const completedAt = new Date().toISOString();
+    setProgressRows((prev) => {
+      if (prev.some((r) => r.user_id === userId && r.lesson_id === lessonId)) return prev;
+      return [...prev, { user_id: userId, course_id: courseId, lesson_id: lessonId, completed_at: completedAt }];
+    });
+    // A completion trigger may have issued a certificate — refresh.
+    if (user?.id === userId) fetchMyCertificates(userId).then(setCertificates).catch(() => {});
+    else if (isAdmin) fetchAllCertificates().then(setCertificates).catch(() => {});
+    const total = totalsByCourse[courseId] || 0;
+    const completed = [...(current?.completedLessons || []), lessonId];
+    return { completedLessons: completed, progress: total ? Math.min(100, Math.round((completed.length / total) * 100)) : 0, lastLessonId: lessonId };
   };
 
-  const getUserCertificates = (userId) => certificates.filter(c => c.userId === userId);
-  const verifyCertificate = (certId) => {
-    const q = String(certId || '').trim();
-    return certificates.find(c => c.certificateId === q || c.verificationCode === q);
+  const unmarkLesson = async (userId, courseId, lessonId) => {
+    await unmarkLessonDb(userId, lessonId);
+    setProgressRows((prev) => prev.filter((r) => !(r.user_id === userId && r.lesson_id === lessonId)));
   };
 
-  const getUserNotifications = (userId) => notifications.filter(n => n.userId === userId).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-  const markNotificationRead = (notifId) => {
-    setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
+  const getUserCertificates = useCallback((userId) => certificates.filter((c) => c.userId === userId), [certificates]);
+
+  // Public verification (DB RPC; name is masked server-side).
+  const verifyCertificate = useCallback(async (code) => verifyCertificateRpc(code), []);
+
+  const getUserNotifications = useCallback((userId) =>
+    notifications.filter((n) => n.userId === userId)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), [notifications]);
+
+  const markNotificationRead = async (notifId) => {
+    await markNotificationRead(notifId);
+    setNotifications((prev) => prev.map((n) => (n.id === notifId ? { ...n, read: true } : n)));
+  };
+
+  const markAllNotificationsRead = async (userId) => {
+    await markAllNotificationsRead(userId);
+    setNotifications((prev) => prev.map((n) => (n.userId === userId ? { ...n, read: true } : n)));
   };
 
   // Admin actions
-  const addCourse = (course) => {
-    const newCourse = {
-      ...course,
-      id: course.id || course.slug,
-      slug: course.slug,
-      curriculum: course.curriculum || [
-        { id: 'm1', title: 'Introduction', lessons: [{ id: `${course.id}-l1`, title: 'Welcome', type: 'video', duration: '10:00', videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ' }] }
-      ]
-    };
-    setCourses(prev => [newCourse, ...prev]);
+  const addCourse = async (course) => {
+    const created = await adminCreateCourse(course);
+    setCourses((prev) => [{ ...created, curriculum: course.curriculum || [] }, ...prev]);
+    return created;
   };
 
-  const updateCourse = (id, updates) => {
-    setCourses(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+  const updateCourse = async (id, updates) => {
+    const updated = await adminUpdateCourse(id, updates);
+    setCourses((prev) => prev.map((c) => (c.id === id ? { ...c, ...updated, curriculum: c.curriculum } : c)));
+    return updated;
   };
 
-  const deleteCourse = (id) => {
-    setCourses(prev => prev.filter(c => c.id !== id));
+  const deleteCourse = async (id) => {
+    await adminDeleteCourse(id);
+    setCourses((prev) => prev.filter((c) => c.id !== id));
   };
 
-  // ===== ADMIN STUDENT-DASHBOARD CONTROL =====
-  // All sensitive actions should be paired with an audit() call from LMSContext by the caller.
-
-  const grantEnrollment = (userId, courseId, meta = {}) => {
-    if (isEnrolled(userId, courseId)) {
-      // restore if removed
-      setEnrollments(prev => prev.map(e => (e.userId === userId && e.courseId === courseId) ? { ...e, status: 'active', restoredAt: new Date().toISOString(), ...meta } : e));
-      return;
-    }
-    const enrollment = { id: generateId(), userId, courseId, enrolledAt: new Date().toISOString(), status: 'active', ...meta };
-    setEnrollments(prev => [...prev, enrollment]);
-    return enrollment;
+  const refreshDetail = async (courseId) => {
+    const detail = await fetchCourseDetail(courseId);
+    setCourses((prev) => prev.map((c) => (c.id === courseId ? detail : c)));
+    return detail;
   };
 
-  const setEnrollmentStatus = (userId, courseId, status) => {
-    setEnrollments(prev => prev.map(e => (e.userId === userId && e.courseId === courseId) ? { ...e, status } : e));
-  };
-
-  const resetProgress = (userId, courseId) => {
-    const key = `${userId}_${courseId}`;
-    setProgressMap(prev => ({ ...prev, [key]: { completedLessons: [], progress: 0, lastLessonId: null } }));
-  };
-
-  const adminSetLesson = (userId, courseId, lessonId, complete) => {
-    const key = `${userId}_${courseId}`;
-    const current = progressMap[key] || { completedLessons: [], progress: 0, lastLessonId: null };
-    const course = getCourseById(courseId);
-    const total = course ? course.curriculum.reduce((acc, m) => acc + m.lessons.length, 0) : 1;
-    const completed = complete
-      ? [...new Set([...current.completedLessons, lessonId])]
-      : current.completedLessons.filter(id => id !== lessonId);
-    setProgressMap({ ...progressMap, [key]: { completedLessons: completed, progress: Math.round((completed.length / total) * 100), lastLessonId: lessonId } });
-  };
-
-  const issueCertificateManual = ({ userId, studentName, courseId, courseName, issuedBy }) => {
-    const existing = certificates.find(c => c.userId === userId && c.courseId === courseId && c.status !== 'revoked');
-    if (existing) return existing;
-    const cert = {
-      id: generateId(), certificateId: generateCertId(),
-      verificationCode: `WDTH-${Math.random().toString(36).slice(2, 6).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
-      userId, studentName, courseId, courseName,
-      issueDate: new Date().toISOString(), issuedBy: issuedBy || 'WOLI DAN TECH HUB', status: 'valid', manual: true,
-    };
-    setCertificates(prev => [...prev, cert]);
-    return cert;
-  };
-
-  const revokeCertificate = (certId) => {
-    setCertificates(prev => prev.map(c => (c.id === certId || c.certificateId === certId) ? { ...c, status: 'revoked', revokedAt: new Date().toISOString() } : c));
-  };
-
-  const sendNotificationToUser = (userId, { title, message, type = 'announcement', courseId = null }) => {
-    const notif = { id: generateId(), userId, type, title, message, courseId, createdAt: new Date().toISOString(), read: false };
-    setNotifications(prev => [...prev, notif]);
-    return notif;
-  };
-
-  const broadcastNotification = (userIds, payload) => {
-    const notifs = userIds.map(userId => ({ id: generateId(), userId, type: 'announcement', courseId: null, createdAt: new Date().toISOString(), read: false, ...payload }));
-    setNotifications(prev => [...notifs, ...prev]);
-    return notifs;
-  };
-
-  // Curriculum builder helpers (admin manages content without touching code)
-  const addModule = (courseId, title) => {
-    const mod = { id: `m-${generateId()}`, title, lessons: [] };
-    setCourses(prev => prev.map(c => (c.id === courseId ? { ...c, curriculum: [...(c.curriculum || []), mod] } : c)));
+  const addModule = async (courseId, title) => {
+    const mod = await adminCreateModule(courseId, title);
+    await refreshDetail(courseId);
     return mod;
   };
-  const updateModule = (courseId, moduleId, updates) => {
-    setCourses(prev => prev.map(c => (c.id === courseId ? { ...c, curriculum: c.curriculum.map(m => (m.id === moduleId ? { ...m, ...updates } : m)) } : c)));
+  const updateModule = async (courseId, moduleId, updates) => {
+    await adminUpdateModule(moduleId, updates);
+    await refreshDetail(courseId);
   };
-  const deleteModule = (courseId, moduleId) => {
-    setCourses(prev => prev.map(c => (c.id === courseId ? { ...c, curriculum: c.curriculum.filter(m => m.id !== moduleId) } : c)));
+  const deleteModule = async (courseId, moduleId) => {
+    await adminDeleteModule(moduleId);
+    await refreshDetail(courseId);
   };
-  const addLesson = (courseId, moduleId, lesson) => {
-    const l = { id: `${courseId}-${generateId()}`, type: 'video', duration: '10:00', videoUrl: '', textContent: '', resources: [], ...lesson };
-    setCourses(prev => prev.map(c => (c.id === courseId ? { ...c, curriculum: c.curriculum.map(m => (m.id === moduleId ? { ...m, lessons: [...m.lessons, l] } : m)), lessonsCount: (c.lessonsCount || 0) + 1 } : c)));
+  const addLesson = async (courseId, moduleId, lesson) => {
+    const l = await adminCreateLesson(courseId, moduleId, lesson);
+    await refreshDetail(courseId);
     return l;
   };
-  const updateLesson = (courseId, moduleId, lessonId, updates) => {
-    setCourses(prev => prev.map(c => (c.id === courseId ? { ...c, curriculum: c.curriculum.map(m => (m.id === moduleId ? { ...m, lessons: m.lessons.map(l => (l.id === lessonId ? { ...l, ...updates } : l)) } : m)) } : c)));
+  const updateLesson = async (courseId, moduleId, lessonId, updates) => {
+    await adminUpdateLesson(lessonId, updates);
+    await refreshDetail(courseId);
   };
-  const deleteLesson = (courseId, moduleId, lessonId) => {
-    setCourses(prev => prev.map(c => (c.id === courseId ? { ...c, curriculum: c.curriculum.map(m => (m.id === moduleId ? { ...m, lessons: m.lessons.filter(l => l.id !== lessonId) } : m)), lessonsCount: Math.max(0, (c.lessonsCount || 1) - 1) } : c)));
+  const deleteLesson = async (courseId, moduleId, lessonId) => {
+    await adminDeleteLesson(lessonId);
+    await refreshDetail(courseId);
   };
   const setCoursePublished = (courseId, published) => updateCourse(courseId, { published });
 
+  // ===== ADMIN STUDENT-DASHBOARD CONTROL =====
+  const grantEnrollment = async (userId, courseId, meta = {}) => {
+    const enrollment = await adminGrantEnrollment(userId, courseId, meta);
+    setEnrollments((prev) => {
+      const i = prev.findIndex((e) => e.userId === userId && e.courseId === courseId);
+      if (i === -1) return [...prev, enrollment];
+      const next = prev.slice();
+      next[i] = enrollment;
+      return next;
+    });
+    return enrollment;
+  };
+
+  const setEnrollmentStatus = async (userId, courseId, status) => {
+    await adminSetEnrollmentStatus(userId, courseId, status);
+    setEnrollments((prev) => prev.map((e) =>
+      (e.userId === userId && e.courseId === courseId ? { ...e, status } : e)));
+  };
+
+  const resetProgress = async (userId, courseId) => {
+    await resetProgressDb(userId, courseId);
+    setProgressRows((prev) => prev.filter((r) => !(r.user_id === userId && r.course_id === courseId)));
+  };
+
+  const adminSetLesson = async (userId, courseId, lessonId, complete) => {
+    if (complete) {
+      await markLessonDb(userId, courseId, lessonId);
+      setProgressRows((prev) => {
+        if (prev.some((r) => r.user_id === userId && r.lesson_id === lessonId)) return prev;
+        return [...prev, { user_id: userId, course_id: courseId, lesson_id: lessonId, completed_at: new Date().toISOString() }];
+      });
+    } else {
+      await unmarkLessonDb(userId, lessonId);
+      setProgressRows((prev) => prev.filter((r) => !(r.user_id === userId && r.lesson_id === lessonId)));
+    }
+  };
+
+  const issueCertificateManual = async ({ userId, courseId }) => {
+    const res = await issueCertificateRpc(userId, courseId);
+    const certs = isAdmin ? await fetchAllCertificates() : await fetchMyCertificates(userId);
+    setCertificates(certs);
+    return certs.find((c) => c.certificateId === res.certificateId) || res;
+  };
+
+  const revokeCertificate = async (certId) => {
+    await revokeCertificateRpc(certId);
+    setCertificates((prev) => prev.map((c) =>
+      (c.id === certId || c.certificateId === certId)
+        ? { ...c, status: 'revoked', revokedAt: new Date().toISOString() } : c));
+  };
+
+  const sendNotificationToUser = async (userId, { title, message, type = 'announcement', courseId = null }) =>
+    sendNotificationRow({ userId, title, message, type, courseId });
+
+  const broadcastNotification = async (userIds, payload) =>
+    broadcastNotifications(userIds, payload);
+
   const stats = useMemo(() => {
-    const totalStudents = new Set([...enrollments.map(e => e.userId), ...manualPayments.map(p => p.userId)]).size;
-    const approvedPayments = manualPayments.filter(p => p.status === 'approved');
-    const pendingPayments = manualPayments.filter(p => p.status === 'pending');
-    const rejectedPayments = manualPayments.filter(p => p.status === 'rejected');
-    const totalRevenue = approvedPayments.reduce((sum, p) => sum + p.amount, 0) + payments.filter(p => p.status === 'successful').reduce((sum, p) => sum + p.amount, 0);
-    const completed = Object.values(progressMap).filter(p => p.progress === 100).length;
+    const totalStudents = new Set([...enrollments.map((e) => e.userId), ...manualPayments.map((p) => p.userId)]).size;
+    const approvedPayments = manualPayments.filter((p) => p.status === 'approved');
+    const pendingPayments = manualPayments.filter((p) => p.status === 'pending');
+    const rejectedPayments = manualPayments.filter((p) => p.status === 'rejected');
+    const totalRevenue = approvedPayments.reduce((sum, p) => sum + p.amount, 0);
+    const completed = Object.values(progressMap).filter((p) => p.progress === 100).length;
     return {
       totalStudents,
       totalCourses: courses.length,
       totalEnrollments: enrollments.length,
       totalRevenue,
-      approvedRevenue: approvedPayments.reduce((sum, p) => sum + p.amount, 0),
+      approvedRevenue: totalRevenue,
       pendingAmount: pendingPayments.reduce((sum, p) => sum + p.amount, 0),
       rejectedAmount: rejectedPayments.reduce((sum, p) => sum + p.amount, 0),
       approvedPayments: approvedPayments.length,
       pendingPayments: pendingPayments.length,
       rejectedPayments: rejectedPayments.length,
       completedCourses: completed,
-      certificatesIssued: certificates.length
+      certificatesIssued: certificates.filter((c) => c.status !== 'revoked').length,
     };
-  }, [enrollments, courses, payments, manualPayments, progressMap, certificates]);
+  }, [enrollments, courses, manualPayments, progressMap, certificates]);
 
-  const getUserPaymentSummary = (userId) => {
-    const userManual = manualPayments.filter(p => p.userId === userId);
-    const approved = userManual.filter(p => p.status === 'approved');
-    const pending = userManual.filter(p => p.status === 'pending');
-    const rejected = userManual.filter(p => p.status === 'rejected');
+  const getUserPaymentSummary = useCallback((userId) => {
+    const userManual = manualPayments.filter((p) => p.userId === userId);
+    const approved = userManual.filter((p) => p.status === 'approved');
+    const pending = userManual.filter((p) => p.status === 'pending');
+    const rejected = userManual.filter((p) => p.status === 'rejected');
     return {
       totalPaid: approved.reduce((sum, p) => sum + p.amount, 0),
       pendingAmount: pending.reduce((sum, p) => sum + p.amount, 0),
@@ -478,23 +417,27 @@ export const CourseProvider = ({ children }) => {
       totalPayments: userManual.length,
       approvedCount: approved.length,
       pendingCount: pending.length,
-      rejectedCount: rejected.length
+      rejectedCount: rejected.length,
     };
-  };
+  }, [manualPayments]);
 
   return (
     <CourseContext.Provider value={{
       courses,
+      coursesLoading,
+      dataLoading,
+      ensureCourseDetail,
+      refreshCourses,
+      refreshMine,
       enrollments,
-      payments,
-      manualPayments,
+      payments: [],
+      manualPayments: paymentsEnriched,
       certificates,
       progressMap,
       notifications,
       getCourseBySlug,
       getCourseById,
       isEnrolled,
-      enrollUser,
       // Manual payment system
       submitManualPayment,
       approveManualPayment,
@@ -506,6 +449,7 @@ export const CourseProvider = ({ children }) => {
       getUserPaymentSummary,
       getUserNotifications,
       markNotificationRead,
+      markAllNotificationsRead,
       getUserEnrollments,
       getUserPayments,
       getProgress,
@@ -523,10 +467,11 @@ export const CourseProvider = ({ children }) => {
       issueCertificateManual, revokeCertificate,
       sendNotificationToUser, broadcastNotification,
       stats,
-      allPayments: payments,
-      allManualPayments: manualPayments,
+      adminStats,
+      allPayments: [],
+      allManualPayments: paymentsEnriched,
       allEnrollments: enrollments,
-      allCertificates: certificates
+      allCertificates: certificates,
     }}>
       {children}
     </CourseContext.Provider>

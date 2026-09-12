@@ -1,6 +1,9 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { getUsers, saveUsers, getCurrentUser, setCurrentUser, clearCurrentUser, generateId } from '../lib/storage';
-import { hashPassword, verifyAdminPassword, ADMIN_EMAIL, ADMIN_PASSWORD_HASH, ADMIN_SESSION_KEY, createAdminSession, getAdminSession, clearAdminSession } from '../lib/security';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { requireSb, friendlyError } from '../lib/supabase';
+import {
+  fetchMyProfile, fetchProfiles, updateProfileRow, adminSetBanned as banRow,
+  adminSetRole as roleRow, touchLastLogin, uploadAvatar, fetchSettings,
+} from '../lib/store';
 
 const AuthContext = createContext(null);
 
@@ -10,272 +13,222 @@ export const useAuth = () => {
   return ctx;
 };
 
+const BANNED_MSG = 'This account has been suspended. Contact support on WhatsApp 08159610509.';
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [students, setStudents] = useState([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
 
-  useEffect(() => {
-    const init = async () => {
-      const saved = getCurrentUser();
-      if (saved) setUser(saved);
-
-      // Ensure secure admin account exists - wolidantech@gmail.com
-      const users = getUsers();
-      let needsSave = false;
-
-      // Remove old admin if exists
-      const oldAdminIndex = users.findIndex(u => u.email === 'admin@wolidantech.com');
-      if (oldAdminIndex !== -1) {
-        users.splice(oldAdminIndex, 1);
-        needsSave = true;
-      }
-
-      // Ensure primary admin exists with hashed password (no plain text)
-      const existingAdmin = users.find(u => u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
-      if (!existingAdmin) {
-        const admin = {
-          id: 'admin-secure-001',
-          fullName: 'Woli Dan Admin',
-          email: ADMIN_EMAIL,
-          phone: '08159610509',
-          // Store only hash, never plain password
-          passwordHash: ADMIN_PASSWORD_HASH,
-          password: undefined, // Ensure no plain password
-          role: 'admin',
-          createdAt: new Date().toISOString(),
-          avatar: null,
-          isSecureAdmin: true
-        };
-        users.push(admin);
-        needsSave = true;
-      } else {
-        // Migrate existing admin to secure hash if needed
-        if (!existingAdmin.passwordHash) {
-          existingAdmin.passwordHash = ADMIN_PASSWORD_HASH;
-          delete existingAdmin.password;
-          needsSave = true;
-        }
-        if (existingAdmin.email !== ADMIN_EMAIL) {
-          existingAdmin.email = ADMIN_EMAIL;
-          needsSave = true;
-        }
-      }
-
-      if (needsSave) {
-        saveUsers(users);
-      }
-
-      setLoading(false);
-    };
-    init();
+  const loadProfile = useCallback(async (authUserId) => {
+    const profile = await fetchMyProfile(authUserId);
+    if (!profile) {
+      await requireSb().auth.signOut();
+      throw new Error('Account setup is incomplete. Please contact support.');
+    }
+    if (profile.banned) {
+      await requireSb().auth.signOut();
+      throw new Error(BANNED_MSG);
+    }
+    setUser(profile);
+    return profile;
   }, []);
 
-  const register = async ({ fullName, email, phone, password }) => {
-    const users = getUsers();
-    if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
-      throw new Error('Email already registered');
+  const refreshStudents = useCallback(async () => {
+    setStudentsLoading(true);
+    try {
+      setStudents(await fetchProfiles());
+    } catch (err) {
+      console.error('[auth] failed to load students:', err.message);
+    } finally {
+      setStudentsLoading(false);
     }
-    const passwordHash = await hashPassword(password);
-    const newUser = {
-      id: generateId(),
-      fullName,
-      email,
-      phone,
-      passwordHash, // Store only hash
-      role: 'student',
-      createdAt: new Date().toISOString(),
-      lastLoginAt: new Date().toISOString(),
-      avatar: null,
-      onboarded: false
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    const init = async () => {
+      try {
+        const sb = requireSb();
+        const { data } = await sb.auth.getSession();
+        if (data?.session?.user && alive) {
+          try {
+            await loadProfile(data.session.user.id);
+          } catch (err) {
+            console.error('[auth] session restore failed:', err.message);
+            if (alive) setUser(null);
+          }
+        }
+      } catch (err) {
+        console.error('[auth] init failed:', err.message);
+      } finally {
+        if (alive) setLoading(false);
+      }
     };
-    saveUsers([...users, newUser]);
-    const sessionUser = { ...newUser, passwordHash: undefined };
-    setUser(newUser);
-    setCurrentUser(newUser);
-    return newUser;
+    init();
+    let sub = null;
+    try {
+      sub = requireSb().auth.onAuthStateChange(async (event, session) => {
+        if (!alive) return;
+        try {
+          if (event === 'SIGNED_OUT' || !session?.user) {
+            setUser(null);
+          } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+            await loadProfile(session.user.id);
+          }
+        } catch (err) {
+          console.error('[auth] state change failed:', err.message);
+          setUser(null);
+        }
+      });
+    } catch { /* unconfigured: SetupGate handles */ }
+    return () => { alive = false; sub?.data?.subscription?.unsubscribe(); };
+  }, [loadProfile]);
+
+  // Load the student roster for admins (drives StudentControl, broadcasts, etc.)
+  useEffect(() => {
+    if (user?.role === 'admin') refreshStudents();
+    else setStudents([]);
+  }, [user?.role, refreshStudents]);
+
+  const register = async ({ fullName, email, phone, password }) => {
+    const settings = await fetchSettings().catch(() => null);
+    if (settings && settings.allowRegistration === false) {
+      throw new Error('Registration is currently closed. Please check back later.');
+    }
+    const sb = requireSb();
+    const { data, error } = await sb.auth.signUp({
+      email: String(email || '').trim(),
+      password,
+      options: { data: { full_name: fullName, phone: phone || '' } },
+    });
+    if (error) throw new Error(friendlyError(error, 'Registration failed. Please try again.'));
+    // If email confirmation is ON, there is no session yet — user must confirm first.
+    if (!data.session) {
+      return { pendingConfirmation: true, email };
+    }
+    const profile = await loadProfile(data.user.id);
+    touchLastLogin(profile.id);
+    return profile;
   };
 
   const login = async (email, password) => {
-    const users = getUsers();
-    const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (!found) throw new Error('Invalid email or password');
-    if (found.banned) throw new Error('This account has been suspended. Contact support on WhatsApp 08159610509.');
-
-    // Admin must use secure admin login route
-    if (found.role === 'admin' && email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-      const isValid = await verifyAdminPassword(password);
-      if (!isValid) throw new Error('Invalid email or password');
-      // Create secure admin session
-      createAdminSession();
-      setUser(found);
-      setCurrentUser(found);
-      return found;
-    }
-
-    // For students - verify hash
-    try {
-      const inputHash = await hashPassword(password);
-      // Check both hashed and legacy plain for migration
-      const isValid = found.passwordHash ? (inputHash === found.passwordHash || password === found.password) : (found.password === password);
-      if (!isValid) throw new Error('Invalid email or password');
-      
-      // Migrate to hash if needed
-      if (!found.passwordHash) {
-        found.passwordHash = inputHash;
-        delete found.password;
-        saveUsers(users);
-      }
-    } catch {
-      // Fallback for legacy users
-      if (found.password !== password && found.passwordHash !== password) {
-        throw new Error('Invalid email or password');
-      }
-    }
-
-    found.lastLoginAt = new Date().toISOString();
-    saveUsers(users);
-    setUser({ ...found });
-    setCurrentUser({ ...found });
-    return found;
+    const sb = requireSb();
+    const { data, error } = await sb.auth.signInWithPassword({
+      email: String(email || '').trim(), password,
+    });
+    if (error) throw new Error(friendlyError(error, 'Login failed. Please try again.'));
+    const profile = await loadProfile(data.user.id);
+    touchLastLogin(profile.id);
+    return profile;
   };
 
-  // Password reset (local-mode: verify email + phone ownership).
-  // Production: Supabase Auth sends a secure email link instead.
-  const resetPassword = async (email, phone, newPassword) => {
-    const users = getUsers();
-    const idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
-    if (idx === -1) throw new Error('No account found with this email');
-    const u = users[idx];
-    if (u.role === 'admin') throw new Error('Admin password can only be changed from the admin dashboard');
-    if (String(u.phone || '').replace(/\D/g, '').slice(-10) !== String(phone || '').replace(/\D/g, '').slice(-10)) {
-      throw new Error('Phone number does not match our records');
-    }
-    if (!newPassword || newPassword.length < 6) throw new Error('Password must be at least 6 characters');
-    const passwordHash = await hashPassword(newPassword);
-    users[idx] = { ...u, passwordHash, password: undefined };
-    saveUsers(users);
-    return true;
-  };
-
-  const setUserBanned = (userId, banned) => {
-    const users = getUsers();
-    const idx = users.findIndex(u => u.id === userId);
-    if (idx === -1) return;
-    users[idx] = { ...users[idx], banned };
-    saveUsers(users);
-  };
-
-  // Dedicated secure admin login
   const adminLogin = async (email, password) => {
-    if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
-      throw new Error('Unauthorized: Invalid admin credentials');
+    const sb = requireSb();
+    const { data, error } = await sb.auth.signInWithPassword({
+      email: String(email || '').trim(), password,
+    });
+    if (error) throw new Error(friendlyError(error, 'Login failed. Please try again.'));
+    const profile = await fetchMyProfile(data.user.id);
+    if (!profile || profile.role !== 'admin') {
+      await sb.auth.signOut();
+      throw new Error('Unauthorized: this area is for administrators only.');
     }
-
-    const isValid = await verifyAdminPassword(password);
-    if (!isValid) {
-      throw new Error('Invalid admin email or password');
+    if (profile.banned) {
+      await sb.auth.signOut();
+      throw new Error(BANNED_MSG);
     }
-
-    const users = getUsers();
-    let admin = users.find(u => u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
-    
-    if (!admin) {
-      admin = {
-        id: 'admin-secure-001',
-        fullName: 'Woli Dan Admin',
-        email: ADMIN_EMAIL,
-        phone: '08159610509',
-        passwordHash: ADMIN_PASSWORD_HASH,
-        role: 'admin',
-        createdAt: new Date().toISOString(),
-        avatar: null
-      };
-      saveUsers([...users, admin]);
-    }
-
-    createAdminSession();
-    setUser(admin);
-    setCurrentUser(admin);
-    return admin;
+    setUser(profile);
+    touchLastLogin(profile.id);
+    return profile;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try { await requireSb().auth.signOut(); } catch { /* ignore */ }
     setUser(null);
-    clearCurrentUser();
-    clearAdminSession();
-    localStorage.removeItem(ADMIN_SESSION_KEY);
+    setStudents([]);
   };
+  const adminLogout = () => logout();
 
-  const adminLogout = () => {
-    logout();
-  };
-
-  const updateProfile = (updates) => {
-    const users = getUsers();
-    const idx = users.findIndex(u => u.id === user.id);
-    if (idx === -1) return;
-    const updated = { ...users[idx], ...updates };
-    // Never allow updating to expose password
-    if (updated.password) delete updated.password;
-    users[idx] = updated;
-    saveUsers(users);
+  const updateProfile = async (updates) => {
+    if (!user) throw new Error('Not authenticated');
+    const patch = { ...(updates || {}) };
+    if (patch.avatarFile) {
+      const path = await uploadAvatar(user.id, patch.avatarFile);
+      patch.avatar = path; // stored as path; rendered via public URL
+      delete patch.avatarFile;
+    }
+    delete patch.role;
+    delete patch.banned;
+    delete patch.email;
+    const updated = await updateProfileRow(user.id, patch);
     setUser(updated);
-    setCurrentUser(updated);
+    return updated;
   };
 
   const changePassword = async (currentPassword, newPassword) => {
     if (!user) throw new Error('Not authenticated');
-    const users = getUsers();
-    const idx = users.findIndex(u => u.id === user.id);
-    if (idx === -1) throw new Error('User not found');
-
-    const currentUser = users[idx];
-    
-    // Verify current password
-    if (currentUser.role === 'admin') {
-      const isValid = await verifyAdminPassword(currentPassword);
-      if (!isValid) throw new Error('Current password is incorrect');
-    } else {
-      const currentHash = await hashPassword(currentPassword);
-      const isValid = currentUser.passwordHash === currentHash || currentUser.password === currentPassword;
-      if (!isValid) throw new Error('Current password is incorrect');
-    }
-
-    const newHash = await hashPassword(newPassword);
-    users[idx] = {
-      ...currentUser,
-      passwordHash: newHash,
-      password: undefined
-    };
-    saveUsers(users);
-    
-    const updated = users[idx];
-    setUser(updated);
-    setCurrentUser(updated);
+    if (!newPassword || newPassword.length < 6) throw new Error('Password must be at least 6 characters');
+    const sb = requireSb();
+    // Re-authenticate with the current password first
+    const { error: signErr } = await sb.auth.signInWithPassword({ email: user.email, password: currentPassword });
+    if (signErr) throw new Error('Current password is incorrect');
+    const { error } = await sb.auth.updateUser({ password: newPassword });
+    if (error) throw new Error(friendlyError(error, 'Could not change password. Please try again.'));
     return true;
   };
 
-  const isAdminSessionValid = () => {
-    const session = getAdminSession();
-    return !!session;
+  // Sends a secure email link (Supabase Auth). User lands on /update-password.
+  const resetPassword = async (email) => {
+    const sb = requireSb();
+    const redirectTo = `${window.location.origin}/update-password`;
+    const { error } = await sb.auth.resetPasswordForEmail(String(email || '').trim(), { redirectTo });
+    if (error) throw new Error(friendlyError(error, 'Could not send reset email. Please try again.'));
+    return true;
   };
 
+  // Called from /update-password after the user clicks the email recovery link.
+  const setNewPassword = async (newPassword) => {
+    if (!newPassword || newPassword.length < 6) throw new Error('Password must be at least 6 characters');
+    const { error } = await requireSb().auth.updateUser({ password: newPassword });
+    if (error) throw new Error(friendlyError(error, 'Could not set new password. The link may have expired.'));
+    return true;
+  };
+
+  const setUserBanned = async (userId, banned) => {
+    await banRow(userId, banned);
+    setStudents((prev) => prev.map((s) => (s.id === userId ? { ...s, banned: !!banned } : s)));
+  };
+
+  const setUserRole = async (userId, role) => {
+    await roleRow(userId, role);
+    setStudents((prev) => prev.map((s) => (s.id === userId ? { ...s, role } : s)));
+  };
+
+  const isAdminSessionValid = () => user?.role === 'admin';
+
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      loading, 
-      register, 
-      login, 
+    <AuthContext.Provider value={{
+      user,
+      loading,
+      register,
+      login,
       adminLogin,
-      logout, 
+      logout,
       adminLogout,
       updateProfile,
       changePassword,
       resetPassword,
+      setNewPassword,
       setUserBanned,
+      setUserRole,
+      students,
+      studentsLoading,
+      refreshStudents,
       isAdmin: user?.role === 'admin',
       isAdminSessionValid,
-      adminEmail: ADMIN_EMAIL
+      adminEmail: '',
     }}>
       {children}
     </AuthContext.Provider>

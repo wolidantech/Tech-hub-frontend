@@ -21,6 +21,8 @@ import CareerHub from './pages/CareerHub';
 import StudentPortfolio from './pages/StudentPortfolio';
 import Search from './pages/Search';
 import ForgotPassword from './pages/ForgotPassword';
+import UpdatePassword from './pages/UpdatePassword';
+import SetupGate from './components/common/SetupGate';
 
 // Code-split heavy routes for faster mobile loads
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -49,12 +51,9 @@ function ProtectedRoute({ children }) {
 }
 
 function AdminRoute({ children }) {
-  const { user, loading, isAdmin, isAdminSessionValid } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   if (loading) return <RouteLoader />;
   if (!user || !isAdmin) return <Navigate to="/admin/login" replace />;
-  if (!isAdminSessionValid()) {
-    return <Navigate to="/admin/login" replace />;
-  }
   return children;
 }
 
@@ -86,6 +85,7 @@ const lazyEl = (el) => <Suspense fallback={<RouteLoader />}>{el}</Suspense>;
 export default function App() {
   return (
     <BrowserRouter>
+      <SetupGate>
       <AuthProvider>
         <CourseProvider>
           <LMSProvider>
@@ -105,6 +105,7 @@ export default function App() {
               <Route path="/student/:id" element={<StudentPortfolio />} />
               <Route path="/search" element={<Layout><Search /></Layout>} />
               <Route path="/forgot-password" element={<Layout><ForgotPassword /></Layout>} />
+              <Route path="/update-password" element={<Layout><UpdatePassword /></Layout>} />
               <Route path="/certificate/:id" element={lazyEl(<Layout><CertificateView /></Layout>)} />
 
               <Route path="/admin/login" element={<PublicAdminRoute><AdminLogin /></PublicAdminRoute>} />
@@ -112,22 +113,5 @@ export default function App() {
               <Route path="/dashboard" element={lazyEl(<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>)} />
               <Route path="/my-courses" element={lazyEl(<ProtectedRoute><Layout><MyCourses /></Layout></ProtectedRoute>)} />
               <Route path="/my-payments" element={lazyEl(<ProtectedRoute><Layout><MyPayments /></Layout></ProtectedRoute>)} />
-              <Route path="/learn/:slug" element={lazyEl(<ProtectedRoute><Learn /></ProtectedRoute>)} />
-              <Route path="/enroll/:slug" element={lazyEl(<ProtectedRoute><Layout><Enroll /></Layout></ProtectedRoute>)} />
-              <Route path="/enroll/bundle/:id" element={lazyEl(<ProtectedRoute><Layout><BundleEnroll /></Layout></ProtectedRoute>)} />
-              <Route path="/certificates" element={lazyEl(<ProtectedRoute><Layout><Certificates /></Layout></ProtectedRoute>)} />
-              <Route path="/profile" element={lazyEl(<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>)} />
-              <Route path="/onboarding" element={lazyEl(<ProtectedRoute><Onboarding /></ProtectedRoute>)} />
-
-              <Route path="/admin" element={<AdminRedirect />} />
-              <Route path="/admin/dashboard" element={lazyEl(<AdminRoute><Layout><Admin /></Layout></AdminRoute>)} />
-
-              <Route path="*" element={<Layout><div className="min-h-[60vh] flex items-center justify-center text-center p-8"><div><h1 className="font-black text-4xl">404</h1><p className="text-white/60 mt-2">Page not found</p><a href="/" className="inline-flex mt-6 btn-primary">GO HOME</a></div></div></Layout>} />
-            </Routes>
-            <DanTechAI />
-          </LMSProvider>
-        </CourseProvider>
-      </AuthProvider>
-    </BrowserRouter>
-  );
-}
+              <Route path="/learn/:slug" element={lazyEl(<ProtectedRoute><Learn /></Protecte
+...[truncated 1021 chars]

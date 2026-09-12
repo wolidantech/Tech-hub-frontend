@@ -90,8 +90,8 @@ export default function AdminLogin() {
             </div>
 
             <div className="flex items-center justify-between text-xs">
-              <span className="text-white/40">Secure session • 8 hour expiry</span>
-              <button type="button" onClick={() => toast.info('Contact system owner to reset admin password via secure channel')} className="text-cyan-300 hover:text-cyan-200 font-semibold">Forgot Password?</button>
+              <span className="text-white/40">Secured by Supabase Auth</span>
+              <Link to="/forgot-password" className="text-cyan-300 hover:text-cyan-200 font-semibold">Forgot Password?</Link>
             </div>
 
             <button disabled={loading} className="w-full btn-primary !py-4 !text-[14px] gap-2 disabled:opacity-60">
@@ -112,10 +112,10 @@ export default function AdminLogin() {
           <div className="glass rounded-2xl p-4 space-y-2">
             <div className="text-[11px] font-bold tracking-widest text-white/40">SECURITY FEATURES</div>
             <ul className="text-[12px] text-white/50 space-y-1">
-              <li>• Passwords hashed with SHA-256 + salt</li>
-              <li>• No plain text passwords in source code</li>
+              <li>• Bank-grade auth (Supabase Auth, bcrypt)</li>
+              <li>• No passwords in source code or storage</li>
               <li>• Role-based access control (ADMIN only)</li>
-              <li>• Secure session tokens with expiry</li>
+              <li>• Secure sessions with auto refresh</li>
               <li>• Protected admin routes</li>
             </ul>
           </div>
@@ -132,11 +132,11 @@ export default function AdminLogin() {
           <div className="space-y-3 pt-4">
             <div className="flex items-center gap-3 text-sm text-white/70">
               <div className="h-8 w-8 rounded-full bg-green-500/20 flex items-center justify-center"><Shield className="h-4 w-4 text-green-400" /></div>
-              Encrypted password storage (no plain text)
+              Secure password storage (never plain text)
             </div>
             <div className="flex items-center gap-3 text-sm text-white/70">
               <div className="h-8 w-8 rounded-full bg-cyan-500/20 flex items-center justify-center"><Lock className="h-4 w-4 text-cyan-400" /></div>
-              8-hour secure session with auto-expiry
+              Secure session with auto refresh
             </div>
             <div className="flex items-center gap-3 text-sm text-white/70">
               <div className="h-8 w-8 rounded-full bg-purple-500/20 flex items-center justify-center"><Eye className="h-4 w-4 text-purple-400" /></div>
@@ -145,11 +145,11 @@ export default function AdminLogin() {
           </div>
 
           <div className="glass rounded-2xl p-4 mt-6">
-            <div className="text-xs font-bold tracking-widest text-white/40 mb-2">ADMIN CREDENTIALS</div>
+            <div className="text-xs font-bold tracking-widest text-white/40 mb-2">ADMIN ACCESS</div>
             <div className="text-sm space-y-1">
-              <div className="flex justify-between"><span className="text-white/50">Email</span><span className="font-mono font-bold text-cyan-300">wolidantech@gmail.com</span></div>
+              <div className="flex justify-between"><span className="text-white/50">Sign in with</span><span className="font-bold text-cyan-300">Your admin account</span></div>
               <div className="flex justify-between"><span className="text-white/50">Access</span><span className="font-bold text-green-300">ADMIN Role Required</span></div>
-              <div className="text-[11px] text-white/30 mt-2">Password is securely hashed and not displayed. Use your secure admin password to login.</div>
+              <div className="text-[11px] text-white/30 mt-2">Admin accounts are created in the database by the system owner. Credentials are never shown here.</div>
             </div>
           </div>
         </div>

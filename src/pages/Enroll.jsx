@@ -5,18 +5,21 @@ import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
 import { formatNaira } from '../lib/utils';
-import { getEffectiveSettings } from '../lib/storage';
-
-// Bank details honor admin overrides in Site Settings (defaults: MONIEPOINT • 69852663361)
-const BANK_DETAILS = getEffectiveSettings();
 import { toast, Toaster } from 'sonner';
 
 export default function Enroll() {
   const { slug } = useParams();
-  const { getCourseBySlug, submitManualPayment, getManualPaymentByCourse, grantEnrollment, sendNotificationToUser } = useCourses();
-  const { validateCouponForUser, recordRedemption } = useLMS();
+  const { getCourseBySlug, submitManualPayment, getManualPaymentByCourse } = useCourses();
+  const { validateCouponForUser, recordRedemption, siteSettings } = useLMS();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Bank details honor admin overrides in Site Settings (defaults: MONIEPOINT • 69852663361)
+  const BANK_DETAILS = {
+    bankName: siteSettings?.bankName || 'MONIEPOINT',
+    accountNumber: siteSettings?.accountNumber || '69852663361',
+    accountName: siteSettings?.accountName || 'LUNA ENTRY SERVICES',
+  };
 
   const [form, setForm] = useState({
     studentName: user?.fullName || '',
@@ -69,12 +72,12 @@ export default function Enroll() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleApplyCoupon = () => {
+  const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
       toast.error('Enter a coupon code');
       return;
     }
-    const result = validateCouponForUser(couponCode, { courseId: course.id, coursePrice: course.price, user });
+    const result = await validateCouponForUser(couponCode, { courseId: course.id });
     setCoupon(result);
     if (result.valid) {
       toast.success(result.isFree ? '🎉 100% coupon applied — this course is FREE for you!' : `Coupon applied! You save ${formatNaira(result.discount)}`);
@@ -83,17 +86,10 @@ export default function Enroll() {
     }
   };
 
-  const handleRedeemFree = () => {
+  const handleRedeemFree = async () => {
     if (!coupon?.valid || !coupon.isFree) return;
     try {
-      recordRedemption({ couponId: coupon.coupon.id, userId: user.id, courseId: course.id, discount: coupon.discount, amountDue: 0 });
-      grantEnrollment(user.id, course.id, { method: 'coupon', couponCode: coupon.coupon.code, paymentStatus: 'COUPON APPROVED' });
-      sendNotificationToUser(user.id, {
-        title: 'Enrollment Activated! 🎉',
-        message: `Your coupon ${coupon.coupon.code} was approved. You now have FULL access to ${course.title}. WOLI DAN TECH HUB - Learn • Build • Grow`,
-        type: 'coupon_approved',
-        courseId: course.id,
-      });
+      await recordRedemption({ code: coupon.coupon.code, courseId: course.id });
       setSuccess({ free: true, couponCode: coupon.coupon.code });
       toast.success('Enrollment activated! Start learning now 🎓');
     } catch (err) {
@@ -136,7 +132,7 @@ export default function Enroll() {
     // Re-validate coupon server-side equivalent at submit time (never trust earlier calc)
     let appliedCoupon = null;
     if (coupon?.valid) {
-      const recheck = validateCouponForUser(coupon.coupon.code, { courseId: course.id, coursePrice: course.price, user });
+      const recheck = await validateCouponForUser(coupon.coupon.code, { courseId: course.id });
       if (!recheck.valid) {
         setCoupon(recheck);
         toast.error(`Coupon no longer valid: ${recheck.reason}`);
@@ -146,13 +142,7 @@ export default function Enroll() {
     }
     setSubmitting(true);
     try {
-      const receiptData = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(receiptFile);
-      });
-      const payment = submitManualPayment({
+      const payment = await submitManualPayment({
         userId: user.id,
         courseId: course.id,
         studentName: form.studentName,
@@ -161,16 +151,13 @@ export default function Enroll() {
         amount: form.amount || (appliedCoupon ? appliedCoupon.amountDue : course.price),
         transactionDate: form.transactionDate,
         reference: form.reference,
-        receiptData,
-        receiptName: receiptFile.name,
-        receiptType: receiptFile.type,
-        receiptSize: receiptFile.size,
+        receiptFile,
         couponCode: appliedCoupon?.coupon.code || null,
         couponDiscount: appliedCoupon?.discount || 0,
         originalAmount: appliedCoupon ? course.price : null,
       });
       if (appliedCoupon) {
-        recordRedemption({ couponId: appliedCoupon.coupon.id, userId: user.id, courseId: course.id, discount: appliedCoupon.discount, amountDue: appliedCoupon.amountDue });
+        await recordRedemption({ code: appliedCoupon.coupon.code, courseId: course.id });
       }
       setSuccess(payment);
       toast.success('Payment submitted successfully! Pending review.');
