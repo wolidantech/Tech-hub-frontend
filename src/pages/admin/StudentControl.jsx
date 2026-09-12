@@ -1,20 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, UserCheck, Ban, RotateCcw, Award, Bell, Trash2, CheckCircle2, XCircle } from 'lucide-react';
 import { useCourses } from '../../context/CourseContext';
 import { useLMS } from '../../context/LMSContext';
 import { useAuth } from '../../context/AuthContext';
-import { getUsers } from '../../lib/storage';
 import { formatNaira } from '../../lib/utils';
 import { toast } from 'sonner';
 
 export default function StudentControl() {
-  const { user, setUserBanned } = useAuth();
+  const { user, students: roster, banStudent, unbanStudent } = useAuth();
   const [, setTick] = useState(0);
   const refresh = () => setTick((t) => t + 1);
   const {
     courses, enrollments, grantEnrollment, setEnrollmentStatus, resetProgress, adminSetLesson,
     getProgress, getUserManualPayments, getUserCertificates, issueCertificateManual, revokeCertificate,
-    sendNotificationToUser, getUserEnrollments,
+    sendNotificationToUser, getUserEnrollments, ensureCourseDetail,
   } = useCourses();
   const { audit, getUserQuizAverage, getUserAttempts, resetQuizAttempts, getUserSubmissions, quizzes } = useLMS();
   const [search, setSearch] = useState('');
@@ -22,17 +21,30 @@ export default function StudentControl() {
   const [enrollCourse, setEnrollCourse] = useState('');
   const [notify, setNotify] = useState({ title: '', message: '' });
 
-  const students = getUsers().filter((u) => u.role !== 'admin').filter((u) =>
+  const students = roster.filter((u) => u.role !== 'admin').filter((u) =>
     !search || u.fullName.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  const student = selected ? getUsers().find((u) => u.id === selected) : null;
+  const student = selected ? roster.find((u) => u.id === selected) : null;
 
-  const doAction = (label, fn) => {
+  // Lesson-level control needs full curriculum per enrolled course.
+  useEffect(() => {
+    if (!student) return;
+    getUserEnrollments(student.id)
+      .filter((e) => e.status !== 'removed')
+      .forEach((e) => {
+        const c = courses.find((x) => x.id === e.courseId);
+        if (c && !c.curriculum) ensureCourseDetail(c.id).catch(() => {});
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected]);
+
+  const doAction = async (label, fn) => {
     if (!confirm(`${label} — continue?`)) return;
     try {
-      fn();
+      await fn();
       toast.success(label + ' ✓');
+      refresh();
     } catch (err) {
       toast.error(err.message);
     }
@@ -62,9 +74,9 @@ export default function StudentControl() {
             </div>
             <div className="flex gap-2 items-start">
               {student.banned ? (
-                <button onClick={() => doAction('Unban student', () => { setUserBanned(student.id, false); audit(user, 'user.unban', 'user', student.id, {}); refresh(); })} className="h-9 px-4 rounded-full bg-green-500/20 text-green-300 text-xs font-bold flex items-center gap-1.5"><UserCheck className="h-4 w-4" /> UNBAN</button>
+                <button onClick={() => doAction('Unban student', async () => { await unbanStudent(student.id); audit(user, 'user.unban', 'user', student.id, {}); })} className="h-9 px-4 rounded-full bg-green-500/20 text-green-300 text-xs font-bold flex items-center gap-1.5"><UserCheck className="h-4 w-4" /> UNBAN</button>
               ) : (
-                <button onClick={() => doAction('BAN student (blocks login)', () => { setUserBanned(student.id, true); audit(user, 'user.ban', 'user', student.id, {}); refresh(); })} className="h-9 px-4 rounded-full bg-red-500/20 text-red-300 text-xs font-bold flex items-center gap-1.5"><Ban className="h-4 w-4" /> BAN</button>
+                <button onClick={() => doAction('BAN student (blocks login)', async () => { await banStudent(student.id); audit(user, 'user.ban', 'user', student.id, {}); })} className="h-9 px-4 rounded-full bg-red-500/20 text-red-300 text-xs font-bold flex items-center gap-1.5"><Ban className="h-4 w-4" /> BAN</button>
               )}
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
@@ -83,7 +95,7 @@ export default function StudentControl() {
               <option className="bg-[#061236]" value="">Select course to enroll manually</option>
               {courses.filter((c) => !studentEnrollments.some((e) => e.courseId === c.id && e.status !== 'removed')).map((c) => <option className="bg-[#061236]" key={c.id} value={c.id}>{c.title}</option>)}
             </select>
-            <button onClick={() => { if (!enrollCourse) return toast.error('Select a course'); doAction('Manually enroll student', () => { grantEnrollment(student.id, enrollCourse, { method: 'admin_manual', grantedBy: user.email }); audit(user, 'enrollment.grant', 'enrollment', enrollCourse, { studentId: student.id }); setEnrollCourse(''); }); }} className="h-10 px-4 rounded-full bg-green-500 text-white text-xs font-bold">ENROLL</button>
+            <button onClick={() => { if (!enrollCourse) return toast.error('Select a course'); doAction('Manually enroll student', async () => { await grantEnrollment(student.id, enrollCourse, { method: 'admin_manual', grantedBy: user.email }); audit(user, 'enrollment.grant', 'enrollment', enrollCourse, { studentId: student.id }); setEnrollCourse(''); }); }} className="h-10 px-4 rounded-full bg-green-500 text-white text-xs font-bold">ENROLL</button>
           </div>
           <div className="space-y-3">
             {studentEnrollments.map((e) => {
@@ -102,23 +114,23 @@ export default function StudentControl() {
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {e.status === 'removed' ? (
-                        <button onClick={() => doAction('Restore course access', () => { setEnrollmentStatus(student.id, e.courseId, 'active'); audit(user, 'enrollment.restore', 'enrollment', e.courseId, { studentId: student.id }); })} className="h-8 px-3 rounded-full bg-green-500/20 text-green-300 text-[11px] font-bold">RESTORE ACCESS</button>
+                        <button onClick={() => doAction('Restore course access', async () => { await setEnrollmentStatus(student.id, e.courseId, 'active'); audit(user, 'enrollment.restore', 'enrollment', e.courseId, { studentId: student.id }); })} className="h-8 px-3 rounded-full bg-green-500/20 text-green-300 text-[11px] font-bold">RESTORE ACCESS</button>
                       ) : (
-                        <button onClick={() => doAction('Remove course access', () => { setEnrollmentStatus(student.id, e.courseId, 'removed'); audit(user, 'enrollment.remove', 'enrollment', e.courseId, { studentId: student.id }); })} className="h-8 px-3 rounded-full bg-red-500/20 text-red-300 text-[11px] font-bold">REMOVE ACCESS</button>
+                        <button onClick={() => doAction('Remove course access', async () => { await setEnrollmentStatus(student.id, e.courseId, 'removed'); audit(user, 'enrollment.remove', 'enrollment', e.courseId, { studentId: student.id }); })} className="h-8 px-3 rounded-full bg-red-500/20 text-red-300 text-[11px] font-bold">REMOVE ACCESS</button>
                       )}
-                      <button onClick={() => doAction('Reset course progress', () => { resetProgress(student.id, e.courseId); audit(user, 'progress.reset', 'progress', e.courseId, { studentId: student.id }); })} className="h-8 px-3 rounded-full glass text-[11px] font-bold flex items-center gap-1"><RotateCcw className="h-3 w-3" /> RESET PROGRESS</button>
+                      <button onClick={() => doAction('Reset course progress', async () => { await resetProgress(student.id, e.courseId); audit(user, 'progress.reset', 'progress', e.courseId, { studentId: student.id }); })} className="h-8 px-3 rounded-full glass text-[11px] font-bold flex items-center gap-1"><RotateCcw className="h-3 w-3" /> RESET PROGRESS</button>
                     </div>
                   </div>
                   {/* Lesson-level control */}
                   <details className="mt-3">
-                    <summary className="text-xs font-bold text-cyan-300 cursor-pointer">LESSON CONTROL ({prog.completedLessons.length}/{course.curriculum.reduce((a, m) => a + m.lessons.length, 0)})</summary>
+                    <summary className="text-xs font-bold text-cyan-300 cursor-pointer">LESSON CONTROL ({prog.completedLessons.length}/{(course.curriculum || []).reduce((a, m) => a + (m.lessons?.length || 0), 0)})</summary>
                     <div className="mt-2 space-y-1 max-h-[220px] overflow-auto">
-                      {course.curriculum.flatMap((m) => m.lessons).map((l) => {
+                      {(course.curriculum || []).flatMap((m) => m.lessons || []).map((l) => {
                         const done = prog.completedLessons.includes(l.id);
                         return (
                           <div key={l.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-white/[0.02]">
                             <span className="truncate max-w-[70%]">{l.title}</span>
-                            <button onClick={() => { adminSetLesson(student.id, e.courseId, l.id, !done); audit(user, done ? 'progress.lesson_incomplete' : 'progress.lesson_complete', 'lesson', l.id, { studentId: student.id }); }} className={`h-7 px-3 rounded-full text-[10px] font-bold ${done ? 'bg-green-500/20 text-green-300' : 'glass text-white/50'}`}>{done ? '✓ DONE — MARK INCOMPLETE' : 'MARK COMPLETE'}</button>
+                            <button onClick={async () => { try { await adminSetLesson(student.id, e.courseId, l.id, !done); audit(user, done ? 'progress.lesson_incomplete' : 'progress.lesson_complete', 'lesson', l.id, { studentId: student.id }); } catch (err) { toast.error(err.message); } }} className={`h-7 px-3 rounded-full text-[10px] font-bold ${done ? 'bg-green-500/20 text-green-300' : 'glass text-white/50'}`}>{done ? '✓ DONE — MARK INCOMPLETE' : 'MARK COMPLETE'}</button>
                           </div>
                         );
                       })}
@@ -133,7 +145,7 @@ export default function StudentControl() {
                         return (
                           <div key={q.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-white/[0.02]">
                             <span>{q.title} — {atts.length} attempt(s){atts.length > 0 && ` • best ${Math.max(...atts.map((a) => a.score))}%`}</span>
-                            {atts.length > 0 && <button onClick={() => doAction('Reset quiz attempts', () => resetQuizAttempts(student.id, q.id, user))} className="h-7 px-3 rounded-full glass text-[10px] font-bold">RESET</button>}
+                            {atts.length > 0 && <button onClick={() => doAction('Reset quiz attempts', async () => { await resetQuizAttempts(student.id, q.id, user); })} className="h-7 px-3 rounded-full glass text-[10px] font-bold">RESET</button>}
                           </div>
                         );
                       })}
@@ -188,7 +200,7 @@ export default function StudentControl() {
                 <span className="font-mono font-bold text-cyan-300">{c.certificateId}</span>
                 <span>{c.courseName}</span>
                 <span className={`px-2 py-0.5 rounded-full font-bold ${c.status === 'revoked' ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'}`}>{(c.status || 'valid').toUpperCase()}</span>
-                {c.status !== 'revoked' && <button onClick={() => doAction('Revoke certificate', () => { revokeCertificate(c.id); audit(user, 'certificate.revoke', 'certificate', c.id, { studentId: student.id }); })} className="h-7 px-3 rounded-full bg-red-500/20 text-red-300 text-[10px] font-bold">REVOKE</button>}
+                {c.status !== 'revoked' && <button onClick={() => doAction('Revoke certificate', async () => { await revokeCertificate(c.id); audit(user, 'certificate.revoke', 'certificate', c.id, { studentId: student.id }); })} className="h-7 px-3 rounded-full bg-red-500/20 text-red-300 text-[10px] font-bold">REVOKE</button>}
               </div>
             ))}
             {certs.length === 0 && <div className="text-sm text-white/40">No certificates.</div>}
@@ -198,7 +210,7 @@ export default function StudentControl() {
               <option className="bg-[#061236]" value="">Select course to issue certificate manually</option>
               {studentEnrollments.map((e) => { const c = courses.find((x) => x.id === e.courseId); return c ? <option className="bg-[#061236]" key={e.id} value={c.id}>{c.title}</option> : null; })}
             </select>
-            <button onClick={() => { const sel = document.getElementById('manual-cert-course'); if (!sel.value) return toast.error('Select a course'); const c = courses.find((x) => x.id === sel.value); doAction('Issue certificate manually', () => { issueCertificateManual({ userId: student.id, studentName: student.fullName, courseId: c.id, courseName: c.title, issuedBy: user.email }); sendNotificationToUser(student.id, { title: 'Congratulations! 🎓', message: `Congratulations! 🎓 You have successfully completed ${c.title}. Your WOLI DAN TECH HUB certificate is now available.`, type: 'course_completed', courseId: c.id }); audit(user, 'certificate.issue_manual', 'certificate', c.id, { studentId: student.id }); }); }} className="h-10 px-4 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1"><Award className="h-3.5 w-3.5" /> ISSUE</button>
+            <button onClick={() => { const sel = document.getElementById('manual-cert-course'); if (!sel.value) return toast.error('Select a course'); const c = courses.find((x) => x.id === sel.value); doAction('Issue certificate manually', async () => { await issueCertificateManual({ userId: student.id, courseId: c.id }); await sendNotificationToUser(student.id, { title: 'Congratulations! 🎓', message: `Congratulations! 🎓 You have successfully completed ${c.title}. Your WOLI DAN TECH HUB certificate is now available.`, type: 'course_completed', courseId: c.id }); audit(user, 'certificate.issue_manual', 'certificate', c.id, { studentId: student.id }); }); }} className="h-10 px-4 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1"><Award className="h-3.5 w-3.5" /> ISSUE</button>
           </div>
         </div>
 
@@ -207,7 +219,7 @@ export default function StudentControl() {
           <h3 className="font-bold flex items-center gap-2"><Bell className="h-4 w-4 text-cyan-300" /> Send Notification</h3>
           <input value={notify.title} onChange={(e) => setNotify({ ...notify, title: e.target.value })} placeholder="Title" className="w-full h-11 rounded-full glass px-4 text-sm" />
           <textarea value={notify.message} onChange={(e) => setNotify({ ...notify, message: e.target.value })} placeholder="Message" className="w-full rounded-2xl glass p-4 text-sm h-20" />
-          <button onClick={() => { if (!notify.title.trim() || !notify.message.trim()) return toast.error('Title + message required'); sendNotificationToUser(student.id, { title: notify.title, message: notify.message, type: 'admin_message' }); audit(user, 'notification.send', 'user', student.id, { title: notify.title }); setNotify({ title: '', message: '' }); toast.success('Notification sent'); }} className="px-6 h-11 rounded-full bg-white text-black font-bold text-sm">SEND</button>
+          <button onClick={async () => { if (!notify.title.trim() || !notify.message.trim()) return toast.error('Title + message required'); try { await sendNotificationToUser(student.id, { title: notify.title, message: notify.message, type: 'admin_message' }); audit(user, 'notification.send', 'user', student.id, { title: notify.title }); setNotify({ title: '', message: '' }); toast.success('Notification sent'); } catch (err) { toast.error(err.message); } }} className="px-6 h-11 rounded-full bg-white text-black font-bold text-sm">SEND</button>
         </div>
       </div>
     );

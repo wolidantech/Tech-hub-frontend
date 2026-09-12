@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, X, Edit, Trash2, Eye, EyeOff, Save, Image as ImageIcon, ChevronDown, ChevronUp, ListChecks, FolderPlus } from 'lucide-react';
 import { useCourses } from '../../context/CourseContext';
 import { useLMS } from '../../context/LMSContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatNaira } from '../../lib/utils';
+import { uploadThumbnail } from '../../lib/store';
 import { DEFAULT_COMPLETION_RULES } from '../../lib/lms';
 import CourseArt from '../../components/course/CourseArt';
 import { BundleManager, PathManager } from './BundlePathManager';
@@ -11,7 +12,7 @@ import { toast } from 'sonner';
 
 export default function CourseManager() {
   const { user } = useAuth();
-  const { courses, addCourse, updateCourse, deleteCourse, setCoursePublished, addModule, updateModule, deleteModule, addLesson, updateLesson, deleteLesson } = useCourses();
+  const { courses, addCourse, updateCourse, deleteCourse, setCoursePublished, addModule, updateModule, deleteModule, addLesson, updateLesson, deleteLesson, ensureCourseDetail } = useCourses();
   const { categories, addCategory, deleteCategory, completionRules, setCourseRules, audit, getCourseQuizzes, getCourseAssignments } = useLMS();
 
   const [showAdd, setShowAdd] = useState(false);
@@ -30,62 +31,79 @@ export default function CourseManager() {
 
   const filtered = courses.filter((c) => !search || c.title.toLowerCase().includes(search.toLowerCase()));
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!newCourse.title.trim()) { toast.error('Title required'); return; }
     const slug = newCourse.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     if (courses.some((c) => c.slug === slug)) { toast.error('A course with this title already exists'); return; }
-    addCourse({
-      id: slug, slug, title: newCourse.title.toUpperCase(),
-      shortDescription: newCourse.description || 'New course', description: newCourse.description,
-      longDescription: newCourse.description, category: newCourse.category, instructor: newCourse.instructor,
-      instructorRole: 'Instructor', duration: newCourse.duration, lessonsCount: 0, level: newCourse.level,
-      price: Number(newCourse.price), originalPrice: Number(newCourse.price) * 2, rating: 5.0, students: 0,
-      thumbnail: 'default', color: 'from-cyan-500 to-blue-600', published: false, featured: false,
-      whatYouWillLearn: [], curriculum: [],
-    });
-    audit(user, 'course.create', 'course', slug, { title: newCourse.title });
-    setShowAdd(false);
-    setNewCourse({ title: '', category: categories[0] || 'Design', price: 5000, duration: '5 hours', level: 'Beginner', instructor: 'Woli Dan', description: '' });
-    toast.success('Course created as UNPUBLISHED. Add curriculum, then publish.');
+    try {
+      const created = await addCourse({
+        slug, title: newCourse.title.toUpperCase(),
+        shortDescription: newCourse.description || 'New course', description: newCourse.description,
+        longDescription: newCourse.description, category: newCourse.category, instructor: newCourse.instructor,
+        instructorRole: 'Instructor', duration: newCourse.duration, level: newCourse.level,
+        price: Number(newCourse.price), originalPrice: Number(newCourse.price) * 2,
+        thumbnail: 'default', published: false, featured: false,
+        whatYouWillLearn: [],
+      });
+      audit(user, 'course.create', 'course', created.id, { title: newCourse.title });
+      setShowAdd(false);
+      setNewCourse({ title: '', category: categories[0] || 'Design', price: 5000, duration: '5 hours', level: 'Beginner', instructor: 'Woli Dan', description: '' });
+      toast.success('Course created as UNPUBLISHED. Add curriculum, then publish.');
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   const startEdit = (c) => { setEditing(c.id); setEditForm({ title: c.title, price: c.price, originalPrice: c.originalPrice, category: c.category, duration: c.duration, level: c.level, instructor: c.instructor, shortDescription: c.shortDescription, description: c.description, featured: !!c.featured, requirements: (c.requirements || []).join('\n'), audience: (c.audience || []).join('\n') }); };
-  const saveEdit = (id) => {
-    updateCourse(id, { ...editForm, price: Number(editForm.price), originalPrice: Number(editForm.originalPrice), requirements: String(editForm.requirements || '').split('\n').map((s) => s.trim()).filter(Boolean), audience: String(editForm.audience || '').split('\n').map((s) => s.trim()).filter(Boolean) });
-    audit(user, 'course.update', 'course', id, { price: editForm.price });
-    setEditing(null);
-    toast.success('Course updated');
+  const saveEdit = async (id) => {
+    try {
+      await updateCourse(id, { ...editForm, price: Number(editForm.price), originalPrice: Number(editForm.originalPrice), requirements: String(editForm.requirements || '').split('\n').map((s) => s.trim()).filter(Boolean), audience: String(editForm.audience || '').split('\n').map((s) => s.trim()).filter(Boolean) });
+      audit(user, 'course.update', 'course', id, { price: editForm.price });
+      setEditing(null);
+      toast.success('Course updated');
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
-  const handleThumbnail = (courseId, e) => {
+  const handleThumbnail = async (courseId, e) => {
     const file = e.target.files[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) { toast.error('Only image files allowed'); return; }
     if (file.size > 2 * 1024 * 1024) { toast.error('Max 2MB for thumbnails'); return; }
-    const reader = new FileReader();
-    reader.onload = () => {
-      updateCourse(courseId, { thumbnailUrl: reader.result });
+    try {
+      const path = await uploadThumbnail(courseId, file);
+      await updateCourse(courseId, { thumbnailUrl: path });
       audit(user, 'course.thumbnail', 'course', courseId, {});
       toast.success('Thumbnail updated');
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   const openLessonForm = (moduleId, lesson = null) => {
     setLessonForm({ moduleId, lessonId: lesson?.id || null });
     setLessonData(lesson ? { title: lesson.title, type: lesson.type, duration: lesson.duration, videoUrl: lesson.videoUrl || '', textContent: lesson.textContent || lesson.content || '', subLessons: (lesson.subLessons || []).map((s) => s.title).join('\n') } : { title: '', type: 'video', duration: '10:00', videoUrl: '', textContent: '', subLessons: '' });
   };
-  const saveLesson = (courseId) => {
+  const saveLesson = async (courseId) => {
     if (!lessonData.title.trim()) { toast.error('Lesson title required'); return; }
     const payload = { ...lessonData, subLessons: String(lessonData.subLessons || '').split('\n').map((s) => s.trim()).filter(Boolean).map((t, i) => ({ id: `sub-${Date.now()}-${i}`, title: t })) };
-    if (lessonForm.lessonId) updateLesson(courseId, lessonForm.moduleId, lessonForm.lessonId, { ...payload });
-    else addLesson(courseId, lessonForm.moduleId, { ...payload });
-    setLessonForm(null);
-    toast.success('Lesson saved');
+    try {
+      if (lessonForm.lessonId) await updateLesson(courseId, lessonForm.moduleId, lessonForm.lessonId, { ...payload });
+      else await addLesson(courseId, lessonForm.moduleId, { ...payload });
+      setLessonForm(null);
+      toast.success('Lesson saved');
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   const course = managing ? courses.find((c) => c.id === managing) : null;
   const rules = managing ? { ...DEFAULT_COMPLETION_RULES, ...(completionRules[managing] || {}) } : null;
+
+  useEffect(() => {
+    if (course && !course.curriculum) ensureCourseDetail(course.id).catch((err) => toast.error(err.message));
+  }, [managing, course, ensureCourseDetail]);
 
   // ---- Curriculum detail view ----
   if (course) {
@@ -94,7 +112,7 @@ export default function CourseManager() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <button onClick={() => setManaging(null)} className="text-sm text-white/60 hover:text-white">← Back to courses</button>
           <div className="flex gap-2">
-            <button onClick={() => { setCoursePublished(course.id, !course.published); audit(user, course.published ? 'course.unpublish' : 'course.publish', 'course', course.id, {}); toast.success(course.published ? 'Unpublished' : 'Published 🎉'); }} className={`px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 ${course.published ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-green-500 text-white'}`}>
+            <button onClick={async () => { try { await setCoursePublished(course.id, !course.published); audit(user, course.published ? 'course.unpublish' : 'course.publish', 'course', course.id, {}); toast.success(course.published ? 'Unpublished' : 'Published 🎉'); } catch (err) { toast.error(err.message); } }} className={`px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 ${course.published ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-green-500 text-white'}`}>
               {course.published ? <><EyeOff className="h-3.5 w-3.5" /> UNPUBLISH</> : <><Eye className="h-3.5 w-3.5" /> PUBLISH</>}
             </button>
           </div>
@@ -126,7 +144,7 @@ export default function CourseManager() {
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={rulesForm.requireFinalProject} onChange={(e) => setRulesForm({ ...rulesForm, requireFinalProject: e.target.checked })} className="h-4 w-4" /> Require final project approval</label>
               </div>
               <div className="sm:col-span-2 flex gap-2">
-                <button onClick={() => { setCourseRules(course.id, rulesForm, user); setRulesForm(null); toast.success('Completion rules saved'); }} className="px-6 h-11 rounded-full bg-green-500 text-white font-bold text-sm">SAVE RULES</button>
+                <button onClick={async () => { try { await setCourseRules(course.id, rulesForm, user); setRulesForm(null); toast.success('Completion rules saved'); } catch (err) { toast.error(err.message); } }} className="px-6 h-11 rounded-full bg-green-500 text-white font-bold text-sm">SAVE RULES</button>
                 <button onClick={() => setRulesForm(null)} className="px-6 h-11 rounded-full glass font-bold text-sm">CANCEL</button>
               </div>
             </div>
@@ -146,7 +164,7 @@ export default function CourseManager() {
           <h3 className="font-bold text-lg">Curriculum — {course.curriculum?.length || 0} modules</h3>
           <div className="flex gap-2">
             <input value={newModuleTitle} onChange={(e) => setNewModuleTitle(e.target.value)} placeholder="New module title" className="h-10 w-[220px] rounded-full glass px-4 text-sm" />
-            <button onClick={() => { if (!newModuleTitle.trim()) return toast.error('Enter module title'); addModule(course.id, newModuleTitle.trim()); setNewModuleTitle(''); toast.success('Module added'); }} className="px-4 h-10 rounded-full bg-white text-black font-bold text-xs">+ ADD MODULE</button>
+            <button onClick={async () => { if (!newModuleTitle.trim()) return toast.error('Enter module title'); try { await addModule(course.id, newModuleTitle.trim()); setNewModuleTitle(''); toast.success('Module added'); } catch (err) { toast.error(err.message); } }} className="px-4 h-10 rounded-full bg-white text-black font-bold text-xs">+ ADD MODULE</button>
           </div>
         </div>
 
@@ -157,16 +175,16 @@ export default function CourseManager() {
                 <button onClick={() => setOpenMod(openMod === mod.id ? null : mod.id)} className="flex items-center gap-2 font-bold text-left">
                   {openMod === mod.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   <span className="text-cyan-300 text-sm">MODULE {mi + 1}</span> {mod.title}
-                  <span className="text-xs text-white/40 font-normal">({mod.lessons.length} lessons)</span>
+                  <span className="text-xs text-white/40 font-normal">{((mod.lessons || []).length} lessons)</span>
                 </button>
                 <div className="flex gap-2">
-                  <button onClick={() => { const t = prompt('Rename module:', mod.title); if (t) updateModule(course.id, mod.id, { title: t }); }} className="h-8 w-8 rounded-full glass flex items-center justify-center"><Edit className="h-3.5 w-3.5" /></button>
-                  <button onClick={() => { if (confirm(`Delete module "${mod.title}" and its lessons?`)) { deleteModule(course.id, mod.id); toast.success('Module deleted'); } }} className="h-8 w-8 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-3.5 w-3.5" /></button>
+                  <button onClick={async () => { const t = prompt('Rename module:', mod.title); if (t) { try { await updateModule(course.id, mod.id, { title: t }); } catch (err) { toast.error(err.message); } } }} className="h-8 w-8 rounded-full glass flex items-center justify-center"><Edit className="h-3.5 w-3.5" /></button>
+                  <button onClick={async () => { if (confirm(`Delete module "${mod.title}" and its lessons?`)) { try { await deleteModule(course.id, mod.id); toast.success('Module deleted'); } catch (err) { toast.error(err.message); } } }} className="h-8 w-8 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               </div>
               {openMod === mod.id && (
                 <div className="p-4 space-y-2">
-                  {mod.lessons.map((l, li) => (
+                  {(mod.lessons || []).map((l, li) => (
                     <div key={l.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] text-sm">
                       <span className="text-white/30 font-mono text-xs w-6">{li + 1}.</span>
                       <div className="flex-1 min-w-0">
@@ -174,7 +192,7 @@ export default function CourseManager() {
                         <div className="text-[11px] text-white/40">{l.type} • {l.duration} {l.videoUrl ? '• 🎬' : ''} {(l.textContent || l.content) ? '• 📖' : ''}</div>
                       </div>
                       <button onClick={() => openLessonForm(mod.id, l)} className="h-8 px-3 rounded-full glass text-xs font-bold">EDIT</button>
-                      <button onClick={() => { if (confirm('Delete lesson?')) { deleteLesson(course.id, mod.id, l.id); toast.success('Lesson deleted'); } }} className="h-8 w-8 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-3.5 w-3.5" /></button>
+                      <button onClick={async () => { if (confirm('Delete lesson?')) { try { await deleteLesson(course.id, mod.id, l.id); toast.success('Lesson deleted'); } catch (err) { toast.error(err.message); } } }} className="h-8 w-8 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-3.5 w-3.5" /></button>
                     </div>
                   ))}
                   <button onClick={() => openLessonForm(mod.id)} className="w-full h-10 rounded-xl border border-dashed border-white/20 text-xs font-bold text-white/50 hover:text-white hover:border-cyan-400/50">+ ADD LESSON</button>
@@ -248,13 +266,13 @@ export default function CourseManager() {
           {categories.map((c) => (
             <span key={c} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full glass text-xs font-bold">
               {c}
-              <button onClick={() => { if (confirm(`Delete category "${c}"?`)) { try { deleteCategory(c, user); toast.success('Category deleted'); } catch (e) { toast.error(e.message); } } }} className="text-white/30 hover:text-red-300"><X className="h-3 w-3" /></button>
+              <button onClick={async () => { if (confirm(`Delete category "${c}"?`)) { try { await deleteCategory(c, user); toast.success('Category deleted'); } catch (e) { toast.error(e.message); } } }} className="text-white/30 hover:text-red-300"><X className="h-3 w-3" /></button>
             </span>
           ))}
         </div>
         <div className="flex gap-2">
           <input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="New category name" className="h-10 flex-1 max-w-[280px] rounded-full glass px-4 text-sm" />
-          <button onClick={() => { try { addCategory(newCat, user); setNewCat(''); toast.success('Category added'); } catch (e) { toast.error(e.message); } }} className="h-10 px-4 rounded-full bg-white text-black font-bold text-xs">ADD</button>
+          <button onClick={async () => { try { await addCategory(newCat, user); setNewCat(''); toast.success('Category added'); } catch (e) { toast.error(e.message); } }} className="h-10 px-4 rounded-full bg-white text-black font-bold text-xs">ADD</button>
         </div>
       </div>
 
@@ -299,7 +317,7 @@ export default function CourseManager() {
                     {c.featured && <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold">FEATURED</span>}
                     {c.archived && <span className="px-2 py-0.5 rounded-full bg-gray-500/20 text-gray-300 text-[10px] font-bold">ARCHIVED</span>}
                   </div>
-                  <div className="text-xs text-white/40 mt-1">{c.category} • <span className="text-cyan-300 font-bold">{formatNaira(c.price)}</span> • {c.curriculum?.reduce((a, m) => a + m.lessons.length, 0) || 0} lessons • {c.students} students</div>
+                  <div className="text-xs text-white/40 mt-1">{c.category} • <span className="text-cyan-300 font-bold">{formatNaira(c.price)}</span> • {c.curriculum ? c.curriculum.reduce((a, m) => a + (m.lessons?.length || 0), 0) : (c.lessonsCount || 0)} lessons • {c.students} students</div>
                 </>
               )}
             </div>
@@ -312,10 +330,10 @@ export default function CourseManager() {
               ) : (
                 <>
                   <button onClick={() => setManaging(c.id)} className="h-9 px-4 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-bold">CURRICULUM</button>
-                  <button onClick={() => { setCoursePublished(c.id, !c.published); audit(user, c.published ? 'course.unpublish' : 'course.publish', 'course', c.id, {}); }} title={c.published ? 'Unpublish' : 'Publish'} className="h-9 w-9 rounded-full glass flex items-center justify-center">{c.published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}</button>
+                  <button onClick={async () => { try { await setCoursePublished(c.id, !c.published); audit(user, c.published ? 'course.unpublish' : 'course.publish', 'course', c.id, {}); } catch (err) { toast.error(err.message); } }} title={c.published ? 'Unpublish' : 'Publish'} className="h-9 w-9 rounded-full glass flex items-center justify-center">{c.published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}</button>
                   <button onClick={() => startEdit(c)} className="h-9 w-9 rounded-full glass flex items-center justify-center"><Edit className="h-4 w-4" /></button>
-                  <button onClick={() => { updateCourse(c.id, { archived: !c.archived }); audit(user, c.archived ? 'course.unarchive' : 'course.archive', 'course', c.id, {}); toast.success(c.archived ? 'Unarchived' : 'Archived — hidden from store'); }} title={c.archived ? 'Unarchive' : 'Archive'} className="h-9 px-3 rounded-full glass text-[10px] font-bold">{c.archived ? 'UNARCHIVE' : 'ARCHIVE'}</button>
-                  <button onClick={() => { if (confirm(`Delete "${c.title}"? This cannot be undone.`)) { deleteCourse(c.id); audit(user, 'course.delete', 'course', c.id, {}); toast.success('Deleted'); } }} className="h-9 w-9 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-4 w-4" /></button>
+                  <button onClick={async () => { try { await updateCourse(c.id, { archived: !c.archived }); audit(user, c.archived ? 'course.unarchive' : 'course.archive', 'course', c.id, {}); toast.success(c.archived ? 'Unarchived' : 'Archived — hidden from store'); } catch (err) { toast.error(err.message); } }} title={c.archived ? 'Unarchive' : 'Archive'} className="h-9 px-3 rounded-full glass text-[10px] font-bold">{c.archived ? 'UNARCHIVE' : 'ARCHIVE'}</button>
+                  <button onClick={async () => { if (confirm(`Delete "${c.title}"? This cannot be undone.`)) { try { await deleteCourse(c.id); audit(user, 'course.delete', 'course', c.id, {}); toast.success('Deleted'); } catch (err) { toast.error(err.message); } } }} className="h-9 w-9 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-4 w-4" /></button>
                 </>
               )}
             </div>

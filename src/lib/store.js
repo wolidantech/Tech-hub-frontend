@@ -111,7 +111,7 @@ export const mapQuestionFull = (q) => q && {
 };
 
 export const mapAttempt = (a) => a && {
-  id: a.id, quizId: a.quiz_id, courseId: a.course_id, userId: a.user_id,
+  id: a.id, quizId: a.quiz_id, courseId: a.quiz?.course_id || null, userId: a.user_id,
   answers: a.answers || {}, score: num(a.score), earned: num(a.earned), total: num(a.total),
   passed: !!a.passed, details: a.details || null, attemptNo: num(a.attempt_no, 1), createdAt: a.created_at,
 };
@@ -315,6 +315,7 @@ export const touchLastLogin = async (userId) => {
 };
 
 export const uploadAvatar = async (userId, file) => uploadFile('avatars', userId, file);
+export const uploadThumbnail = async (courseId, file) => uploadFile('thumbnails', courseId, file);
 
 // ============================================================ COURSES
 export const fetchCourses = async ({ onlyPublished = false } = {}) => {
@@ -587,10 +588,10 @@ export const submitAttemptRpc = async (quizId, answers) =>
   mapAttempt(await one(sb().rpc('submit_quiz_attempt', { p_quiz_id: quizId, p_answers: answers || {} })));
 
 export const fetchMyAttempts = async (userId) =>
-  (await one(sb().from('quiz_attempts').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(2000))).map(mapAttempt);
+  (await one(sb().from('quiz_attempts').select('*, quiz:quizzes(course_id)').eq('user_id', userId).order('created_at', { ascending: false }).limit(2000))).map(mapAttempt);
 
 export const fetchAllAttempts = async () =>
-  (await one(sb().from('quiz_attempts').select('*').order('created_at', { ascending: false }).limit(5000))).map(mapAttempt);
+  (await one(sb().from('quiz_attempts').select('*, quiz:quizzes(course_id)').order('created_at', { ascending: false }).limit(5000))).map(mapAttempt);
 
 export const adminDeleteAttempts = async (userId, quizId) => {
   await one(sb().from('quiz_attempts').delete().eq('user_id', userId).eq('quiz_id', quizId));

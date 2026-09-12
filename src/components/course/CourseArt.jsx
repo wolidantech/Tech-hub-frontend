@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { publicUrl } from '../../lib/supabase';
 
 // Premium 3D-style course visuals: layered glassmorphism scenes with depth,
 // floating elements, realistic lighting gradients and brand accents.
@@ -26,11 +27,12 @@ const SCENES = {
 function CourseArt({ course, className = 'h-[200px]' }) {
   const theme = SCENES[course.artTheme] || SCENES[course.thumbnail] || SCENES.default;
 
-  // Admin-uploaded custom thumbnail takes precedence
+  // Admin-uploaded custom thumbnail takes precedence (storage path or direct URL)
   if (course.thumbnailUrl) {
+    const src = /^(https?:|data:|blob:)/.test(course.thumbnailUrl) ? course.thumbnailUrl : publicUrl('thumbnails', course.thumbnailUrl);
     return (
       <div className={`relative ${className} overflow-hidden bg-[#0a1a4a]`}>
-        <img src={course.thumbnailUrl} alt={course.title} loading="lazy" className="h-full w-full object-cover" />
+        <img src={src} alt={course.title} loading="lazy" className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#020a1f]/70 via-transparent to-transparent" />
       </div>
     );
