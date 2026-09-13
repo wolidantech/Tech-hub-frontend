@@ -13,7 +13,7 @@ npm run verify:seed   # the seed chain an administrator is told to run
 Expected:
 
 - `npm run verify` → `42 passed, 0 failed`
-- `npm run verify:seed` → `22 passed, 0 failed`
+- `npm run verify:seed` → `24 passed, 0 failed`
 
 ## What each covers
 

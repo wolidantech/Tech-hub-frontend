@@ -92,11 +92,11 @@ await t('seeded catalog starts unpublished (RLS hides it from visitors)', async 
 // ---------- 3. curriculum seed ----------
 await db.exec(read(join(here, '../seed/seed_curriculum.sql')));
 
-await t('curriculum seed creates modules and lessons', async () => {
+await t('curriculum seed creates the full 12×4×4 catalog', async () => {
   const m = await count(`select count(*)::int as n from course_modules`);
   const l = await count(`select count(*)::int as n from course_lessons`);
-  assert(m === 15, `expected 15 modules, got ${m}`);
-  assert(l === 26, `expected 26 lessons, got ${l}`);
+  assert(m === 48, `expected 48 modules (12 courses × 4), got ${m}`);
+  assert(l === 192, `expected 192 lessons (48 modules × 4), got ${l}`);
 });
 
 await t('every lesson is attached to a module of its own course', async () => {
@@ -112,19 +112,49 @@ await t('lesson types satisfy the video/text check constraint', async () => {
   assert(bad === 0, `${bad} lessons have an invalid type`);
 });
 
-await t('no placeholder video rows are seeded', async () => {
+await t('every lesson ships a real video (no placeholders)', async () => {
   const n = await count(`select count(*)::int as n from course_videos`);
-  assert(n === 0, `expected 0 course_videos, got ${n} (placeholder URLs must not ship)`);
+  assert(n === 192, `expected one video per lesson (192), got ${n}`);
+  const placeholders = await count(
+    `select count(*)::int as n from course_videos where url ilike '%dQw4w9WgXcQ%' or url is null or url = ''`
+  );
+  assert(placeholders === 0, `${placeholders} placeholder/empty video URLs must never ship`);
+  const bad = await count(
+    `select count(*)::int as n from course_videos
+     where provider <> 'youtube' or url not like 'https://www.youtube.com/watch?v=%'`
+  );
+  assert(bad === 0, `${bad} videos are not real YouTube watch URLs`);
+  const orphans = await count(
+    `select count(*)::int as n from course_lessons l
+     where not exists (select 1 from course_videos v where v.lesson_id = l.id)`
+  );
+  assert(orphans === 0, `${orphans} lessons have no video row`);
+  const dupes = await count(
+    `select count(*)::int as n from (
+       select lesson_id, url from course_videos group by lesson_id, url having count(*) > 1
+     ) d`
+  );
+  assert(dupes === 0, `${dupes} duplicated (lesson, url) video rows`);
 });
 
 await t('lessons_count trigger keeps the card totals in sync', async () => {
   const row = await one(`select lessons_count from courses where slug = 'ai-video-content-creation'`);
-  assert(Number(row.lessons_count) === 9, `expected 9 lessons on ai-video-content-creation, got ${row.lessons_count}`);
+  assert(Number(row.lessons_count) === 16, `expected 16 lessons on ai-video-content-creation, got ${row.lessons_count}`);
 });
 
-await t('text bodies are stored for enrolled-only reading', async () => {
-  const n = await count(`select count(*)::int as n from course_content where body_markdown <> ''`);
-  assert(n >= 1, `expected at least one lesson body, got ${n}`);
+await t('every lesson has a full teaching body (enrolled-only reading)', async () => {
+  const n = await count(`select count(*)::int as n from course_content where length(body_markdown) > 300`);
+  assert(n === 192, `expected 192 full lesson bodies, got ${n}`);
+  const missing = await count(
+    `select count(*)::int as n from course_lessons l
+     where not exists (select 1 from course_content c where c.lesson_id = l.id and c.body_markdown <> '')`
+  );
+  assert(missing === 0, `${missing} lessons have no body`);
+});
+
+await t('every lesson carries curated resources', async () => {
+  const n = await count(`select count(*)::int as n from course_lessons where jsonb_array_length(resources) >= 1`);
+  assert(n === 192, `expected resources on all 192 lessons, got ${n}`);
 });
 
 // ---------- 4. idempotency ----------
@@ -135,7 +165,9 @@ await t('re-running the seeds does not duplicate curriculum', async () => {
   const m = await count(`select count(*)::int as n from course_modules`);
   const l = await count(`select count(*)::int as n from course_lessons`);
   const c = await count(`select count(*)::int as n from courses`);
-  assert(m === 15 && l === 26 && c === 12, `got ${c} courses / ${m} modules / ${l} lessons`);
+  const v = await count(`select count(*)::int as n from course_videos`);
+  assert(m === 48 && l === 192 && c === 12 && v === 192,
+    `got ${c} courses / ${m} modules / ${l} lessons / ${v} videos`);
 });
 
 // ---------- 5. publish ----------
@@ -232,11 +264,22 @@ await t('one-step setup leaves no course as an empty shell', async () => {
   assert(noLessons === 0, `${noLessons} published courses have no lessons`);
 });
 
+await t('one-step setup seeds bodies, resources and videos for every lesson', async () => {
+  const bodies = await fcount(`select count(*)::int as n from course_content where length(body_markdown) > 300`);
+  const videos = await fcount(`select count(*)::int as n from course_videos where url like 'https://www.youtube.com/watch?v=%'`);
+  const resources = await fcount(`select count(*)::int as n from course_lessons where jsonb_array_length(resources) >= 1`);
+  assert(bodies === 192, `expected 192 bodies, got ${bodies}`);
+  assert(videos === 192, `expected 192 real videos, got ${videos}`);
+  assert(resources === 192, `expected 192 lessons with resources, got ${resources}`);
+});
+
 await t('one-step setup is idempotent on re-run', async () => {
   await fresh.exec(read(join(here, '../seed/setup_full_catalog.sql')));
   const total = await fcount(`select count(*)::int as n from courses`);
   const lessons = await fcount(`select count(*)::int as n from course_lessons`);
-  assert(total === 12 && lessons === 26, `got ${total} courses / ${lessons} lessons`);
+  const videos = await fcount(`select count(*)::int as n from course_videos`);
+  assert(total === 12 && lessons === 192 && videos === 192,
+    `got ${total} courses / ${lessons} lessons / ${videos} videos`);
 });
 
 // ---------- summary ----------

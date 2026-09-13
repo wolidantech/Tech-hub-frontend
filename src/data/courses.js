@@ -9,6 +9,59 @@ export const categories = [
   "Microsoft Office"
 ];
 
+// ============================================================
+// FULL CURRICULA — each course carries 4 modules × 4 lessons
+// (16 lessons) of professional lesson bodies, one curated real
+// YouTube video per lesson and curated resources per lesson.
+// The per-course content lives in ./curriculum/<slug>.js so it
+// stays reviewable and the seed chain stays the single consumer.
+// ============================================================
+import aiVideoContentCreation from "./curriculum/ai-video-content-creation.js";
+import videoEditingCapcut from "./curriculum/video-editing-capcut.js";
+import graphicDesignCanva from "./curriculum/graphic-design-canva.js";
+import digitalMarketing from "./curriculum/digital-marketing.js";
+import frontendWebDevelopment from "./curriculum/frontend-web-development.js";
+import webDesignWordpress from "./curriculum/web-design-wordpress.js";
+import uiUxDesignFigma from "./curriculum/ui-ux-design-figma.js";
+import microsoftExcel from "./curriculum/microsoft-excel.js";
+import microsoftWord from "./curriculum/microsoft-word.js";
+import microsoftPowerpoint from "./curriculum/microsoft-powerpoint.js";
+import mobileAppDevelopment from "./curriculum/mobile-app-development.js";
+import portfolioCreation from "./curriculum/portfolio-creation.js";
+
+const CURRICULA = Object.fromEntries(
+  [
+    aiVideoContentCreation,
+    videoEditingCapcut,
+    graphicDesignCanva,
+    digitalMarketing,
+    frontendWebDevelopment,
+    webDesignWordpress,
+    uiUxDesignFigma,
+    microsoftExcel,
+    microsoftWord,
+    microsoftPowerpoint,
+    mobileAppDevelopment,
+    portfolioCreation,
+  ].map(({ slug, curriculum }) => [slug, curriculum])
+);
+
+/** Normalise a curriculum module for the seed chain: stable ids + explicit type. */
+const withIds = (slug, modules) =>
+  modules.map((mod, mi) => ({
+    id: `${slug}-m${mi + 1}`,
+    title: mod.title,
+    lessons: mod.lessons.map((lesson, li) => ({
+      id: `${slug}-m${mi + 1}-l${li + 1}`,
+      title: lesson.title,
+      type: lesson.videoUrl ? "video" : "text",
+      duration: lesson.duration || "",
+      videoUrl: lesson.videoUrl,
+      content: lesson.content || "",
+      resources: lesson.resources || [],
+    })),
+  }));
+
 export const coursesData = [
   {
     id: "ai-video-content-creation",
@@ -21,7 +74,7 @@ export const coursesData = [
     instructor: "Woli Dan",
     instructorRole: "AI Content Strategist",
     duration: "8 hours",
-    lessonsCount: 24,
+    lessonsCount: 16,
     level: "Beginner",
     price: 5000,
     originalPrice: 15000,
@@ -38,35 +91,6 @@ export const coursesData = [
       "Creating advertisements with AI",
       "Creating viral social media content with AI",
       "Monetizing AI video content"
-    ],
-    curriculum: [
-      {
-        id: "m1",
-        title: "Introduction to AI Video Creation",
-        lessons: [
-          { id: "l1", title: "What is AI Video Creation?", type: "video", duration: "12:30", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", content: "Overview of AI video landscape" },
-          { id: "l2", title: "Tools You Need - Free & Paid", type: "text", duration: "08:45", content: "Complete toolkit breakdown..." },
-          { id: "l3", title: "Setting Up Your Workspace", type: "video", duration: "15:20", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-        ]
-      },
-      {
-        id: "m2",
-        title: "AI Script & Voice Mastery",
-        lessons: [
-          { id: "l4", title: "AI Script Writing with ChatGPT", type: "video", duration: "18:10", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-          { id: "l5", title: "Voice Generation - ElevenLabs & More", type: "video", duration: "22:15", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-          { id: "l6", title: "Practice: Create Your First Script", type: "text", duration: "10:00", content: "Hands-on exercise..." },
-        ]
-      },
-      {
-        id: "m3",
-        title: "AI Video Production",
-        lessons: [
-          { id: "l7", title: "Text-to-Video with Runway & Pika", type: "video", duration: "25:00", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-          { id: "l8", title: "Image-to-Video Animation", type: "video", duration: "20:30", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-          { id: "l9", title: "Creating Ads That Convert", type: "video", duration: "19:45", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-        ]
-      }
     ]
   },
   {
@@ -80,7 +104,7 @@ export const coursesData = [
     instructor: "Woli Dan",
     instructorRole: "Video Editor",
     duration: "6 hours",
-    lessonsCount: 20,
+    lessonsCount: 16,
     level: "Beginner",
     price: 5000,
     originalPrice: 12000,
@@ -97,25 +121,6 @@ export const coursesData = [
       "Sound design & music",
       "Export settings for all platforms",
       "Creating viral short-form content"
-    ],
-    curriculum: [
-      {
-        id: "m1",
-        title: "CapCut Basics",
-        lessons: [
-          { id: "l1", title: "Getting Started with CapCut", type: "video", duration: "10:20", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-          { id: "l2", title: "Timeline & Cutting Techniques", type: "video", duration: "14:30", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-          { id: "l3", title: "Your First Edit", type: "text", duration: "15:00", content: "Practice project..." },
-        ]
-      },
-      {
-        id: "m2",
-        title: "Advanced Editing",
-        lessons: [
-          { id: "l4", title: "Transitions & Effects Deep Dive", type: "video", duration: "18:45", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-          { id: "l5", title: "Keyframes & Motion Graphics", type: "video", duration: "20:10", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-        ]
-      }
     ]
   },
   {
@@ -129,7 +134,7 @@ export const coursesData = [
     instructor: "Woli Dan",
     instructorRole: "Brand Designer",
     duration: "5 hours",
-    lessonsCount: 18,
+    lessonsCount: 16,
     level: "Beginner",
     price: 5000,
     originalPrice: 10000,
@@ -146,16 +151,6 @@ export const coursesData = [
       "Presentation design",
       "Client project workflow",
       "Selling designs online"
-    ],
-    curriculum: [
-      {
-        id: "m1",
-        title: "Design Fundamentals",
-        lessons: [
-          { id: "l1", title: "Design Thinking & Canva Tour", type: "video", duration: "12:00", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-          { id: "l2", title: "Colors, Fonts & Layout", type: "video", duration: "16:20", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-        ]
-      }
     ]
   },
   {
@@ -169,7 +164,7 @@ export const coursesData = [
     instructor: "Woli Dan",
     instructorRole: "Marketing Lead",
     duration: "10 hours",
-    lessonsCount: 28,
+    lessonsCount: 16,
     level: "Beginner to Intermediate",
     price: 5000,
     originalPrice: 20000,
@@ -186,29 +181,20 @@ export const coursesData = [
       "Copywriting that sells",
       "Analytics & optimization",
       "Monetizing your skills"
-    ],
-    curriculum: [
-      {
-        id: "m1",
-        title: "Marketing Foundations",
-        lessons: [
-          { id: "l1", title: "The Digital Marketing Ecosystem", type: "video", duration: "14:00", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-        ]
-      }
     ]
   },
   {
     id: "mobile-app-development",
     slug: "mobile-app-development",
     title: "MOBILE APPLICATION DEVELOPMENT",
-    shortDescription: "Build real mobile apps with no-code & Flutterflow basics",
-    description: "Learn to build functional mobile apps without complex coding. From idea to Play Store.",
-    longDescription: "Build your first mobile app in 2 weeks. This beginner-friendly course covers app ideation, UI design, no-code development, and publishing. Perfect for entrepreneurs with app ideas.",
+    shortDescription: "Build real mobile apps with Flutter & Dart - from zero to Play Store",
+    description: "Learn to build real mobile apps for Android and iOS from one codebase with Flutter. From setup to publishing.",
+    longDescription: "Build and publish your first mobile app. This hands-on course covers Dart, Flutter UI, state management, APIs, Firebase backends, and shipping to the Play Store — the complete path from beginner to app creator.",
     category: "Mobile Development",
     instructor: "Woli Dan Tech Team",
     instructorRole: "Mobile Developer",
     duration: "15 hours",
-    lessonsCount: 32,
+    lessonsCount: 16,
     level: "Beginner",
     price: 5000,
     originalPrice: 25000,
@@ -217,23 +203,14 @@ export const coursesData = [
     thumbnail: "mobile",
     color: "from-emerald-500 to-teal-600",
     whatYouWillLearn: [
-      "Mobile app fundamentals",
-      "UI/UX for mobile apps",
-      "No-code app development",
-      "Database & authentication",
-      "APIs & integrations",
-      "Testing & deployment",
-      "Publishing to Play Store",
-      "App monetization"
-    ],
-    curriculum: [
-      {
-        id: "m1",
-        title: "App Foundations",
-        lessons: [
-          { id: "l1", title: "How Mobile Apps Work", type: "video", duration: "13:00", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-        ]
-      }
+      "Dart programming fundamentals",
+      "Flutter widgets & layouts",
+      "State management with Provider",
+      "Navigation & forms",
+      "APIs, JSON & local storage",
+      "Firebase auth & Firestore",
+      "Polish, themes & app identity",
+      "Publishing to the Play Store"
     ]
   },
   {
@@ -241,13 +218,13 @@ export const coursesData = [
     slug: "portfolio-creation",
     title: "PORTFOLIO CREATION",
     shortDescription: "Build a portfolio that gets you hired - showcase your work like a pro",
-    description: "Create a stunning professional portfolio website that attracts clients and employers. No coding needed.",
-    longDescription: "Your portfolio is your CV in the digital age. Learn to curate your best work, write compelling case studies, and build a portfolio site that converts visitors into clients.",
+    description: "Create a stunning professional portfolio that attracts clients and employers, plus the freelance systems that turn skills into income.",
+    longDescription: "Your portfolio is your CV in the digital age. Learn to curate your best work, write compelling case studies, build your online presence, and land your first clients — the complete path from skilled to hired.",
     category: "Design",
     instructor: "Woli Dan",
     instructorRole: "Career Coach",
     duration: "4 hours",
-    lessonsCount: 14,
+    lessonsCount: 16,
     level: "Beginner",
     price: 5000,
     originalPrice: 8000,
@@ -256,23 +233,14 @@ export const coursesData = [
     thumbnail: "portfolio",
     color: "from-slate-600 to-slate-800",
     whatYouWillLearn: [
-      "Portfolio strategy & structure",
-      "Selecting your best work",
-      "Case study writing",
-      "Building portfolio site",
-      "Personal branding",
-      "Client attraction",
-      "Resume & LinkedIn optimization",
-      "Interview preparation"
-    ],
-    curriculum: [
-      {
-        id: "m1",
-        title: "Portfolio Strategy",
-        lessons: [
-          { id: "l1", title: "What Makes a Great Portfolio", type: "video", duration: "11:00", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-        ]
-      }
+      "Portfolio strategy & curation",
+      "Case studies that sell",
+      "LinkedIn & personal branding",
+      "Fiverr & Upwork mastery",
+      "Pricing your skills",
+      "Proposals & contracts",
+      "Landing your first client",
+      "Retainers, products & growth"
     ]
   },
   {
@@ -286,7 +254,7 @@ export const coursesData = [
     instructor: "Woli Dan Tech Team",
     instructorRole: "Senior Frontend Engineer",
     duration: "20 hours",
-    lessonsCount: 45,
+    lessonsCount: 16,
     level: "Beginner to Intermediate",
     price: 5000,
     originalPrice: 30000,
@@ -303,16 +271,6 @@ export const coursesData = [
       "React basics",
       "Git & deployment",
       "Building 5 real projects"
-    ],
-    curriculum: [
-      {
-        id: "m1",
-        title: "Web Foundations",
-        lessons: [
-          { id: "l1", title: "How the Web Works", type: "video", duration: "10:00", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-          { id: "l2", title: "HTML Crash Course", type: "video", duration: "45:00", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-        ]
-      }
     ]
   },
   {
@@ -326,7 +284,7 @@ export const coursesData = [
     instructor: "Woli Dan",
     instructorRole: "WordPress Expert",
     duration: "8 hours",
-    lessonsCount: 22,
+    lessonsCount: 16,
     level: "Beginner",
     price: 5000,
     originalPrice: 15000,
@@ -343,15 +301,6 @@ export const coursesData = [
       "SEO basics",
       "Security & maintenance",
       "Charging clients & delivery"
-    ],
-    curriculum: [
-      {
-        id: "m1",
-        title: "WordPress Setup",
-        lessons: [
-          { id: "l1", title: "Domain, Hosting & Installation", type: "video", duration: "20:00", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-        ]
-      }
     ]
   },
   {
@@ -365,7 +314,7 @@ export const coursesData = [
     instructor: "Woli Dan Tech Team",
     instructorRole: "Product Designer",
     duration: "12 hours",
-    lessonsCount: 26,
+    lessonsCount: 16,
     level: "Beginner",
     price: 5000,
     originalPrice: 18000,
@@ -382,15 +331,6 @@ export const coursesData = [
       "Prototyping & animations",
       "Usability testing",
       "Portfolio & job prep"
-    ],
-    curriculum: [
-      {
-        id: "m1",
-        title: "UX Foundations",
-        lessons: [
-          { id: "l1", title: "What is UI/UX?", type: "video", duration: "12:00", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-        ]
-      }
     ]
   },
   {
@@ -399,12 +339,12 @@ export const coursesData = [
     title: "MICROSOFT EXCEL",
     shortDescription: "Excel from beginner to advanced - formulas, charts, dashboards",
     description: "Master Microsoft Excel for work and business. Formulas, pivot tables, charts, and dashboards.",
-    longDescription: "Excel is still the most demanded office skill. This course takes you from basic spreadsheet creation to advanced data analysis, pivot tables, and interactive dashboards. Essential for any office job.",
+    longDescription: "Excel is still the most demanded office skill. This course takes you from basic spreadsheet skills to advanced data analysis, pivot tables, and interactive dashboards. Essential for any office job.",
     category: "Microsoft Office",
     instructor: "Woli Dan",
     instructorRole: "Data Analyst",
     duration: "6 hours",
-    lessonsCount: 20,
+    lessonsCount: 16,
     level: "Beginner to Advanced",
     price: 5000,
     originalPrice: 10000,
@@ -421,15 +361,6 @@ export const coursesData = [
       "Conditional formatting",
       "Dashboards & reports",
       "Shortcuts & productivity"
-    ],
-    curriculum: [
-      {
-        id: "m1",
-        title: "Excel Basics",
-        lessons: [
-          { id: "l1", title: "Excel Interface & Navigation", type: "video", duration: "10:00", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-        ]
-      }
     ]
   },
   {
@@ -443,7 +374,7 @@ export const coursesData = [
     instructor: "Woli Dan",
     instructorRole: "Office Productivity Expert",
     duration: "4 hours",
-    lessonsCount: 15,
+    lessonsCount: 16,
     level: "Beginner",
     price: 5000,
     originalPrice: 8000,
@@ -460,15 +391,6 @@ export const coursesData = [
       "Tables & graphics",
       "Collaboration & review",
       "Printing & exporting"
-    ],
-    curriculum: [
-      {
-        id: "m1",
-        title: "Word Essentials",
-        lessons: [
-          { id: "l1", title: "Word Interface & First Document", type: "video", duration: "08:00", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-        ]
-      }
     ]
   },
   {
@@ -499,54 +421,14 @@ export const coursesData = [
       "Storytelling structure",
       "Presenter tools",
       "Export & delivery"
-    ],
-    curriculum: [
-      {
-        id: "m1",
-        title: "Presentation Design",
-        lessons: [
-          { id: "l1", title: "The Art of Presentations", type: "video", duration: "09:00", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-        ]
-      }
     ]
   }
-];
+].map((course) => ({
+  ...course,
+  curriculum: withIds(course.slug, CURRICULA[course.slug]),
+}));
 
-// For demo: ensure all have at least 2 modules with 3 lessons
-export const enrichCourses = (courses) => courses.map(c => {
-  if (!c.curriculum || c.curriculum.length < 2) {
-    return {
-      ...c,
-      curriculum: [
-        {
-          id: "m1",
-          title: "Getting Started",
-          lessons: [
-            { id: `${c.id}-l1`, title: `Introduction to ${c.title}`, type: "video", duration: "12:30", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", content: "Welcome to the course!" },
-            { id: `${c.id}-l2`, title: "Tools & Setup", type: "text", duration: "08:45", content: "In this lesson, we'll cover all the tools you need to get started with this course. Make sure you have everything installed before proceeding." },
-            { id: `${c.id}-l3`, title: "Your First Project", type: "video", duration: "15:20", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", content: "Let's build something together!" },
-          ]
-        },
-        {
-          id: "m2",
-          title: "Core Concepts",
-          lessons: [
-            { id: `${c.id}-l4`, title: "Understanding the Fundamentals", type: "video", duration: "18:10", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-            { id: `${c.id}-l5`, title: "Hands-On Practice", type: "video", duration: "22:15", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-            { id: `${c.id}-l6`, title: "Common Mistakes to Avoid", type: "text", duration: "10:00", content: "Here are the top mistakes beginners make and how to avoid them." },
-          ]
-        },
-        {
-          id: "m3",
-          title: "Advanced Techniques & Monetization",
-          lessons: [
-            { id: `${c.id}-l7`, title: "Pro Techniques", type: "video", duration: "25:00", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-            { id: `${c.id}-l8`, title: "Building Your Portfolio", type: "video", duration: "20:30", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
-            { id: `${c.id}-l9`, title: "How to Get Clients & Make Money", type: "text", duration: "19:45", content: "Now that you have the skills, let's talk about turning them into income. This lesson covers freelancing platforms, pricing, and client acquisition." },
-          ]
-        }
-      ]
-    }
-  }
-  return c;
-});
+// Kept for backwards compatibility. Every course now ships a complete
+// 4-module curriculum from ./curriculum, so there is nothing to enrich;
+// the function simply passes courses through untouched.
+export const enrichCourses = (courses) => courses;
