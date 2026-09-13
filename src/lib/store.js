@@ -80,6 +80,7 @@ export const mapPayment = (p) => p && {
   receiptPath: p.receipt_path, receiptData: null,
   receiptName: (p.receipt_path || '').split('/').pop() || '',
   receiptType: mimeFromName(p.receipt_path), receiptSize: null,
+  note: p.note || '',
   status: p.status, paymentMethod: 'Manual Bank Transfer',
   submittedAt: p.submitted_at, approvedBy: p.approved_by, approvedAt: p.approved_at,
   rejectedReason: p.rejected_reason, rejectedBy: p.rejected_by, rejectedAt: p.rejected_at,
@@ -470,7 +471,7 @@ export const submitPaymentRow = async (row) =>
     amount: num(row.amount), original_amount: row.originalAmount ?? null,
     coupon_code: row.couponCode || null, coupon_discount: num(row.couponDiscount),
     transaction_date: row.transactionDate || null, reference: row.reference,
-    receipt_path: row.receiptPath, status: 'pending',
+    receipt_path: row.receiptPath, note: row.note || null, status: 'pending',
   }).select().single()));
 
 export const fetchMyPayments = async (userId) =>
@@ -485,7 +486,7 @@ export const approvePaymentRpc = async (paymentId) =>
 export const rejectPaymentRpc = async (paymentId, reason) =>
   one(sb().rpc('reject_payment', { p_payment_id: paymentId, p_reason: reason }));
 
-export const uploadReceipt = async (userId, file) => uploadFile('receipts', userId, file);
+export const uploadReceipt = async (userId, file, onProgress = null) => uploadFile('receipts', userId, file, onProgress);
 
 // ============================================================ COUPONS
 const couponResult = (code, r) => ({

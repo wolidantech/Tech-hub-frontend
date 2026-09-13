@@ -178,19 +178,24 @@ export const CourseProvider = ({ children }) => {
   [enrollments]);
 
   // ===== MANUAL BANK TRANSFER SYSTEM =====
+  // Submission ALWAYS lands as status='pending' (enforced by RLS). Approval
+  // and rejection happen exclusively through the admin-gated RPCs, so the
+  // frontend can never approve a payment, alter an amount after submission,
+  // or touch another student's rows.
   const submitManualPayment = async ({
     userId, courseId, studentName, email, phone, amount, transactionDate, reference,
-    receiptFile, receiptName, receiptType, receiptSize,
+    receiptFile, receiptName, receiptType, receiptSize, note = '',
     couponCode = null, couponDiscount = 0, originalAmount = null,
-    bundleId = null, bundleCourseIds = [],
+    bundleId = null, bundleCourseIds = [], onUploadProgress = null,
   }) => {
     if (!receiptFile) throw new Error('Please upload your payment receipt');
     if (!String(reference || '').trim()) throw new Error('Transaction reference is required');
-    const receiptPath = await uploadReceipt(userId, receiptFile);
+    const receiptPath = await uploadReceipt(userId, receiptFile, onUploadProgress);
     try {
       const payment = await submitPaymentRow({
         userId, courseId: courseId || null, studentName, email, phone, amount,
         transactionDate, reference: String(reference).trim(), receiptPath,
+        note: String(note || '').trim().slice(0, 500),
         couponCode, couponDiscount, originalAmount, bundleId, bundleCourseIds,
       });
       setManualPayments((prev) => [payment, ...prev]);
@@ -201,6 +206,9 @@ export const CourseProvider = ({ children }) => {
     }
   };
 
+  // Admin decision flows. The RPCs are atomic server-side (payment status +
+  // enrollment + notification + audit in one transaction); afterwards we
+  // re-read the DB so the UI reflects the authoritative state.
   const approveManualPayment = async (paymentId) => {
     await approvePaymentRpc(paymentId);
     const [pay, en] = await Promise.all([fetchAllPayments(), fetchAllEnrollments()]);
@@ -211,10 +219,26 @@ export const CourseProvider = ({ children }) => {
   };
 
   const rejectManualPayment = async (paymentId, reason) => {
+    if (!String(reason || '').trim()) throw new Error('Rejection reason is required');
     await rejectPaymentRpc(paymentId, reason);
     const pay = await fetchAllPayments();
     setManualPayments(pay);
     return pay.find((p) => p.id === paymentId);
+  };
+
+  // Re-read payments + enrollments from the database (used to resync after
+  // errors such as "already approved" so the UI never drifts from truth).
+  const resyncPayments = async () => {
+    if (!user) return;
+    if (user.role === 'admin') {
+      const [pay, en] = await Promise.all([fetchAllPayments(), fetchAllEnrollments()]);
+      setManualPayments(pay);
+      setEnrollments(en);
+    } else {
+      const [pay, en] = await Promise.all([fetchMyPayments(user.id), fetchMyEnrollments(user.id)]);
+      setManualPayments(pay);
+      setEnrollments(en);
+    }
   };
 
   const getUserManualPayments = useCallback((userId) =>
@@ -448,6 +472,7 @@ export const CourseProvider = ({ children }) => {
       submitManualPayment,
       approveManualPayment,
       rejectManualPayment,
+      resyncPayments,
       getUserManualPayments,
       getManualPaymentByCourse,
       getAllManualPayments,

@@ -1,11 +1,12 @@
 import { useParams, Link } from 'react-router-dom';
 import { useState } from 'react';
-import { Shield, Copy, CheckCircle2, Upload, AlertTriangle, ArrowLeft, FileText, Package } from 'lucide-react';
+import { Shield, Copy, CheckCircle2, Upload, AlertTriangle, ArrowLeft, FileText, Package, Loader2 } from 'lucide-react';
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
 import { formatNaira } from '../lib/utils';
 import { toast, Toaster } from 'sonner';
+import PaymentFlow from '../components/payment/PaymentFlow';
 
 export default function BundleEnroll() {
   const { id } = useParams();
@@ -13,22 +14,27 @@ export default function BundleEnroll() {
   const { getBundleById, siteSettings } = useLMS();
   const { user } = useAuth();
 
+  const bundle = getBundleById(id);
+
   const [form, setForm] = useState({
     studentName: user?.fullName || '',
     email: user?.email || '',
     phone: user?.phone || '',
-    amount: '',
+    amount: String(bundle?.price ?? ''),
     transactionDate: new Date().toISOString().split('T')[0],
-    reference: ''
+    reference: '',
+    note: ''
   });
   const [receiptFile, setReceiptFile] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [phase, setPhase] = useState('idle'); // idle | uploading | submitting
+  const [progress, setProgress] = useState(0);
   const [success, setSuccess] = useState(null);
   const [copied, setCopied] = useState(false);
 
-  const bundle = getBundleById(id);
   if (!bundle || bundle.published === false) return <div className="p-20 text-center">Bundle not found</div>;
   if (!user) return <div className="p-20 text-center"><Link to="/login" className="btn-primary">LOGIN TO CONTINUE</Link></div>;
+
+  const submitting = phase !== 'idle';
 
   const bank = {
     bankName: siteSettings?.bankName || 'MONIEPOINT',
@@ -55,26 +61,38 @@ export default function BundleEnroll() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
     if (!receiptFile) { toast.error('Please upload payment receipt'); return; }
     if (!form.reference.trim()) { toast.error('Transaction reference is required'); return; }
-    setSubmitting(true);
+    const amountPaid = Math.round(Number(form.amount));
+    if (!Number.isFinite(amountPaid) || amountPaid <= 0) { toast.error('Enter the amount you transferred'); return; }
+    if (amountPaid !== bundle.price) {
+      toast.error(`The amount must be exactly ${formatNaira(bundle.price)} — the bundle price shown above.`);
+      return;
+    }
+    setPhase('uploading');
+    setProgress(3);
     try {
       const payment = await submitManualPayment({
         userId: user.id,
         courseId: null,
         studentName: form.studentName, email: form.email, phone: form.phone,
-        amount: form.amount || bundle.price,
+        amount: amountPaid,
         transactionDate: form.transactionDate,
         reference: form.reference,
+        note: form.note,
         receiptFile,
         bundleId: bundle.id, bundleCourseIds: bundle.courseIds,
+        onUploadProgress: (p) => setProgress(Math.max(3, Math.min(96, p))),
       });
+      setPhase('submitting');
+      setProgress(100);
       setSuccess(payment);
-      toast.success('Bundle payment submitted! Pending review.');
+      toast.success('Payment submitted successfully.');
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err?.message || 'Payment submission failed. Please try again.');
     } finally {
-      setSubmitting(false);
+      setPhase('idle');
     }
   };
 
@@ -99,13 +117,14 @@ export default function BundleEnroll() {
         <div className="mx-auto max-w-[640px] px-4">
           <div className="glass-strong rounded-[24px] p-8 md:p-10 text-center space-y-6">
             <div className="h-20 w-20 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mx-auto"><FileText className="h-10 w-10 text-amber-400" /></div>
-            <h1 className="font-display font-black text-2xl md:text-3xl">Bundle Payment Submitted! 🎉</h1>
-            <p className="text-white/70">Once approved, you'll get instant access to all {bundleCourses.length} courses.</p>
+            <h1 className="font-display font-black text-2xl md:text-3xl">Payment submitted successfully.</h1>
+            <p className="text-white/70">Your bundle payment is <span className="text-amber-300 font-bold">PENDING</span> manual verification. Access to all {bundleCourses.length} courses unlocks only after an administrator approves it.</p>
+            <PaymentFlow status="pending" className="justify-center" />
             <div className="glass rounded-2xl p-6 text-left space-y-3">
               <div className="flex justify-between text-sm"><span className="text-white/50">Bundle</span><span className="font-bold">{bundle.title}</span></div>
               <div className="flex justify-between text-sm"><span className="text-white/50">Amount</span><span className="font-bold text-green-300">{formatNaira(success.amount)}</span></div>
               <div className="flex justify-between text-sm"><span className="text-white/50">Reference</span><span className="font-mono font-bold">{success.reference}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-white/50">Status</span><span className="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold">PENDING REVIEW</span></div>
+              <div className="flex justify-between text-sm items-center"><span className="text-white/50">Status</span><span className="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold">PENDING</span></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Link to="/my-payments" className="h-12 rounded-full glass flex items-center justify-center font-bold text-sm">MY PAYMENTS</Link>
@@ -177,20 +196,39 @@ export default function BundleEnroll() {
                 <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone" required className="h-12 rounded-full glass px-5 text-sm" />
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
-                <input value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder={`Amount paid (${bundle.price})`} type="number" className="h-12 rounded-full glass px-5 text-sm" />
-                <input value={form.transactionDate} onChange={(e) => setForm({ ...form, transactionDate: e.target.value })} type="date" required className="h-12 rounded-full glass px-5 text-sm" />
+                <div>
+                  <input value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder={`Amount paid (${bundle.price})`} type="number" min="1" required className="w-full h-12 rounded-full glass px-5 text-sm font-bold" />
+                  <div className="text-[10px] text-white/30 mt-1">Must match the exact bundle amount: {formatNaira(bundle.price)}</div>
+                </div>
+                <input value={form.transactionDate} onChange={(e) => setForm({ ...form, transactionDate: e.target.value })} type="date" max={new Date().toISOString().split('T')[0]} required className="h-12 rounded-full glass px-5 text-sm" />
               </div>
-              <input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="Transaction reference / narration" required className="w-full h-12 rounded-full glass px-5 text-sm" />
+              <input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="Payment / transaction reference" required className="w-full h-12 rounded-full glass px-5 text-sm font-mono" />
               <div>
-                <label className="text-xs font-bold text-white/40">PAYMENT RECEIPT (JPG/PNG/PDF, max 5MB)</label>
+                <label className="text-xs font-bold text-white/40">PAYMENT RECEIPT (JPG/JPEG/PNG/PDF, max 5MB)</label>
                 <input type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={handleFileChange} className="mt-1 w-full h-[52px] rounded-2xl glass px-4 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-white file:text-black file:font-bold file:text-xs" />
-                {receiptFile && <div className="text-xs text-green-300 mt-1">✓ {receiptFile.name}</div>}
+                {receiptFile && <div className="text-xs text-green-300 mt-1">✓ {receiptFile.name} ({(receiptFile.size / 1024).toFixed(1)} KB)</div>}
               </div>
+              <textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value.slice(0, 500) })} placeholder="Note (optional) — e.g. paid from a different account name" rows={2} className="w-full rounded-2xl glass p-4 text-sm focus:outline-none resize-none" />
               <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 text-xs text-white/60 flex gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
-                Transfer the exact bundle amount, then upload your receipt. All {bundleCourses.length} courses unlock after admin approval.
+                Transfer the exact bundle amount, then upload your receipt. All {bundleCourses.length} courses unlock only after admin approval — access stays locked while your payment is pending.
               </div>
-              <button disabled={submitting} className="w-full btn-primary !py-4 disabled:opacity-50">{submitting ? 'SUBMITTING...' : 'SUBMIT BUNDLE PAYMENT'}</button>
+              {submitting && (
+                <div className="rounded-2xl bg-cyan-500/10 border border-cyan-400/30 p-4 space-y-2">
+                  <div className="flex justify-between text-xs font-bold text-cyan-200">
+                    <span className="flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" /> {phase === 'uploading' ? 'Uploading receipt…' : 'Submitting payment for verification…'}</span>
+                    <span>{progress}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-cyan-400 to-blue-600 transition-all duration-300" style={{ width: `${progress}%` }} />
+                  </div>
+                </div>
+              )}
+              <button disabled={submitting || existingBundlePayment?.status === 'pending'} className="w-full btn-primary !py-4 disabled:opacity-50 disabled:cursor-not-allowed">
+                {submitting
+                  ? (phase === 'uploading' ? `UPLOADING RECEIPT… ${progress}%` : 'SUBMITTING PAYMENT…')
+                  : existingBundlePayment?.status === 'pending' ? 'WAITING FOR REVIEW OF PENDING PAYMENT' : `SUBMIT BUNDLE PAYMENT (${formatNaira(bundle.price)})`}
+              </button>
             </form>
           </div>
         </div>

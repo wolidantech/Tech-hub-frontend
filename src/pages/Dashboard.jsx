@@ -13,7 +13,7 @@ import CourseArt from '../components/course/CourseArt';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { courses, enrollments: allEnrollments, progressMap, getUserEnrollments, getCourseById, getProgress, getUserCertificates, getUserManualPayments, getUserPaymentSummary, getUserNotifications } = useCourses();
+  const { courses, enrollments: allEnrollments, progressMap, getUserEnrollments, getCourseById, getProgress, getUserCertificates, getUserManualPayments, getUserPaymentSummary, getUserNotifications, isEnrolled } = useCourses();
   const { getUserQuizAverage, getUserAttempts, getUserSubmissions, courseViews, learningEvents, announcements, quizAttempts, submissions, getUpcomingClasses } = useLMS();
 
   const uid = user?.id || '';
@@ -305,6 +305,27 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
+
+            {/* Approved Payments — access confirmed by the backend */}
+            {manualPayments.filter((p) => p.status === 'approved' && p.courseId && isEnrolled(user.id, p.courseId)).slice(0, 3).map((p) => {
+              const approvedCourse = getCourseById(p.courseId);
+              return (
+                <div key={p.id} className="rounded-2xl border border-green-500/30 bg-green-500/10 p-5 flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center shrink-0"><CheckCircle2 className="h-5 w-5 text-green-300" /></div>
+                    <div>
+                      <div className="font-bold text-green-300 text-sm">Payment Approved</div>
+                      <div className="text-xs text-white/60 mt-0.5">{p.courseName} • Your course access is now active.</div>
+                    </div>
+                  </div>
+                  {approvedCourse && (
+                    <Link to={`/learn/${approvedCourse.slug}`} className="px-5 py-2.5 rounded-full bg-gradient-to-r from-green-400 to-emerald-600 text-white font-bold text-xs flex items-center gap-2">
+                      <Play className="h-3.5 w-3.5" /> START COURSE
+                    </Link>
+                  )}
+                </div>
+              );
+            })}
 
             {/* Pending Payments Section */}
             {manualPayments.filter((p) => p.status === 'pending').length > 0 && (

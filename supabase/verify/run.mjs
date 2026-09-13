@@ -15,10 +15,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 const MIG = join(here, '../migrations');
 const db = new PGlite();
 await db.exec(readFileSync(join(here, 'stubs.sql'), 'utf8'));
-for (const f of ['001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql', '004_notify_and_counts.sql', '005_showcase_reads.sql']) {
+for (const f of ['001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql', '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql']) {
   await db.exec(readFileSync(`${MIG}/${f}`, 'utf8'));
 }
-console.log('migrations 001-004 applied clean');
+console.log('migrations 001-006 applied clean');
 
 const ADMIN = '11111111-1111-1111-1111-111111111111';
 const STU = '22222222-2222-2222-2222-222222222222';
@@ -452,6 +452,21 @@ await t('H22 showcase policy exposes only approved public images', async () => {
   for (const needle of ['submissions', 'approved', 'portfolio_public', 'image/']) {
     assert(String(def.q).includes(needle), 'showcase policy must scope to ' + needle);
   }
+});
+
+// ---------- H23: 006 optional payment submission note ----------
+await t('H23 manual_payments.note is optional and stored', async () => {
+  const col = await one(`select is_nullable from information_schema.columns
+    where table_schema='public' and table_name='manual_payments' and column_name='note'`);
+  assert(col && col.is_nullable === 'YES', 'note column missing or NOT NULL');
+  await as(STU);
+  const withNote = await one(`insert into manual_payments (user_id, course_id, amount, reference, status, note)
+    values ('${STU}','${COURSE}',100,'REF-006-N','pending','Paid from a different account') returning note`);
+  assert(withNote.note === 'Paid from a different account', 'note not stored');
+  const withoutNote = await one(`insert into manual_payments (user_id, course_id, amount, reference, status)
+    values ('${STU}','${COURSE}',100,'REF-006-X','pending') returning note`);
+  assert(withoutNote.note === null, 'note should default to null');
+  await anon();
 });
 
 console.log(`\n==== RESULT: ${pass} passed, ${fail} failed ====`);

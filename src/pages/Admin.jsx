@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCourses } from '../context/CourseContext';
-import { useLMS } from '../context/LMSContext';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Users, BookOpen, DollarSign, Award, TrendingUp, Search, Shield, Lock, LogOut, Settings, Eye, EyeOff, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Users, BookOpen, DollarSign, Award, TrendingUp, Shield, Lock, LogOut, Settings, Eye, EyeOff, XCircle, Clock } from 'lucide-react';
 import { formatNaira } from '../lib/utils';
-import SignedFile from '../components/common/SignedFile';
 import { toast, Toaster } from 'sonner';
 import AdminOverview from './admin/AdminOverview';
 import CourseManager from './admin/CourseManager';
@@ -18,28 +16,20 @@ import NotificationManager from './admin/NotificationManager';
 import AuditLogViewer from './admin/AuditLogViewer';
 import CommunityManager from './admin/CommunityManager';
 import SiteSettingsPanel from './admin/SiteSettingsPanel';
+import PaymentsManager from './admin/PaymentsManager';
 
 export default function Admin() {
   const { user, isAdmin, changePassword, adminLogout, adminEmail } = useAuth();
   const { 
     allManualPayments, allEnrollments, allCertificates, stats,
-    approveManualPayment, rejectManualPayment
   } = useCourses();
-  const { audit } = useLMS();
   const navigate = useNavigate();
   const [tab, setTab] = useState('overview');
-  const [search, setSearch] = useState('');
   
   // Change password
   const [pwdForm, setPwdForm] = useState({ current: '', new: '', confirm: '' });
   const [showPwd, setShowPwd] = useState({ current: false, new: false, confirm: false });
   const [changing, setChanging] = useState(false);
-
-  // Manual payment review
-  const [selectedPayment, setSelectedPayment] = useState(null);
-  const [rejectReason, setRejectReason] = useState('');
-  const [showRejectModal, setShowRejectModal] = useState(null);
-  const [paymentFilter, setPaymentFilter] = useState('all'); // all, pending, approved, rejected
 
   if (!user) return <Navigate to="/admin/login" />;
   if (!isAdmin) return <Navigate to="/dashboard" />;
@@ -71,38 +61,6 @@ export default function Admin() {
     toast.success('Logged out successfully');
     navigate('/admin/login');
   };
-
-  const handleApprove = async (payment) => {
-    if (!confirm(`Are you sure you want to approve this payment?\n\nStudent: ${payment.studentName}\nCourse: ${payment.courseName}\nAmount: ${formatNaira(payment.amount)}\nReference: ${payment.reference}\n\nThis will grant course access immediately.`)) return;
-    try {
-      await approveManualPayment(payment.id);
-      toast.success(`Payment approved! ${payment.studentName} now has access to ${payment.courseName} 🎉`);
-    } catch (err) {
-      toast.error(err.message);
-    }
-  };
-
-  const handleReject = async (payment) => {
-    if (!rejectReason.trim()) {
-      toast.error('Please enter rejection reason');
-      return;
-    }
-    try {
-      await rejectManualPayment(payment.id, rejectReason);
-      audit(user, 'payment.reject', 'manual_payment', payment.id, { student: payment.studentName, reason: rejectReason });
-      toast.success('Payment rejected');
-      setShowRejectModal(null);
-      setRejectReason('');
-    } catch (err) {
-      toast.error(err.message);
-    }
-  };
-
-  const filteredManualPayments = allManualPayments.filter(p => {
-    if (paymentFilter !== 'all' && p.status !== paymentFilter) return false;
-    if (search && !`${p.studentName} ${p.email} ${p.courseName} ${p.reference}`.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#020a1f] via-[#061236] to-[#020a1f]">
@@ -202,188 +160,7 @@ export default function Admin() {
 
         {tab === 'audit' && <AuditLogViewer />}
 
-        {tab === 'payments' && (
-          <div className="space-y-6">
-            <div className="flex flex-wrap justify-between items-center gap-4">
-              <div>
-                <h2 className="font-bold text-xl">Manual Bank Transfer Payments</h2>
-                <p className="text-sm text-white/50 mt-1">Bank: MONIEPOINT • Account: 69852663361 • LUNA ENTRY SERVICES- WOLI DAN TECH HUB</p>
-              </div>
-              <div className="flex gap-2">
-                {[
-                  { id: 'all', label: 'All', count: allManualPayments.length },
-                  { id: 'pending', label: 'Pending', count: stats.pendingPayments },
-                  { id: 'approved', label: 'Approved', count: stats.approvedPayments },
-                  { id: 'rejected', label: 'Rejected', count: stats.rejectedPayments },
-                ].map(f => (
-                  <button key={f.id} onClick={() => setPaymentFilter(f.id)} className={`px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 ${paymentFilter===f.id?'bg-white text-black':'glass text-white/60 hover:text-white'}`}>
-                    {f.label} <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${paymentFilter===f.id?'bg-black text-white':'bg-white/10'}`}>{f.count}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="glass rounded-2xl p-4 border border-green-500/20 bg-green-500/5"><div className="text-[11px] text-white/40 font-bold">TOTAL REVENUE (Approved Only)</div><div className="font-black text-xl text-green-300 mt-1">{formatNaira(stats.totalRevenue)}</div></div>
-              <div className="glass rounded-2xl p-4 border border-amber-500/20 bg-amber-500/5"><div className="text-[11px] text-white/40 font-bold">PENDING AMOUNT</div><div className="font-black text-xl text-amber-300 mt-1">{formatNaira(stats.pendingAmount)}</div></div>
-              <div className="glass rounded-2xl p-4"><div className="text-[11px] text-white/40 font-bold">APPROVED</div><div className="font-black text-xl mt-1">{formatNaira(stats.approvedRevenue)} • {stats.approvedPayments} payments</div></div>
-              <div className="glass rounded-2xl p-4 border border-red-500/20 bg-red-500/5"><div className="text-[11px] text-white/40 font-bold">REJECTED</div><div className="font-black text-xl text-red-300 mt-1">{stats.rejectedPayments} payments</div></div>
-            </div>
-
-            <div className="flex gap-4 items-center">
-              <div className="relative flex-1 max-w-[360px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by student, email, course, reference..." className="h-10 w-full rounded-full glass pl-10 pr-4 text-sm" />
-              </div>
-            </div>
-
-            <div className="glass rounded-[20px] overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-white/[0.03] text-[11px] tracking-widest text-white/40">
-                    <tr>
-                      <th className="text-left p-4">Student</th>
-                      <th className="text-left p-4">Course</th>
-                      <th className="text-left p-4">Amount</th>
-                      <th className="text-left p-4">Reference</th>
-                      <th className="text-left p-4">Date</th>
-                      <th className="text-left p-4">Receipt</th>
-                      <th className="text-left p-4">Status</th>
-                      <th className="text-left p-4">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {filteredManualPayments.map(p => (
-                      <tr key={p.id} className="hover:bg-white/[0.02]">
-                        <td className="p-4">
-                          <div className="font-bold">{p.studentName}</div>
-                          <div className="text-xs text-white/40">{p.email}</div>
-                          <div className="text-xs text-white/40">{p.phone}</div>
-                        </td>
-                        <td className="p-4">
-                          <div className="font-bold">{p.courseName.slice(0,30)}</div>
-                          <div className="text-xs text-white/40">{p.courseId.slice(0,15)}</div>
-                        </td>
-                        <td className="p-4 font-bold text-green-300">{formatNaira(p.amount)}</td>
-                        <td className="p-4 font-mono text-xs">{p.reference}</td>
-                        <td className="p-4 text-xs text-white/50">
-                          <div>{new Date(p.submittedAt).toLocaleDateString()}</div>
-                          <div className="text-[11px] text-white/30">Trx: {p.transactionDate}</div>
-                        </td>
-                        <td className="p-4">
-                          <button onClick={() => setSelectedPayment(p)} className="h-8 px-3 rounded-full glass text-xs font-bold flex items-center gap-1 hover:bg-white/10">
-                            <Eye className="h-3.5 w-3.5" /> VIEW
-                          </button>
-                          <div className="text-[10px] text-white/30 mt-1">{p.receiptName?.slice(0,15)}</div>
-                        </td>
-                        <td className="p-4">
-                          <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${
-                            p.status==='approved'?'bg-green-500/20 border-green-500/30 text-green-300':
-                            p.status==='pending'?'bg-amber-500/20 border-amber-500/30 text-amber-300':
-                            'bg-red-500/20 border-red-500/30 text-red-300'
-                          }`}>
-                            {p.status.toUpperCase()}
-                          </span>
-                          {p.status==='rejected' && p.rejectedReason && <div className="text-[10px] text-red-300/70 mt-1 max-w-[120px] truncate">{p.rejectedReason}</div>}
-                          {p.status==='approved' && <div className="text-[10px] text-green-300/70 mt-1">By {p.approvedBy?.slice(0,15)}</div>}
-                        </td>
-                        <td className="p-4">
-                          {p.status === 'pending' ? (
-                            <div className="flex gap-1.5">
-                              <button onClick={() => handleApprove(p)} className="h-8 px-3 rounded-full bg-green-500 text-white text-xs font-bold flex items-center gap-1 hover:bg-green-600">
-                                <CheckCircle2 className="h-3.5 w-3.5" /> APPROVE
-                              </button>
-                              <button onClick={() => setShowRejectModal(p)} className="h-8 w-8 rounded-full bg-red-500/20 border border-red-500/30 text-red-300 flex items-center justify-center hover:bg-red-500/30">
-                                <XCircle className="h-4 w-4" />
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-white/30">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {filteredManualPayments.length === 0 && (
-                  <div className="p-12 text-center text-white/40 text-sm">No payments found for filter: {paymentFilter}</div>
-                )}
-              </div>
-            </div>
-
-            {/* Receipt Viewer Modal */}
-            {selectedPayment && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
-                <div className="w-full max-w-[700px] max-h-[90vh] overflow-auto glass-strong rounded-[24px] p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-lg">Payment Receipt - Secure View (Admin Only)</h3>
-                    <button onClick={() => setSelectedPayment(null)} className="h-8 w-8 rounded-full glass flex items-center justify-center">✕</button>
-                  </div>
-                  
-                  <div className="grid sm:grid-cols-2 gap-4 text-sm glass rounded-2xl p-4">
-                    <div><span className="text-white/40 text-xs">Student:</span><div className="font-bold">{selectedPayment.studentName} • {selectedPayment.email}</div></div>
-                    <div><span className="text-white/40 text-xs">Course:</span><div className="font-bold">{selectedPayment.courseName}</div></div>
-                    <div><span className="text-white/40 text-xs">Amount:</span><div className="font-bold text-green-300">{formatNaira(selectedPayment.amount)}</div></div>
-                    <div><span className="text-white/40 text-xs">Reference:</span><div className="font-mono font-bold">{selectedPayment.reference}</div></div>
-                    <div><span className="text-white/40 text-xs">Transaction Date:</span><div className="font-bold">{selectedPayment.transactionDate}</div></div>
-                    <div><span className="text-white/40 text-xs">Submitted:</span><div className="font-bold">{new Date(selectedPayment.submittedAt).toLocaleString()}</div></div>
-                  </div>
-
-                  <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/30 p-4">
-                    <SignedFile bucket="receipts" path={selectedPayment.receiptPath} fileName={selectedPayment.receiptName} fileType={selectedPayment.receiptType} />
-                  </div>
-
-                  {selectedPayment.status === 'pending' && (
-                    <div className="flex gap-3">
-                      <button onClick={() => { handleApprove(selectedPayment); setSelectedPayment(null); }} className="flex-1 h-12 rounded-full bg-green-500 text-white font-bold flex items-center justify-center gap-2 hover:bg-green-600">
-                        <CheckCircle2 className="h-5 w-5" /> APPROVE PAYMENT
-                      </button>
-                      <button onClick={() => { setShowRejectModal(selectedPayment); setSelectedPayment(null); }} className="flex-1 h-12 rounded-full bg-red-500/20 border border-red-500/30 text-red-300 font-bold flex items-center justify-center gap-2 hover:bg-red-500/30">
-                        <XCircle className="h-5 w-5" /> REJECT
-                      </button>
-                    </div>
-                  )}
-
-                  <button onClick={() => setSelectedPayment(null)} className="w-full h-11 rounded-full glass font-bold">CLOSE</button>
-                </div>
-              </div>
-            )}
-
-            {/* Reject Modal */}
-            {showRejectModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
-                <div className="w-full max-w-[480px] glass-strong rounded-[24px] p-6 space-y-5">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-red-500/20 flex items-center justify-center"><XCircle className="h-5 w-5 text-red-400" /></div>
-                    <div><h3 className="font-bold">Reject Payment</h3><p className="text-xs text-white/50">{showRejectModal.studentName} • {showRejectModal.courseName}</p></div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold tracking-widest text-white/40 mb-2 block">REJECTION REASON *</label>
-                    <select value={rejectReason} onChange={e => setRejectReason(e.target.value)} className="w-full h-12 rounded-full glass px-5 text-sm focus:outline-none focus:border-red-400/50">
-                      <option className="bg-[#061236]" value="">Select reason</option>
-                      <option className="bg-[#061236]" value="Invalid receipt">Invalid receipt</option>
-                      <option className="bg-[#061236]" value="Payment not found">Payment not found</option>
-                      <option className="bg-[#061236]" value="Incorrect amount">Incorrect amount</option>
-                      <option className="bg-[#061236]" value="Duplicate payment">Duplicate payment</option>
-                      <option className="bg-[#061236]" value="Incorrect transaction reference">Incorrect transaction reference</option>
-                      <option className="bg-[#061236]" value="Other">Other</option>
-                    </select>
-                    {rejectReason === 'Other' && (
-                      <textarea value={rejectReason === 'Other' ? '' : rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder="Enter custom reason..." className="mt-3 w-full rounded-2xl glass p-4 text-sm h-24 focus:outline-none focus:border-red-400/50" />
-                    )}
-                    <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder="Or type detailed reason..." className="mt-3 w-full rounded-2xl glass p-4 text-sm h-24 focus:outline-none focus:border-red-400/50" />
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button onClick={() => { setShowRejectModal(null); setRejectReason(''); }} className="flex-1 h-11 rounded-full glass font-bold">CANCEL</button>
-                    <button onClick={() => handleReject(showRejectModal)} className="flex-1 h-11 rounded-full bg-red-500 text-white font-bold">REJECT PAYMENT</button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        {tab === 'payments' && <PaymentsManager />}
 
         {tab === 'certificates' && (
           <div className="space-y-6">
