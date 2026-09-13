@@ -263,14 +263,13 @@ export default function DanTechAI() {
               </div>
 
               {/* Suggested follow-ups */}
-              {messages.length > 0 && (
-                <div className="px-3 pb-1 flex gap-1.5 overflow-x-auto" aria-label="Quick actions">
-                  {QUICK_ACTIONS.map((qa) => (
-                    <button key={qa.id} onClick={() => send(qa.prompt)} disabled={thinking} className="whitespace-nowrap px-3 py-1 rounded-full glass text-[10px] font-bold text-white/60 hover:text-cyan-300 disabled:opacity-40">{qa.label}</button>
-                  ))}
-                  <button onClick={exportChat} className="whitespace-nowrap px-3 py-1 rounded-full glass text-[10px] font-bold">Export</button>
-                </div>
-              )}
+              {/* Quick actions — always available, incl. on lesson pages */}
+              <div className="px-3 pb-1 flex gap-1.5 overflow-x-auto" aria-label="Quick actions">
+                {QUICK_ACTIONS.map((qa) => (
+                  <button key={qa.id} onClick={() => send(qa.prompt)} disabled={thinking} className="whitespace-nowrap px-3 py-1 rounded-full glass text-[10px] font-bold text-white/60 hover:text-cyan-300 disabled:opacity-40">{qa.label}</button>
+                ))}
+                {messages.length > 0 && <button onClick={exportChat} className="whitespace-nowrap px-3 py-1 rounded-full glass text-[10px] font-bold">Export</button>}
+              </div>
 
               {/* Input */}
               <form onSubmit={(e) => { e.preventDefault(); send(); }} className="p-3 border-t border-white/10 flex gap-2">
