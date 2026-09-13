@@ -198,6 +198,47 @@ await tErr('make_admin reports a missing profile clearly', async () => {
   await db.exec(makeAdmin.replace(ADMIN_EMAIL, 'nobody@nowhere.test'));
 }, 'No profile row for');
 
+// ---------- 7. the one-step setup script, on a completely fresh database ----------
+// This is exactly what an administrator pastes into the SQL Editor, so prove it
+// works standalone: fresh DB, migrations only, then the single combined file.
+const fresh = new PGlite();
+await fresh.exec(read(join(here, 'stubs.sql')));
+for (const f of [
+  '001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql',
+  '004_notify_and_counts.sql', '005_showcase_reads.sql',
+]) {
+  await fresh.exec(read(join(here, '../migrations', f)));
+}
+await fresh.exec(read(join(here, '../seed/setup_full_catalog.sql')));
+
+const fcount = async (sql) => Number((await fresh.query(sql)).rows[0].n);
+
+await t('one-step setup yields a fully published catalog from scratch', async () => {
+  const published = await fcount(`select count(*)::int as n from courses where published`);
+  const total = await fcount(`select count(*)::int as n from courses`);
+  assert(total === 12, `expected 12 courses, got ${total}`);
+  assert(published === 12, `expected 12 published, got ${published}`);
+});
+
+await t('one-step setup leaves no course as an empty shell', async () => {
+  const shells = await fcount(`
+    select count(*)::int as n from courses c
+    where c.published
+      and not exists (select 1 from course_modules m where m.course_id = c.id)`);
+  const noLessons = await fcount(`
+    select count(*)::int as n from courses c
+    where c.published and c.lessons_count = 0`);
+  assert(shells === 0, `${shells} published courses have no modules`);
+  assert(noLessons === 0, `${noLessons} published courses have no lessons`);
+});
+
+await t('one-step setup is idempotent on re-run', async () => {
+  await fresh.exec(read(join(here, '../seed/setup_full_catalog.sql')));
+  const total = await fcount(`select count(*)::int as n from courses`);
+  const lessons = await fcount(`select count(*)::int as n from course_lessons`);
+  assert(total === 12 && lessons === 26, `got ${total} courses / ${lessons} lessons`);
+});
+
 // ---------- summary ----------
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
