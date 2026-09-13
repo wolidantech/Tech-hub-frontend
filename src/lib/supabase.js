@@ -5,8 +5,19 @@
 import { createClient } from '@supabase/supabase-js';
 import { ALLOWED_SUBMISSION_TYPES, MAX_SUBMISSION_BYTES } from './lms';
 
-const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY || '';
+// Env values are pasted by hand into .env or a hosting dashboard, where a stray
+// trailing newline, space or wrapping quote is easy to introduce. Any of them
+// makes every fetch throw "TypeError: Failed to fetch" — which surfaces as a
+// generic "Network error" — while isSupabaseConfigured() still reports true, so
+// SetupGate waves the app through and the whole site silently fails. Normalize.
+const cleanEnv = (v) => String(v ?? '').trim().replace(/^["']|["']$/g, '').trim();
+
+// Exported so backendHealth.js normalizes identically — diagnostics that probed
+// a different URL than the client uses would be actively misleading.
+export { cleanEnv };
+
+const SUPABASE_URL = cleanEnv(import.meta.env?.VITE_SUPABASE_URL);
+const SUPABASE_ANON_KEY = cleanEnv(import.meta.env?.VITE_SUPABASE_ANON_KEY);
 
 export const isSupabaseConfigured = () => Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 

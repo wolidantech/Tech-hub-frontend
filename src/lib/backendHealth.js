@@ -13,8 +13,19 @@
 // It is read-only: every request is a GET against public endpoints.
 // ============================================================
 
-const RAW_URL = String(import.meta.env?.VITE_SUPABASE_URL || '').trim();
-const RAW_KEY = String(import.meta.env?.VITE_SUPABASE_ANON_KEY || '').trim();
+// Shares the app's own normalization so these probes always target exactly the
+// URL the Supabase client uses. Diverging here would make the diagnostics
+// report on a different backend than the one actually failing.
+import { cleanEnv } from './supabase';
+
+const RAW_URL = cleanEnv(import.meta.env?.VITE_SUPABASE_URL);
+const RAW_KEY = cleanEnv(import.meta.env?.VITE_SUPABASE_ANON_KEY);
+
+// Kept untrimmed so we can tell the admin their env value is contaminated.
+// src/lib/supabase.js now normalizes these before building the client, but the
+// value in the host's dashboard should still be cleaned up.
+const UNTRIMMED_URL = String(import.meta.env?.VITE_SUPABASE_URL ?? '');
+const UNTRIMMED_KEY = String(import.meta.env?.VITE_SUPABASE_ANON_KEY ?? '');
 
 export const backendUrl = RAW_URL;
 export const backendKey = RAW_KEY;
@@ -106,6 +117,38 @@ function checkEnv() {
     id: 'env', title: 'Environment variables', level: 'pass',
     detail: `Both variables are present. URL = ${RAW_URL}`,
     fix: null,
+  };
+}
+
+// ---------- check 1b: whitespace / quote contamination ----------
+// The classic "healthy project, broken site" cause. A trailing newline or a
+// wrapping quote in the env value makes fetch() throw before any request is
+// sent, so the browser reports a network failure and the app says "Network
+// error. Check your connection and retry." — pointing at the visitor's
+// connection when the real fault is a malformed URL string.
+function checkEnvHygiene() {
+  const issues = [];
+  const edge = (label, raw) => {
+    const trimmed = raw.trim();
+    if (raw !== trimmed) issues.push(`${label} has leading/trailing whitespace or a newline`);
+    if (/^["'].*["']$/s.test(trimmed)) issues.push(`${label} is wrapped in quote characters`);
+    return trimmed;
+  };
+  edge('VITE_SUPABASE_URL', UNTRIMMED_URL);
+  const key = edge('VITE_SUPABASE_ANON_KEY', UNTRIMMED_KEY);
+  if (/\s/.test(key)) issues.push('VITE_SUPABASE_ANON_KEY contains a space inside the value');
+
+  if (!issues.length) {
+    return {
+      id: 'hygiene', title: 'Env value hygiene', level: 'pass',
+      detail: 'No stray whitespace or quote characters in either variable.',
+      fix: null,
+    };
+  }
+  return {
+    id: 'hygiene', title: 'Env value hygiene', level: 'warn',
+    detail: `${issues.join('; ')}. Against a perfectly healthy project this produces exactly the reported symptom: the browser tries to fetch a malformed URL and throws before the request is sent, so login fails with a network error and the catalog silently stays empty.`,
+    fix: 'The app now trims and unwraps these values automatically, so it should already work after this deploy. Still, clean them up in your host’s environment variables — no surrounding quotes, no trailing newline — and redeploy, or any other tool reading them will break the same way.',
   };
 }
 
@@ -391,9 +434,10 @@ function checkAdminPath() {
 export async function runDiagnostics() {
   const checks = [];
   const env = checkEnv();
+  const hygiene = checkEnvHygiene();
   const url = checkUrlShape();
   const key = checkKeyShape();
-  checks.push(env, url, key);
+  checks.push(env, hygiene, url, key);
 
   // No point hammering the network when the config itself is broken.
   if (env.level === 'fail' || url.level === 'fail') {
