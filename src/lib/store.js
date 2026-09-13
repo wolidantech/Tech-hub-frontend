@@ -80,6 +80,7 @@ export const mapPayment = (p) => p && {
   receiptPath: p.receipt_path, receiptData: null,
   receiptName: (p.receipt_path || '').split('/').pop() || '',
   receiptType: mimeFromName(p.receipt_path), receiptSize: null,
+  note: p.note || '',
   status: p.status, paymentMethod: 'Manual Bank Transfer',
   submittedAt: p.submitted_at, approvedBy: p.approved_by, approvedAt: p.approved_at,
   rejectedReason: p.rejected_reason, rejectedBy: p.rejected_by, rejectedAt: p.rejected_at,
@@ -470,7 +471,7 @@ export const submitPaymentRow = async (row) =>
     amount: num(row.amount), original_amount: row.originalAmount ?? null,
     coupon_code: row.couponCode || null, coupon_discount: num(row.couponDiscount),
     transaction_date: row.transactionDate || null, reference: row.reference,
-    receipt_path: row.receiptPath, status: 'pending',
+    receipt_path: row.receiptPath, note: row.note || null, status: 'pending',
   }).select().single()));
 
 export const fetchMyPayments = async (userId) =>
@@ -485,7 +486,7 @@ export const approvePaymentRpc = async (paymentId) =>
 export const rejectPaymentRpc = async (paymentId, reason) =>
   one(sb().rpc('reject_payment', { p_payment_id: paymentId, p_reason: reason }));
 
-export const uploadReceipt = async (userId, file) => uploadFile('receipts', userId, file);
+export const uploadReceipt = async (userId, file, onProgress = null) => uploadFile('receipts', userId, file, onProgress);
 
 // ============================================================ COUPONS
 const couponResult = (code, r) => ({
@@ -566,6 +567,77 @@ export const unmarkLessonDb = async (userId, lessonId) => {
 
 export const resetProgressDb = async (userId, courseId) => {
   await one(sb().from('lesson_progress').delete().eq('user_id', userId).eq('course_id', courseId));
+};
+
+// ---------- Lesson activity (starts + video progress; NOT completion) ----------
+// lesson_activity is deliberately separate from lesson_progress: opening or
+// watching a lesson must never count as completing it. RLS keeps rows private.
+export const fetchMyActivity = async (userId) =>
+  (await one(sb().from('lesson_activity').select('*').eq('user_id', userId).order('updated_at', { ascending: false }).limit(200)))
+    .map((r) => ({ userId: r.user_id, courseId: r.course_id, lessonId: r.lesson_id, startedAt: r.started_at, videoSeconds: r.video_seconds || 0, updatedAt: r.updated_at }));
+
+export const markLessonStartedDb = async (userId, courseId, lessonId) =>
+  one(sb().from('lesson_activity').upsert(
+    { user_id: userId, course_id: courseId, lesson_id: lessonId },
+    { onConflict: 'user_id,lesson_id', ignoreDuplicates: true },
+  ));
+
+export const reportVideoProgressDb = async (userId, courseId, lessonId, seconds, duration = null) =>
+  one(sb().from('lesson_activity').upsert({
+    user_id: userId, course_id: courseId, lesson_id: lessonId,
+    video_seconds: Math.max(0, Math.floor(seconds)),
+    ...(duration ? { video_duration: Math.max(0, Math.floor(duration)) } : {}),
+  }, { onConflict: 'user_id,lesson_id' }));
+
+// ============================================================ CV BUILDER
+// Registered users can save multiple CV versions. Guests build locally and
+// download without an account — cloud saving is opt-in after registration.
+const mapCV = (r) => r && ({ id: r.id, userId: r.user_id, title: r.title, template: r.template, data: r.data || {}, createdAt: r.created_at, updatedAt: r.updated_at });
+
+export const fetchMyCVs = async (userId) =>
+  (await one(sb().from('cv_documents').select('*').eq('user_id', userId).order('updated_at', { ascending: false }))).map(mapCV);
+
+export const saveCVDb = async ({ id = null, userId, title, template, data }) => {
+  const row = { user_id: userId, title: title || 'My CV', template: template || 'modern', data: data || {} };
+  const q = id
+    ? sb().from('cv_documents').update(row).eq('id', id).eq('user_id', userId).select().single()
+    : sb().from('cv_documents').insert(row).select().single();
+  return mapCV(await one(q));
+};
+
+export const deleteCVDb = async (userId, id) => {
+  await one(sb().from('cv_documents').delete().eq('id', id).eq('user_id', userId));
+};
+
+// ============================================================ STUDY TOOLS
+const mapNote = (r) => r && ({ id: r.id, userId: r.user_id, courseId: r.course_id, lessonId: r.lesson_id, title: r.title, body: r.body, createdAt: r.created_at, updatedAt: r.updated_at });
+const mapBookmark = (r) => r && ({ id: r.id, userId: r.user_id, courseId: r.course_id, lessonId: r.lesson_id, note: r.note || '', createdAt: r.created_at });
+
+export const fetchMyNotes = async (userId) =>
+  (await one(sb().from('study_notes').select('*').eq('user_id', userId).order('updated_at', { ascending: false }).limit(200))).map(mapNote);
+
+export const saveNoteDb = async ({ id = null, userId, courseId, lessonId, title, body }) => {
+  const row = { user_id: userId, course_id: courseId || null, lesson_id: lessonId || null, title: title || 'Note', body: body || '' };
+  const q = id
+    ? sb().from('study_notes').update(row).eq('id', id).eq('user_id', userId).select().single()
+    : sb().from('study_notes').insert(row).select().single();
+  return mapNote(await one(q));
+};
+
+export const deleteNoteDb = async (userId, id) => {
+  await one(sb().from('study_notes').delete().eq('id', id).eq('user_id', userId));
+};
+
+export const fetchMyBookmarks = async (userId) =>
+  (await one(sb().from('study_bookmarks').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(300))).map(mapBookmark);
+
+export const addBookmarkDb = async ({ userId, courseId, lessonId, note = '' }) =>
+  mapBookmark(await one(sb().from('study_bookmarks').upsert(
+    { user_id: userId, course_id: courseId, lesson_id: lessonId, note },
+    { onConflict: 'user_id,lesson_id' }).select().single()));
+
+export const removeBookmarkDb = async (userId, lessonId) => {
+  await one(sb().from('study_bookmarks').delete().eq('user_id', userId).eq('lesson_id', lessonId));
 };
 
 // ============================================================ QUIZZES

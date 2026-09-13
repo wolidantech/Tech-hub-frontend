@@ -28,13 +28,24 @@ export default function CareerHub() {
           <h1 className="font-display font-black text-[36px] md:text-[52px] leading-none mt-4">WOLI DAN CAREER HUB</h1>
           <p className="mt-3 text-white/60 max-w-[620px] mx-auto">Skills pay the bills only when the world can see them. Build your portfolio, brand, and income systems here.</p>
           <div className="mt-6 flex gap-3 justify-center flex-wrap">
-            <Link to="/courses" className="btn-primary !py-3">BUILD SKILLS FIRST</Link>
+            <Link to="/cv-builder" className="btn-primary !py-3">CREATE YOUR PROFESSIONAL CV</Link>
+            <Link to="/courses" className="btn-secondary !py-3">BUILD SKILLS FIRST</Link>
             <Link to="/learning-paths" className="btn-secondary !py-3">VIEW LEARNING PATHS</Link>
           </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+        {/* CV builder banner */}
+        <div className="rounded-[24px] border border-cyan-400/30 bg-gradient-to-r from-cyan-500/15 via-blue-600/10 to-purple-600/15 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-5">
+          <div className="text-center md:text-left">
+            <div className="text-[10px] font-black tracking-widest text-cyan-300">FREE CV BUILDER • NO ACCOUNT NEEDED</div>
+            <h2 className="font-black text-2xl mt-1">Build a job-ready CV in minutes</h2>
+            <p className="text-sm text-white/60 mt-2 max-w-[560px]">Pick from 350+ occupations, fill in your details step by step, choose one of 6 professional templates and polish your wording with DanTECH AI — then download a print-ready PDF.</p>
+          </div>
+          <Link to="/cv-builder" className="shrink-0 btn-primary !py-4 !px-8 whitespace-nowrap">CREATE MY CV NOW</Link>
+        </div>
+
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {guides.map((g) => (
             <div key={g.title} className="glass rounded-[24px] p-6 hover:border-cyan-400/30 transition">

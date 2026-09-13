@@ -95,3 +95,17 @@
   #certificate-print-area { position: absolute; left: 0; top: 0; width: 100%; }
   .no-print { display: none !important; }
 }
+
+/* ================= CV Builder — A4 print export ================= */
+.cv-page { width: 794px; min-height: 1123px; margin: 0 auto; background: #fff; }
+#cv-print-root { display: none; }
+@media print {
+  @page { size: A4; margin: 10mm; }
+  body.cv-print-mode { overflow: visible; }
+  body.cv-print-mode * { visibility: hidden; }
+  body.cv-print-mode #cv-print-root,
+  body.cv-print-mode #cv-print-root * { visibility: visible; }
+  body.cv-print-mode #cv-print-root { position: absolute; left: 0; top: 0; width: 100%; display: block; }
+  body.cv-print-mode #cv-print-root .cv-page { width: 100%; min-height: auto; margin: 0; box-shadow: none; }
+  body.cv-print-mode .no-print { display: none !important; }
+}

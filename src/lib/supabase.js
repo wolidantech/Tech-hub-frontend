@@ -59,6 +59,12 @@ export function friendlyError(err, fallback = 'Something went wrong. Please try 
     // tells them apart instead of blaming the visitor's connection.
     return 'Cannot reach the database. Check your connection — if it persists, open /backend-status for diagnostics.';
   }
+  // Storage-specific failures (receipt uploads, thumbnails, submissions).
+  if (/the resource already exists|duplicate key/i.test(msg)) return 'That file already exists. Rename it and try again.';
+  if (/payload too large|entity too large|exceeded the maximum allowed size/i.test(msg)) return 'The file is too large to upload. Use a smaller file.';
+  if (/bucket not found/i.test(msg)) return 'File storage is not set up yet. Please contact support.';
+  if (/object not found|not found in storage/i.test(msg)) return 'The file could not be found. It may have been removed.';
+  if (/unauthorized|invalid api key|missing authorization/i.test(msg)) return 'You are not authorized for that action. Please log in again.';
   if (/Invalid login credentials/i.test(msg)) return 'Invalid email or password';
   if (/User already registered/i.test(msg)) return 'Email already registered. Try logging in instead.';
   if (/rate limit|too many requests|over_request_rate_limit/i.test(msg + code)) return 'Too many attempts. Please wait a moment and retry.';
@@ -90,12 +96,72 @@ export function validateUpload(bucket, file) {
   return { ok: true };
 }
 
-/** Upload a file to private storage. Returns the storage path. */
-export async function uploadFile(bucket, folder, file) {
+/**
+ * Direct XHR upload to the Storage REST endpoint. The SDK's upload() uses
+ * fetch, which cannot report byte-level progress; XHR can. Same endpoint,
+ * same headers, same RLS policies — the only difference is the transport.
+ */
+function uploadViaXhr(bucket, path, file, onProgress) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const sb = requireSb();
+      const { data } = await sb.auth.getSession();
+      const token = data?.session?.access_token;
+      if (!token) { reject(new Error('Session expired. Please log in again.')); return; }
+      const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+      const url = `${SUPABASE_URL.replace(/\/+$/, '')}/storage/v1/object/${bucket}/${encodedPath}`;
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+      xhr.setRequestHeader('x-upsert', 'false');
+      if (file.type) xhr.setRequestHeader('Content-Type', file.type);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && typeof onProgress === 'function') {
+          onProgress(Math.max(1, Math.round((e.loaded / e.total) * 100)));
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) { resolve(); return; }
+        let msg = '';
+        try {
+          const body = JSON.parse(xhr.responseText || '{}');
+          msg = body.message || body.error || body.msg || '';
+        } catch { /* non-JSON error body */ }
+        reject(new Error(friendlyError(
+          { message: msg || `Upload failed (HTTP ${xhr.status})` },
+          'Upload failed. Please try again.',
+        )));
+      };
+      xhr.onerror = () => reject(new Error('Network error while uploading the file. Check your connection and try again.'));
+      xhr.ontimeout = () => reject(new Error('The upload timed out. Please try again.'));
+      xhr.send(file);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+/**
+ * Upload a file to private storage. Returns the storage path.
+ * When `onProgress` is provided (and XHR is available) real byte-level
+ * progress is reported (1-100); otherwise the SDK transport is used.
+ */
+export async function uploadFile(bucket, folder, file, onProgress = null) {
   const check = validateUpload(bucket, file);
   if (!check.ok) throw new Error(check.error);
   const sb = requireSb();
   const path = `${folder}/${Date.now()}_${safeName(file.name)}`;
+  if (typeof onProgress === 'function' && typeof XMLHttpRequest !== 'undefined') {
+    try {
+      await uploadViaXhr(bucket, path, file, onProgress);
+      return path;
+    } catch (err) {
+      // Auth/validation errors must surface verbatim; transport glitches
+      // fall through to the SDK upload as a second attempt.
+      if (/session expired|log in again|permission|denied|already exists|too large|not set up/i.test(err.message)) throw err;
+    }
+  }
   const { error } = await sb.storage.from(bucket).upload(path, file, { upsert: false });
   if (error) throw new Error(friendlyError(error, 'Upload failed. Please try again.'));
   return path;

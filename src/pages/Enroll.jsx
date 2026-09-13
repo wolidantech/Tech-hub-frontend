@@ -1,24 +1,30 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useState } from 'react';
-import { Shield, Copy, CheckCircle2, Upload, AlertTriangle, ArrowLeft, FileText, Calendar, CreditCard, Phone, Ticket, BadgeCheck } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Shield, Copy, CheckCircle2, Upload, AlertTriangle, ArrowLeft, FileText, Calendar, CreditCard, Phone, Ticket, BadgeCheck, X, Loader2, Lock } from 'lucide-react';
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
 import { formatNaira } from '../lib/utils';
 import { toast, Toaster } from 'sonner';
+import CourseArt from '../components/course/CourseArt';
+import PaymentFlow from '../components/payment/PaymentFlow';
+
+const MAX_RECEIPT_BYTES = 5 * 1024 * 1024;
+const RECEIPT_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
 
 export default function Enroll() {
   const { slug } = useParams();
-  const { getCourseBySlug, submitManualPayment, getManualPaymentByCourse } = useCourses();
+  const { getCourseBySlug, submitManualPayment, getManualPaymentByCourse, isEnrolled } = useCourses();
   const { validateCouponForUser, recordRedemption, siteSettings } = useLMS();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
 
   // Bank details honor admin overrides in Site Settings (defaults: MONIEPOINT • 69852663361)
   const BANK_DETAILS = {
     bankName: siteSettings?.bankName || 'MONIEPOINT',
     accountNumber: siteSettings?.accountNumber || '69852663361',
-    accountName: siteSettings?.accountName || 'LUNA ENTRY SERVICES',
+    accountName: siteSettings?.accountName || 'LUNA ENTRY SERVICES- WOLI DAN TECH HUB',
   };
 
   const [form, setForm] = useState({
@@ -27,11 +33,14 @@ export default function Enroll() {
     phone: user?.phone || '',
     amount: '',
     transactionDate: new Date().toISOString().split('T')[0],
-    reference: ''
+    reference: '',
+    note: ''
   });
   const [receiptFile, setReceiptFile] = useState(null);
   const [receiptPreview, setReceiptPreview] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [phase, setPhase] = useState('idle'); // idle | uploading | submitting
+  const [progress, setProgress] = useState(0);
+  const [amountError, setAmountError] = useState('');
   const [success, setSuccess] = useState(null);
   const [copied, setCopied] = useState(false);
   // Coupon state
@@ -39,6 +48,16 @@ export default function Enroll() {
   const [coupon, setCoupon] = useState(null); // { coupon, valid, reason, discount, amountDue, isFree }
 
   const course = getCourseBySlug(slug);
+  const submitting = phase !== 'idle';
+  const amountDue = coupon?.valid ? coupon.amountDue : (course?.price ?? 0);
+  const hasCatalogDiscount = course && course.originalPrice > course.price;
+
+  // Keep the amount field in sync with the final amount due (coupon apply/remove).
+  useEffect(() => {
+    setForm((f) => ({ ...f, amount: String(amountDue ?? '') }));
+    setAmountError('');
+  }, [amountDue]);
+
   if (!course) return <div className="p-20 text-center">Course not found</div>;
   if (!user) {
     navigate('/login');
@@ -46,11 +65,11 @@ export default function Enroll() {
   }
 
   const existingPayment = getManualPaymentByCourse(user.id, course.id);
-  const amountDue = coupon?.valid ? coupon.amountDue : course.price;
   const isFreeCoupon = coupon?.valid && coupon.isFree;
+  const accessAlreadyActive = isEnrolled(user.id, course.id);
 
-  // If already approved, redirect to learn
-  if (existingPayment?.status === 'approved') {
+  // Backend-confirmed access (approved payment or active enrollment) → learn.
+  if (accessAlreadyActive || existingPayment?.status === 'approved') {
     return (
       <div className="min-h-[80vh] flex items-center justify-center p-4">
         <div className="w-full max-w-[480px] glass-strong rounded-[24px] p-8 text-center space-y-6">
@@ -59,7 +78,8 @@ export default function Enroll() {
             <h1 className="font-display font-black text-2xl">Already Enrolled ✅</h1>
             <p className="mt-2 text-white/60">You already have approved access to <span className="text-white font-bold">{course.title}</span></p>
           </div>
-          <Link to={`/learn/${course.slug}`} className="inline-flex w-full h-12 rounded-full bg-gradient-to-r from-cyan-400 to-blue-600 items-center justify-center font-bold">START LEARNING</Link>
+          <PaymentFlow status="approved" accessActive={accessAlreadyActive} className="justify-center" />
+          <Link to={`/learn/${course.slug}`} className="inline-flex w-full h-12 rounded-full bg-gradient-to-r from-cyan-400 to-blue-600 items-center justify-center font-bold">START COURSE</Link>
         </div>
       </div>
     );
@@ -97,16 +117,23 @@ export default function Enroll() {
     }
   };
 
+  const clearReceipt = () => {
+    setReceiptFile(null);
+    setReceiptPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error('Invalid file type. Only JPG, JPEG, PNG, PDF allowed');
+    if (!RECEIPT_TYPES.includes(file.type)) {
+      toast.error('Invalid receipt format. Only JPG, JPEG, PNG or PDF allowed.');
+      e.target.value = '';
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File too large. Max 5MB allowed');
+    if (file.size > MAX_RECEIPT_BYTES) {
+      toast.error('Receipt is too large. Maximum size is 5MB.');
+      e.target.value = '';
       return;
     }
     setReceiptFile(file);
@@ -121,15 +148,27 @@ export default function Enroll() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
     if (!receiptFile) {
-      toast.error('Please upload payment receipt');
+      toast.error('Please upload your payment receipt.');
       return;
     }
     if (!form.reference.trim()) {
-      toast.error('Transaction reference is required');
+      toast.error('Transaction reference is required.');
       return;
     }
-    // Re-validate coupon server-side equivalent at submit time (never trust earlier calc)
+    const amountPaid = Math.round(Number(form.amount));
+    if (!Number.isFinite(amountPaid) || amountPaid <= 0) {
+      setAmountError('Enter the amount you transferred.');
+      return;
+    }
+    if (amountPaid !== amountDue) {
+      setAmountError(`The amount must be exactly ${formatNaira(amountDue)} — the amount due shown above. Transfer the exact amount, then submit.`);
+      return;
+    }
+    setAmountError('');
+
+    // Re-validate coupon server-side at submit time (never trust earlier calc)
     let appliedCoupon = null;
     if (coupon?.valid) {
       const recheck = await validateCouponForUser(coupon.coupon.code, { courseId: course.id });
@@ -140,7 +179,9 @@ export default function Enroll() {
       }
       appliedCoupon = recheck;
     }
-    setSubmitting(true);
+
+    setPhase('uploading');
+    setProgress(3);
     try {
       const payment = await submitManualPayment({
         userId: user.id,
@@ -148,23 +189,27 @@ export default function Enroll() {
         studentName: form.studentName,
         email: form.email,
         phone: form.phone,
-        amount: form.amount || (appliedCoupon ? appliedCoupon.amountDue : course.price),
+        amount: amountPaid,
         transactionDate: form.transactionDate,
         reference: form.reference,
+        note: form.note,
         receiptFile,
         couponCode: appliedCoupon?.coupon.code || null,
         couponDiscount: appliedCoupon?.discount || 0,
         originalAmount: appliedCoupon ? course.price : null,
+        onUploadProgress: (p) => setProgress(Math.max(3, Math.min(96, p))),
       });
+      setPhase('submitting');
+      setProgress(100);
       if (appliedCoupon) {
         await recordRedemption({ code: appliedCoupon.coupon.code, courseId: course.id });
       }
       setSuccess(payment);
-      toast.success('Payment submitted successfully! Pending review.');
+      toast.success('Payment submitted successfully.');
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err?.message || 'Payment submission failed. Please try again.');
     } finally {
-      setSubmitting(false);
+      setPhase('idle');
     }
   };
 
@@ -202,24 +247,25 @@ export default function Enroll() {
           <div className="glass-strong rounded-[24px] p-8 md:p-10 text-center space-y-6">
             <div className="h-20 w-20 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mx-auto"><FileText className="h-10 w-10 text-amber-400" /></div>
             <div>
-              <h1 className="font-display font-black text-2xl md:text-3xl">Payment Submitted Successfully! 🎉</h1>
-              <p className="mt-3 text-white/70 leading-relaxed">Your payment is currently being reviewed by WOLI DAN TECH HUB. You will be notified once approved.</p>
+              <h1 className="font-display font-black text-2xl md:text-3xl">Payment submitted successfully.</h1>
+              <p className="mt-3 text-white/70 leading-relaxed">Your payment is now <span className="text-amber-300 font-bold">PENDING</span> manual verification by WOLI DAN TECH HUB. Course access stays locked until an administrator approves your payment.</p>
             </div>
+            <PaymentFlow status="pending" className="justify-center" />
             <div className="glass rounded-2xl p-6 text-left space-y-3">
               <div className="flex justify-between text-sm"><span className="text-white/50">Course</span><span className="font-bold">{course.title}</span></div>
               <div className="flex justify-between text-sm"><span className="text-white/50">Amount</span><span className="font-bold text-green-300">{formatNaira(success.amount)}</span></div>
               {success.couponCode && <div className="flex justify-between text-sm"><span className="text-white/50">Coupon</span><span className="font-mono font-bold text-cyan-300">{success.couponCode} (-{formatNaira(success.couponDiscount)})</span></div>}
               <div className="flex justify-between text-sm"><span className="text-white/50">Reference</span><span className="font-mono font-bold">{success.reference}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-white/50">Status</span><span className="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold">PENDING REVIEW</span></div>
+              <div className="flex justify-between text-sm items-center"><span className="text-white/50">Status</span><span className="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold">PENDING</span></div>
               <div className="flex justify-between text-sm"><span className="text-white/50">Submitted</span><span className="font-bold">{new Date(success.submittedAt).toLocaleString()}</span></div>
             </div>
             <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 text-left">
-              <div className="font-bold text-amber-300 text-sm flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Important</div>
+              <div className="font-bold text-amber-300 text-sm flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> What happens next?</div>
               <ul className="mt-2 text-xs text-white/60 space-y-1 list-disc pl-5">
-                <li>Do NOT submit another payment for this course while pending</li>
-                <li>Course access will be granted only after admin approval</li>
-                <li>You will receive notification when approved</li>
-                <li>Check My Payments for status updates</li>
+                <li>An administrator verifies your receipt (usually within 2–6 hours)</li>
+                <li>Do NOT submit another payment for this course while it is pending</li>
+                <li>Your course is <span className="font-bold text-white">not active yet</span> — access unlocks only after approval</li>
+                <li>You will get a notification and can track status in My Payments</li>
               </ul>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -229,8 +275,10 @@ export default function Enroll() {
           </div>
         </div>
       </div>
-    );
-  }
+      );
+    }
+
+  const pendingExists = existingPayment?.status === 'pending';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#020a1f] via-[#061236] to-[#020a1f] py-8">
@@ -238,41 +286,68 @@ export default function Enroll() {
       <div className="mx-auto max-w-[1100px] px-4 sm:px-6 lg:px-8">
         <Link to={`/course/${slug}`} className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white mb-6"><ArrowLeft className="h-4 w-4" /> Back to course</Link>
 
-        {existingPayment?.status === 'pending' && (
+        {pendingExists && (
           <div className="mb-6 rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 flex gap-3">
             <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
             <div className="text-sm">
               <div className="font-bold text-amber-300">Pending Payment Exists</div>
-              <div className="text-white/60 mt-1">You already have a pending payment for this course (Ref: {existingPayment.reference}) submitted on {new Date(existingPayment.submittedAt).toLocaleDateString()}. Please wait for admin review.</div>
+              <div className="text-white/60 mt-1">You already have a pending payment for this course (Ref: {existingPayment.reference}) submitted on {new Date(existingPayment.submittedAt).toLocaleDateString()}. Please wait for admin review — submitting twice will delay verification.</div>
               <Link to="/my-payments" className="inline-flex mt-2 text-xs font-bold text-amber-300 hover:text-amber-200">View in My Payments →</Link>
             </div>
           </div>
         )}
 
+        {existingPayment?.status === 'rejected' && (
+          <div className="mb-6 rounded-2xl bg-red-500/10 border border-red-500/20 p-4 flex gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <div className="font-bold text-red-300">Previous Payment Rejected</div>
+              <div className="text-white/60 mt-1">Reason: {existingPayment.rejectedReason || 'Contact support'}. You can resubmit payment evidence below.</div>
+            </div>
+          </div>
+        )}
+
         <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-8">
-          {/* Left - Course & Bank Details */}
+          {/* Left - Course summary & Bank Details */}
           <div className="space-y-6">
             <div>
-              <h1 className="font-display font-black text-[28px] leading-none">Enroll & Pay</h1>
-              <p className="mt-2 text-white/60 text-sm">Transfer the exact amount and upload receipt for verification</p>
+              <h1 className="font-display font-black text-[28px] leading-none">Checkout — Enroll & Pay</h1>
+              <p className="mt-2 text-white/60 text-sm">Manual bank transfer • verified by an administrator before access is granted</p>
             </div>
 
             <div className="glass rounded-[24px] p-6 space-y-5">
               <h3 className="font-bold flex items-center gap-2"><CreditCard className="h-5 w-5 text-cyan-300" /> Order Summary</h3>
               <div className="flex gap-4">
-                <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center font-black shrink-0">{course.title.slice(0, 2)}</div>
-                <div className="flex-1">
+                <div className="h-20 w-20 rounded-2xl overflow-hidden shrink-0 border border-white/10">
+                  <CourseArt course={course} className="h-20" />
+                </div>
+                <div className="flex-1 min-w-0">
                   <div className="font-bold leading-tight">{course.title}</div>
-                  <div className="text-sm text-white/50 mt-1">{course.category} • {course.duration}</div>
-                  {coupon?.valid ? (
-                    <div className="mt-2 space-y-1">
-                      <div className="text-sm text-white/40 line-through">{formatNaira(course.price)}</div>
-                      <div className="text-sm text-green-300 font-bold">Coupon {coupon.coupon.code}: -{formatNaira(coupon.discount)}</div>
-                      <div className="font-black text-xl text-gradient">{formatNaira(coupon.amountDue)} due</div>
+                  <div className="text-sm text-white/50 mt-1">{course.category} • {course.duration} • {course.level}</div>
+                  {hasCatalogDiscount && (
+                    <div className="mt-1.5 inline-flex items-center gap-2 text-xs">
+                      <span className="line-through text-white/40">{formatNaira(course.originalPrice)}</span>
+                      <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-300 font-bold">SAVE {formatNaira(course.originalPrice - course.price)}</span>
                     </div>
-                  ) : (
-                    <div className="mt-2 font-black text-xl text-gradient">{formatNaira(course.price)}</div>
                   )}
+                </div>
+              </div>
+
+              {/* Price breakdown → final amount due */}
+              <div className="rounded-2xl bg-white/[0.04] border border-white/10 p-4 space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-white/50">Course price</span><span className="font-bold">{formatNaira(hasCatalogDiscount ? course.originalPrice : course.price)}</span></div>
+                {hasCatalogDiscount && (
+                  <div className="flex justify-between text-green-300"><span>Discount</span><span className="font-bold">-{formatNaira(course.originalPrice - course.price)}</span></div>
+                )}
+                {coupon?.valid && !coupon.isFree && (
+                  <div className="flex justify-between text-cyan-300"><span>Coupon {coupon.coupon.code}</span><span className="font-bold">-{formatNaira(coupon.discount)}</span></div>
+                )}
+                {coupon?.valid && coupon.isFree && (
+                  <div className="flex justify-between text-green-300"><span>Coupon {coupon.coupon.code} (100% off)</span><span className="font-bold">-{formatNaira(course.price)}</span></div>
+                )}
+                <div className="border-t border-white/10 pt-2 flex justify-between items-center">
+                  <span className="font-bold">Final amount due</span>
+                  <span className="font-black text-2xl text-gradient">{formatNaira(amountDue)}</span>
                 </div>
               </div>
 
@@ -309,7 +384,7 @@ export default function Enroll() {
                     <h3 className="font-bold text-lg flex items-center gap-2">🏦 Bank Transfer Details</h3>
                     <div className="space-y-4">
                       <div className="flex justify-between items-center p-4 rounded-2xl bg-white/[0.05] border border-white/10">
-                        <div><div className="text-[11px] tracking-widest text-white/40 font-bold">BANK NAME</div><div className="font-black text-lg mt-1">{BANK_DETAILS.bankName}</div></div>
+                        <div><div className="text-[11px] tracking-widest text-white/40 font-bold">BANK</div><div className="font-black text-lg mt-1">{BANK_DETAILS.bankName}</div></div>
                         <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-black text-sm">M</div>
                       </div>
                       <div className="p-4 rounded-2xl bg-white text-black space-y-3">
@@ -326,7 +401,8 @@ export default function Enroll() {
                       </div>
                       <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4">
                         <div className="font-bold text-amber-300 text-sm flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Important Instruction</div>
-                        <p className="mt-2 text-sm text-white/70 leading-relaxed">Transfer the <span className="font-black text-white">exact amount ({formatNaira(amountDue)})</span> to the account above, then upload your payment receipt below.</p>
+                        <p className="mt-2 text-sm text-white/80 leading-relaxed font-bold">Transfer the exact amount shown above, then upload your payment receipt.</p>
+                        <p className="mt-1 text-xs text-white/50 leading-relaxed">Amount due: <span className="font-black text-white">{formatNaira(amountDue)}</span> to account {BANK_DETAILS.accountNumber} ({BANK_DETAILS.bankName}). Payments are verified manually — nothing is auto-approved.</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-[11px] text-white/40">
@@ -337,12 +413,13 @@ export default function Enroll() {
 
                 <div className="glass rounded-[24px] p-6">
                   <h4 className="font-bold mb-3">How It Works</h4>
+                  <PaymentFlow status="required" className="mb-4" />
                   <div className="space-y-3">
                     {[
-                      { step: '1', title: 'Transfer Money', desc: `Send ${formatNaira(amountDue)} to ${BANK_DETAILS.accountNumber} (${BANK_DETAILS.bankName})` },
-                      { step: '2', title: 'Upload Receipt', desc: 'Fill form and upload JPG, PNG or PDF receipt' },
-                      { step: '3', title: 'Wait for Review', desc: 'Admin verifies payment (usually within 2-6 hours)' },
-                      { step: '4', title: 'Get Access', desc: 'Once approved, course appears in My Courses' },
+                      { step: '1', title: 'Transfer Money', desc: `Send exactly ${formatNaira(amountDue)} to ${BANK_DETAILS.accountNumber} (${BANK_DETAILS.bankName})` },
+                      { step: '2', title: 'Upload Receipt', desc: 'Fill the form and upload a JPG, JPEG, PNG or PDF receipt' },
+                      { step: '3', title: 'Wait for Verification', desc: 'An administrator verifies your payment (usually within 2–6 hours)' },
+                      { step: '4', title: 'Get Access', desc: 'Once approved, your course access becomes active' },
                     ].map((s) => (
                       <div key={s.step} className="flex gap-3">
                         <div className="h-7 w-7 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-black text-xs shrink-0">{s.step}</div>
@@ -360,7 +437,7 @@ export default function Enroll() {
             <div className="space-y-6">
               <div className="glass-strong rounded-[24px] p-6 md:p-8">
                 <h3 className="font-bold text-xl mb-2 flex items-center gap-2"><Upload className="h-5 w-5 text-cyan-300" /> Submit Payment Receipt</h3>
-                <p className="text-sm text-white/50 mb-6">After transfer, fill this form and upload receipt for verification</p>
+                <p className="text-sm text-white/50 mb-6">After your transfer, complete this form and upload your receipt for verification. Your payment will be marked <span className="text-amber-300 font-bold">PENDING</span> until an administrator approves it.</p>
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
@@ -385,56 +462,85 @@ export default function Enroll() {
                       <input value={course.title} disabled className="w-full h-[48px] rounded-full glass px-5 text-sm bg-white/[0.03] text-white/60" />
                     </div>
                     <div>
-                      <label className="text-[11px] font-bold tracking-widest text-white/40 mb-2 block">AMOUNT PAID (₦) *</label>
-                      <input required type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder={String(amountDue)} className="w-full h-[48px] rounded-full glass px-5 text-sm focus:outline-none focus:border-cyan-400/50" />
+                      <label className="text-[11px] font-bold tracking-widest text-white/40 mb-2 block">AMOUNT (₦) *</label>
+                      <input required type="number" min="1" value={form.amount} onChange={(e) => { setForm({ ...form, amount: e.target.value }); setAmountError(''); }} className={`w-full h-[48px] rounded-full glass px-5 text-sm font-bold focus:outline-none focus:border-cyan-400/50 ${amountError ? 'border-red-400/60' : ''}`} />
+                      {amountError && <div className="mt-2 text-xs text-red-300 flex gap-1.5"><AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" /> {amountError}</div>}
                     </div>
                   </div>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[11px] font-bold tracking-widest text-white/40 mb-2 block">TRANSACTION DATE *</label>
+                      <label className="text-[11px] font-bold tracking-widest text-white/40 mb-2 block">PAYMENT DATE *</label>
                       <div className="relative">
                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-                        <input required type="date" value={form.transactionDate} onChange={(e) => setForm({ ...form, transactionDate: e.target.value })} className="w-full h-[48px] rounded-full glass pl-11 pr-5 text-sm focus:outline-none focus:border-cyan-400/50" />
+                        <input required type="date" max={new Date().toISOString().split('T')[0]} value={form.transactionDate} onChange={(e) => setForm({ ...form, transactionDate: e.target.value })} className="w-full h-[48px] rounded-full glass pl-11 pr-5 text-sm focus:outline-none focus:border-cyan-400/50" />
                       </div>
                     </div>
                     <div>
-                      <label className="text-[11px] font-bold tracking-widest text-white/40 mb-2 block">TRANSACTION REFERENCE *</label>
+                      <label className="text-[11px] font-bold tracking-widest text-white/40 mb-2 block">PAYMENT / TRANSACTION REFERENCE *</label>
                       <input required value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="e.g. TRF-123456789" className="w-full h-[48px] rounded-full glass px-5 text-sm focus:outline-none focus:border-cyan-400/50 font-mono" />
                     </div>
                   </div>
+
                   <div>
-                    <label className="text-[11px] font-bold tracking-widest text-white/40 mb-2 block">PAYMENT RECEIPT (JPG, JPEG, PNG, PDF - Max 5MB) *</label>
-                    <div className="relative">
-                      <input required type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={handleFileChange} className="w-full h-[56px] rounded-2xl glass px-5 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-white file:text-black file:font-bold file:text-xs hover:file:bg-white/90 focus:outline-none focus:border-cyan-400/50" />
-                    </div>
-                    {receiptFile && (
-                      <div className="mt-3 p-4 rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center gap-3">
+                    <label className="text-[11px] font-bold tracking-widest text-white/40 mb-2 block">PAYMENT RECEIPT (JPG, JPEG, PNG, PDF — Max 5MB) *</label>
+                    {!receiptFile ? (
+                      <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full rounded-2xl border-2 border-dashed border-white/20 hover:border-cyan-400/50 bg-white/[0.03] p-6 text-center transition group">
+                        <Upload className="h-7 w-7 mx-auto text-white/30 group-hover:text-cyan-300 transition" />
+                        <div className="mt-2 font-bold text-sm">Click to upload your receipt</div>
+                        <div className="text-xs text-white/40 mt-1">JPG • JPEG • PNG • PDF — up to 5MB</div>
+                      </button>
+                    ) : (
+                      <div className="p-4 rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center gap-3">
                         <FileText className="h-8 w-8 text-green-400 shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="font-bold text-sm truncate">{receiptFile.name}</div>
-                          <div className="text-xs text-white/50">{(receiptFile.size / 1024).toFixed(1)} KB • {receiptFile.type}</div>
+                          <div className="text-xs text-white/50">{(receiptFile.size / 1024).toFixed(1)} KB • {receiptFile.type === 'application/pdf' ? 'PDF' : 'Image'}</div>
                         </div>
-                        <CheckCircle2 className="h-5 w-5 text-green-400" />
+                        <button type="button" onClick={clearReceipt} className="h-8 w-8 rounded-full glass flex items-center justify-center hover:bg-red-500/20 hover:text-red-300" aria-label="Remove receipt"><X className="h-4 w-4" /></button>
                       </div>
                     )}
+                    <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={handleFileChange} className="hidden" />
                     {receiptPreview && (
                       <div className="mt-3 rounded-2xl overflow-hidden border border-white/10 max-h-[200px]">
                         <img src={receiptPreview} alt="Receipt preview" className="w-full h-auto max-h-[200px] object-contain bg-black/20" />
                       </div>
                     )}
                   </div>
-                  <button disabled={submitting || existingPayment?.status === 'pending'} type="submit" className="w-full btn-primary !py-4 !text-[14px] gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                    {submitting ? 'SUBMITTING...' : `SUBMIT PAYMENT (${formatNaira(amountDue)}) FOR REVIEW`} <Upload className="h-4 w-4" />
+
+                  <div>
+                    <label className="text-[11px] font-bold tracking-widest text-white/40 mb-2 block">NOTE (OPTIONAL)</label>
+                    <textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value.slice(0, 500) })} placeholder="e.g. Paid from my parent's account, name on transfer is..." rows={2} className="w-full rounded-2xl glass p-4 text-sm focus:outline-none focus:border-cyan-400/50 resize-none" />
+                  </div>
+
+                  {/* Upload / submit progress */}
+                  {submitting && (
+                    <div className="rounded-2xl bg-cyan-500/10 border border-cyan-400/30 p-4 space-y-2">
+                      <div className="flex justify-between text-xs font-bold text-cyan-200">
+                        <span className="flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" /> {phase === 'uploading' ? 'Uploading receipt…' : 'Submitting payment for verification…'}</span>
+                        <span>{progress}%</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-cyan-400 to-blue-600 transition-all duration-300" style={{ width: `${progress}%` }} />
+                      </div>
+                    </div>
+                  )}
+
+                  <button disabled={submitting || pendingExists} type="submit" className="w-full btn-primary !py-4 !text-[14px] gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    {submitting
+                      ? (phase === 'uploading' ? `UPLOADING RECEIPT… ${progress}%` : 'SUBMITTING PAYMENT…')
+                      : pendingExists ? 'WAITING FOR REVIEW OF PENDING PAYMENT' : `SUBMIT PAYMENT (${formatNaira(amountDue)}) FOR VERIFICATION`}
+                    {!submitting && <Upload className="h-4 w-4" />}
                   </button>
-                  <div className="text-[11px] text-white/30 text-center leading-relaxed">
-                    By submitting, you confirm that you transferred {formatNaira(amountDue)} to {BANK_DETAILS.accountNumber} ({BANK_DETAILS.bankName}) and the receipt is valid. False receipts will be rejected.
+                  <div className="text-[11px] text-white/30 text-center leading-relaxed flex items-start justify-center gap-1.5">
+                    <Lock className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                    <span>By submitting, you confirm that you transferred {formatNaira(amountDue)} to {BANK_DETAILS.accountNumber} ({BANK_DETAILS.bankName}) and the receipt is genuine. False receipts will be rejected. Access is granted only after admin approval.</span>
                   </div>
                 </form>
               </div>
               <div className="glass rounded-2xl p-5">
                 <h4 className="font-bold text-sm mb-3">Need Help?</h4>
                 <p className="text-xs text-white/50 leading-relaxed">If you have issues with transfer or upload, chat with us on WhatsApp for immediate assistance.</p>
-                <a href="https://wa.me/2348159610509" target="_blank" className="inline-flex mt-3 px-4 py-2 rounded-full bg-[#25D366] text-white font-bold text-xs">CHAT ON WHATSAPP</a>
+                <a href="https://wa.me/2348159610509" target="_blank" rel="noreferrer" className="inline-flex mt-3 px-4 py-2 rounded-full bg-[#25D366] text-white font-bold text-xs">CHAT ON WHATSAPP</a>
               </div>
             </div>
           )}

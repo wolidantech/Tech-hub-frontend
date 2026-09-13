@@ -6,18 +6,18 @@ cleanup.
 ```bash
 cd supabase/verify
 npm install
-npm run verify        # migrations 001-005, behaviorally
+npm run verify        # migrations 001-006, behaviorally
 npm run verify:seed   # the seed chain an administrator is told to run
 ```
 
 Expected:
 
-- `npm run verify` → `41 passed, 0 failed`
-- `npm run verify:seed` → `19 passed, 0 failed`
+- `npm run verify` → `44 passed, 0 failed`
+- `npm run verify:seed` → `29 passed, 0 failed`
 
 ## What each covers
 
-`run.mjs` applies `migrations/001`–`005` on top of `stubs.sql` (which emulates
+`run.mjs` applies `migrations/001`–`007` on top of `stubs.sql` (which emulates
 the Supabase-managed bits: `auth.users`, `auth.uid()`, `storage.buckets`) and
 then exercises scoring, coupon redemption, payment approval, certificate
 issuance, bundles, portfolios and the RLS hardening in 003.

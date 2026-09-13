@@ -8,6 +8,7 @@ import {
   fetchMyEnrollments, fetchAllEnrollments, adminGrantEnrollment, adminSetEnrollmentStatus,
   submitPaymentRow, fetchMyPayments, fetchAllPayments, approvePaymentRpc, rejectPaymentRpc, uploadReceipt,
   fetchMyProgress, fetchAllProgress, buildProgressMap, markLessonDb, unmarkLessonDb, resetProgressDb,
+  fetchMyActivity, markLessonStartedDb, reportVideoProgressDb,
   fetchMyCertificates, fetchAllCertificates, verifyCertificateRpc, issueCertificateRpc, revokeCertificateRpc,
   fetchMyNotifications, markNotificationRead, markAllNotificationsRead,
   sendNotificationRow, broadcastNotifications, fetchBundles, fetchAdminStats, logEvent,
@@ -33,6 +34,7 @@ export const CourseProvider = ({ children }) => {
   const [enrollments, setEnrollments] = useState([]);
   const [manualPayments, setManualPayments] = useState([]);
   const [progressRows, setProgressRows] = useState([]);
+  const [lessonActivity, setLessonActivity] = useState([]);
   const [certificates, setCertificates] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [bundleNames, setBundleNames] = useState({});
@@ -96,12 +98,13 @@ export const CourseProvider = ({ children }) => {
         setEnrollments(en); setManualPayments(pay); setProgressRows(prog); setCertificates(certs);
         try { setAdminStats(await fetchAdminStats()); } catch (e) { console.error('[courses] admin stats failed:', e.message); }
       } else {
-        const [en, pay, prog, certs, notifs] = await Promise.all([
+        const [en, pay, prog, certs, notifs, activity] = await Promise.all([
           fetchMyEnrollments(user.id), fetchMyPayments(user.id), fetchMyProgress(user.id),
           fetchMyCertificates(user.id), fetchMyNotifications(user.id),
+          fetchMyActivity(user.id).catch(() => []),
         ]);
         setEnrollments(en); setManualPayments(pay); setProgressRows(prog);
-        setCertificates(certs); setNotifications(notifs);
+        setCertificates(certs); setNotifications(notifs); setLessonActivity(activity);
       }
     } catch (err) {
       console.error('[courses] failed to load user data:', err.message);
@@ -178,19 +181,24 @@ export const CourseProvider = ({ children }) => {
   [enrollments]);
 
   // ===== MANUAL BANK TRANSFER SYSTEM =====
+  // Submission ALWAYS lands as status='pending' (enforced by RLS). Approval
+  // and rejection happen exclusively through the admin-gated RPCs, so the
+  // frontend can never approve a payment, alter an amount after submission,
+  // or touch another student's rows.
   const submitManualPayment = async ({
     userId, courseId, studentName, email, phone, amount, transactionDate, reference,
-    receiptFile, receiptName, receiptType, receiptSize,
+    receiptFile, receiptName, receiptType, receiptSize, note = '',
     couponCode = null, couponDiscount = 0, originalAmount = null,
-    bundleId = null, bundleCourseIds = [],
+    bundleId = null, bundleCourseIds = [], onUploadProgress = null,
   }) => {
     if (!receiptFile) throw new Error('Please upload your payment receipt');
     if (!String(reference || '').trim()) throw new Error('Transaction reference is required');
-    const receiptPath = await uploadReceipt(userId, receiptFile);
+    const receiptPath = await uploadReceipt(userId, receiptFile, onUploadProgress);
     try {
       const payment = await submitPaymentRow({
         userId, courseId: courseId || null, studentName, email, phone, amount,
         transactionDate, reference: String(reference).trim(), receiptPath,
+        note: String(note || '').trim().slice(0, 500),
         couponCode, couponDiscount, originalAmount, bundleId, bundleCourseIds,
       });
       setManualPayments((prev) => [payment, ...prev]);
@@ -201,6 +209,9 @@ export const CourseProvider = ({ children }) => {
     }
   };
 
+  // Admin decision flows. The RPCs are atomic server-side (payment status +
+  // enrollment + notification + audit in one transaction); afterwards we
+  // re-read the DB so the UI reflects the authoritative state.
   const approveManualPayment = async (paymentId) => {
     await approvePaymentRpc(paymentId);
     const [pay, en] = await Promise.all([fetchAllPayments(), fetchAllEnrollments()]);
@@ -211,10 +222,26 @@ export const CourseProvider = ({ children }) => {
   };
 
   const rejectManualPayment = async (paymentId, reason) => {
+    if (!String(reason || '').trim()) throw new Error('Rejection reason is required');
     await rejectPaymentRpc(paymentId, reason);
     const pay = await fetchAllPayments();
     setManualPayments(pay);
     return pay.find((p) => p.id === paymentId);
+  };
+
+  // Re-read payments + enrollments from the database (used to resync after
+  // errors such as "already approved" so the UI never drifts from truth).
+  const resyncPayments = async () => {
+    if (!user) return;
+    if (user.role === 'admin') {
+      const [pay, en] = await Promise.all([fetchAllPayments(), fetchAllEnrollments()]);
+      setManualPayments(pay);
+      setEnrollments(en);
+    } else {
+      const [pay, en] = await Promise.all([fetchMyPayments(user.id), fetchMyEnrollments(user.id)]);
+      setManualPayments(pay);
+      setEnrollments(en);
+    }
   };
 
   const getUserManualPayments = useCallback((userId) =>
@@ -257,6 +284,32 @@ export const CourseProvider = ({ children }) => {
     await unmarkLessonDb(userId, lessonId);
     setProgressRows((prev) => prev.filter((r) => !(r.user_id === userId && r.lesson_id === lessonId)));
   };
+
+  // ---------- Lesson activity: starts + video progress (never completion) ----------
+  const startedRef = useMemo(() => new Set(), []);
+  const markLessonStarted = useCallback(async (userId, courseId, lessonId) => {
+    const key = `${userId}_${lessonId}`;
+    if (startedRef.has(key)) return;
+    startedRef.add(key);
+    try {
+      await markLessonStartedDb(userId, courseId, lessonId);
+      setLessonActivity((prev) => {
+        const now = new Date().toISOString();
+        const rest = prev.filter((a) => !(a.userId === userId && a.lessonId === lessonId));
+        return [{ userId, courseId, lessonId, startedAt: now, videoSeconds: 0, updatedAt: now }, ...rest];
+      });
+    } catch { /* best-effort; never block learning on telemetry */ }
+  }, [startedRef]);
+
+  const reportVideoProgress = useCallback(async (userId, courseId, lessonId, seconds, duration = null) => {
+    try {
+      await reportVideoProgressDb(userId, courseId, lessonId, seconds, duration);
+      setLessonActivity((prev) => prev.map((a) =>
+        (a.userId === userId && a.lessonId === lessonId)
+          ? { ...a, videoSeconds: Math.floor(seconds), updatedAt: new Date().toISOString() }
+          : a));
+    } catch { /* best-effort */ }
+  }, []);
 
   const getUserCertificates = useCallback((userId) => certificates.filter((c) => c.userId === userId), [certificates]);
 
@@ -448,6 +501,7 @@ export const CourseProvider = ({ children }) => {
       submitManualPayment,
       approveManualPayment,
       rejectManualPayment,
+      resyncPayments,
       getUserManualPayments,
       getManualPaymentByCourse,
       getAllManualPayments,
@@ -461,6 +515,9 @@ export const CourseProvider = ({ children }) => {
       getProgress,
       markLessonComplete,
       unmarkLesson,
+      lessonActivity,
+      markLessonStarted,
+      reportVideoProgress,
       getUserCertificates,
       verifyCertificate,
       addCourse,

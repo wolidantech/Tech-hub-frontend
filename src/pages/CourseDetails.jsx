@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Clock, BookOpen, BarChart3, User, Star, CheckCircle2, Play, Award, ArrowRight, Shield, Zap, Globe, AlertTriangle } from 'lucide-react';
+import { Clock, BookOpen, BarChart3, User, Star, CheckCircle2, Play, Award, ArrowRight, Shield, Zap, Globe, AlertTriangle, FileText } from 'lucide-react';
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
@@ -321,6 +321,12 @@ export default function CourseDetails() {
               <button onClick={() => navigator.clipboard.writeText(window.location.href)} className="flex-1 h-11 rounded-full glass text-sm font-bold hover:bg-white/10">Copy Link</button>
               <a href={`https://wa.me/?text=Check out this course: ${course.title} ${window.location.href}`} target="_blank" className="flex-1 h-11 rounded-full bg-[#25D366] text-white text-sm font-bold flex items-center justify-center">WhatsApp</a>
             </div>
+          </div>
+
+          <div className="rounded-[24px] bg-gradient-to-br from-purple-500/20 to-blue-600/20 border border-purple-500/20 p-6">
+            <h4 className="font-bold mb-2 flex items-center gap-2"><FileText className="h-5 w-5 text-purple-300" /> Turn Skills Into a CV</h4>
+            <p className="text-sm text-white/60 mb-4">Build a professional CV in minutes — free, no account needed. Add what you learn here and download a print-ready PDF.</p>
+            <Link to="/cv-builder" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-purple-500 text-white font-bold text-sm hover:bg-purple-600 transition"><ArrowRight className="h-4 w-4" /> CREATE MY CV FREE</Link>
           </div>
 
           <div className="rounded-[24px] bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/20 p-6">

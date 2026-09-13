@@ -184,6 +184,53 @@ function buildFlashcards(input) {
   return { title: `${topic} — Flashcards`, topic, cards };
 }
 
+// ---------- CV improvement (never invents facts) ----------
+// Rewrites ONLY what the user supplied into professional CV language:
+// removes first person, adds strong action verbs, structures bullets.
+// It never adds qualifications, employers, dates, degrees or numbers
+// the user did not provide.
+const CV_ACTION_VERBS = {
+  worked: 'Delivered professional work', did: 'Executed', made: 'Produced',
+  helped: 'Supported', used: 'Applied', built: 'Built', designed: 'Designed',
+  managed: 'Managed', created: 'Created', developed: 'Developed',
+};
+function buildCVImprove(input) {
+  const { text = '', field = 'summary' } = input;
+  const original = String(text).trim();
+  if (!original) throw new Error('Write a few words first — DanTECH AI improves YOUR information, it never invents it.');
+  const firstPerson = /\b(i|my|me|we|our)\b/i.test(original);
+  // Split into sentence-ish units, clean first person.
+  const units = original
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map((s) => s.trim().replace(/^[-•*]\s*/, '').replace(/\.$/, ''))
+    .filter(Boolean)
+    .map((s) => s.replace(/^I\s+/i, '').replace(/^I'm\s+/i, 'Am ').replace(/\bmy\b/gi, 'the').replace(/^Am\s+/i, ''));
+  const strong = units.map((s, i) => {
+    let t = s.charAt(0).toUpperCase() + s.slice(1);
+    const first = t.split(/\s+/)[0].toLowerCase();
+    if (i === 0 && CV_ACTION_VERBS[first]) t = t.replace(new RegExp(`^${first}`, 'i'), CV_ACTION_VERBS[first]);
+    else if (!/^[A-Z][a-z]+ed\b/.test(t) && !/^(Developed|Managed|Designed|Built|Led|Created|Delivered|Produced|Supported|Applied|Coordinated|Implemented|Achieved)/.test(t)) {
+      t = field === 'experience' ? `Delivered: ${t}` : t;
+    }
+    return t;
+  });
+  const bullets = strong.map((s) => `• ${s}`);
+  const summary = field === 'summary'
+    ? strong.join('. ').replace(/\.\./g, '.') + (strong.length ? '.' : '')
+    : bullets.join('\n');
+  return {
+    improved: summary,
+    bullets,
+    changes: [
+      firstPerson ? 'Removed first-person phrasing (CVs read stronger without “I”).' : null,
+      'Applied action-led professional wording.',
+      strong.length > 1 ? 'Structured into clear, scannable points.' : null,
+      'No facts were added — verify every detail is yours before sending.',
+    ].filter(Boolean),
+    honestyNote: 'DanTECH AI only rewrote the information you supplied. It never invents qualifications, employers, degrees or achievements.',
+  };
+}
+
 const LocalTemplateProvider = {
   name: 'local-template',
   supports() { return true; },
@@ -202,6 +249,7 @@ const LocalTemplateProvider = {
       case 'notes': return { kind, data: buildNotes(input), provider: 'local-template' };
       case 'flashcards': return { kind, data: buildFlashcards(input), provider: 'local-template' };
       case 'summary': return { kind, data: { markdown: buildSummary(input) }, provider: 'local-template' };
+      case 'cv_improve': return { kind, data: buildCVImprove(input), provider: 'local-template' };
       default: throw new Error(`Unsupported AI kind: ${kind}`);
     }
   },

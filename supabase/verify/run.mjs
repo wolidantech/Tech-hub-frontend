@@ -1,4 +1,4 @@
-// PGlite behavioral verification for migrations 001-003.
+// PGlite behavioral verification for migrations 001-008.
 // NOTE: PGlite runs as superuser so RLS *enforcement* cannot be tested
 // here — RLS is verified at the policy-definition level (pg_policies) plus
 // SECURITY DEFINER auth checks, which DO execute. Full enforcement is
@@ -15,10 +15,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 const MIG = join(here, '../migrations');
 const db = new PGlite();
 await db.exec(readFileSync(join(here, 'stubs.sql'), 'utf8'));
-for (const f of ['001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql', '004_notify_and_counts.sql', '005_showcase_reads.sql']) {
+for (const f of ['001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql', '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql', '007_classroom_upgrade.sql', '008_cv_builder_and_study_tools.sql']) {
   await db.exec(readFileSync(`${MIG}/${f}`, 'utf8'));
 }
-console.log('migrations 001-004 applied clean');
+console.log('migrations 001-008 applied clean');
 
 const ADMIN = '11111111-1111-1111-1111-111111111111';
 const STU = '22222222-2222-2222-2222-222222222222';
@@ -452,6 +452,83 @@ await t('H22 showcase policy exposes only approved public images', async () => {
   for (const needle of ['submissions', 'approved', 'portfolio_public', 'image/']) {
     assert(String(def.q).includes(needle), 'showcase policy must scope to ' + needle);
   }
+});
+
+// ---------- H23: 006 optional payment submission note ----------
+await t('H23 manual_payments.note is optional and stored', async () => {
+  const col = await one(`select is_nullable from information_schema.columns
+    where table_schema='public' and table_name='manual_payments' and column_name='note'`);
+  assert(col && col.is_nullable === 'YES', 'note column missing or NOT NULL');
+  await as(STU);
+  const withNote = await one(`insert into manual_payments (user_id, course_id, amount, reference, status, note)
+    values ('${STU}','${COURSE}',100,'REF-006-N','pending','Paid from a different account') returning note`);
+  assert(withNote.note === 'Paid from a different account', 'note not stored');
+  const withoutNote = await one(`insert into manual_payments (user_id, course_id, amount, reference, status)
+    values ('${STU}','${COURSE}',100,'REF-006-X','pending') returning note`);
+  assert(withoutNote.note === null, 'note should default to null');
+  await anon();
+});
+
+// ---------- H24: 007 classroom upgrade ----------
+await t('H24a lesson types cover the full classroom spectrum', async () => {
+  await as(ADMIN);
+  const mod = await one(`select id from course_modules where course_id='${COURSE}' limit 1`);
+  for (const type of ['practical', 'quiz', 'assignment', 'project', 'resource']) {
+    const r = await one(`insert into course_lessons (module_id, course_id, title, type, position)
+      values ('${mod.id}','${COURSE}','H24 ${type}','${type}',90) returning type`);
+    assert(r.type === type, `lesson type '${type}' rejected by constraint`);
+    await q(`delete from course_lessons where course_id='${COURSE}' and title='H24 ${type}'`);
+  }
+  let rejected = false;
+  try {
+    await one(`insert into course_lessons (module_id, course_id, title, type, position)
+      values ('${mod.id}','${COURSE}','H24 bad','hologram',90) returning id`);
+  } catch { rejected = true; }
+  assert(rejected, 'invalid lesson type was accepted by the constraint');
+  await anon();
+});
+
+await t('H24b lesson_activity: students track own starts, never anyone else\u2019s', async () => {
+  const less = await one(`select id from course_lessons where course_id='${COURSE}' order by position limit 1`);
+  await as(STU);
+  const row = await one(`insert into lesson_activity (user_id, course_id, lesson_id, video_seconds)
+    values ('${STU}','${COURSE}','${less.id}',45)
+    on conflict (user_id, lesson_id) do update set video_seconds = excluded.video_seconds
+    returning video_seconds`);
+  assert(Number(row.video_seconds) === 45, 'start/video progress not stored');
+  // PGlite runs as superuser (RLS not enforced), so assert the policy that
+  // protects this table on a real server exists and is scoped to user_id.
+  const pol = await one(`select qual from pg_policies where tablename='lesson_activity' and policyname='own activity'`);
+  assert(pol && String(pol.qual).includes('user_id'), 'own-rows policy missing on lesson_activity');
+  await anon();
+});
+
+await t('H25 CV documents + study tools: tables exist, own-rows policies scoped', async () => {
+  for (const tbl of ['cv_documents', 'study_notes', 'study_bookmarks']) {
+    const n = await one(`select count(*)::int as n from information_schema.tables where table_name='${tbl}'`);
+    assert(Number(n.n) === 1, `${tbl} table missing (migration 008)`);
+    const rls = await one(`select relforcerowsecurity, relrowsecurity from pg_class where relname='${tbl}'`);
+    assert(rls.relrowsecurity === true, `${tbl} does not have RLS enabled`);
+  }
+  const pols = await db.query(`select tablename, policyname, qual from pg_policies where policyname in ('own cvs','own notes','own bookmarks')`);
+  assert(pols.rows.length === 3, `expected 3 own-rows policies, got ${pols.rows.length}`);
+  for (const p of pols.rows) {
+    assert(String(p.qual).includes('user_id'), `policy ${p.policyname} not scoped to user_id`);
+    assert(String(p.qual).includes('is_admin'), `policy ${p.policyname} missing admin escape hatch`);
+  }
+  // functional: a student can save, update and delete their own CV + note + bookmark
+  await as(STU);
+  const cv = await one(`insert into cv_documents (user_id, title, template, data) values ('${STU}','H25 CV','modern','{"personal":{"fullName":"H25"}}'::jsonb) returning id, updated_at`);
+  const cv2 = await one(`update cv_documents set title='H25 CV v2' where id='${cv.id}' returning title, updated_at`);
+  assert(cv2.title === 'H25 CV v2' && cv2.updated_at >= cv.updated_at, 'cv update / touch trigger failed');
+  const note = await one(`insert into study_notes (user_id, title, body) values ('${STU}','H25 note','body') returning id`);
+  const less = await one(`select id from course_lessons where course_id='${COURSE}' order by position limit 1`);
+  const bm = await one(`insert into study_bookmarks (user_id, course_id, lesson_id, note) values ('${STU}','${COURSE}','${less.id}','resume here') on conflict (user_id, lesson_id) do update set note=excluded.note returning id`);
+  assert(bm.id, 'bookmark upsert failed');
+  await one(`delete from study_bookmarks where id='${bm.id}'`);
+  await one(`delete from study_notes where id='${note.id}'`);
+  await one(`delete from cv_documents where id='${cv.id}'`);
+  await anon();
 });
 
 console.log(`\n==== RESULT: ${pass} passed, ${fail} failed ====`);

@@ -13,8 +13,8 @@ import CourseArt from '../components/course/CourseArt';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { courses, enrollments: allEnrollments, progressMap, getUserEnrollments, getCourseById, getProgress, getUserCertificates, getUserManualPayments, getUserPaymentSummary, getUserNotifications } = useCourses();
-  const { getUserQuizAverage, getUserAttempts, getUserSubmissions, courseViews, learningEvents, announcements, quizAttempts, submissions, getUpcomingClasses } = useLMS();
+  const { courses, enrollments: allEnrollments, progressMap, getUserEnrollments, getCourseById, getProgress, getUserCertificates, getUserManualPayments, getUserPaymentSummary, getUserNotifications, isEnrolled, lessonActivity } = useCourses();
+  const { getUserQuizAverage, getUserAttempts, getUserSubmissions, courseViews, learningEvents, announcements, quizAttempts, submissions, getUpcomingClasses, quizzes } = useLMS();
 
   const uid = user?.id || '';
   const enrollments = useMemo(() => (uid ? getUserEnrollments(uid) : []), [uid, getUserEnrollments]);
@@ -74,6 +74,44 @@ export default function Dashboard() {
     return getUpcomingClasses(ids.length ? ids : null).slice(0, 2);
   }, [uid, enrollments, getUpcomingClasses]);
 
+  // Continue Learning: the exact lesson the student last opened (lesson_activity),
+  // falling back to the last completed lesson. Backend rows are the source.
+  const resume = useMemo(() => {
+    if (!uid) return null;
+    const activeEnrollments = new Set(enrollments.filter((e) => e.status === 'active').map((e) => e.courseId));
+    const recent = (lessonActivity || []).find((a) => a.userId === uid && activeEnrollments.has(a.courseId));
+    const pick = (courseId, lessonId) => {
+      const course = getCourseById(courseId);
+      if (!course) return null;
+      const lesson = (course.curriculum || []).flatMap((m) => m.lessons || []).find((l) => l.id === lessonId);
+      return { course, lesson, progress: getProgress(uid, courseId).progress };
+    };
+    if (recent) {
+      const r = pick(recent.courseId, recent.lessonId);
+      if (r) return r;
+    }
+    for (const e of enrollments) {
+      const p = getProgress(uid, e.courseId);
+      if (p.lastLessonId && p.progress < 100) {
+        const r = pick(e.courseId, p.lastLessonId);
+        if (r) return r;
+      }
+    }
+    return null;
+  }, [uid, enrollments, lessonActivity, getCourseById, getProgress]);
+
+  // Recent quiz results across all courses.
+  const recentAttempts = useMemo(() => {
+    if (!uid) return [];
+    const byQuiz = {};
+    quizzes.forEach((z) => { byQuiz[z.id] = z; });
+    return myAttempts
+      .slice()
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      .slice(0, 4)
+      .map((a) => ({ ...a, quizTitle: byQuiz[a.quizId]?.title || 'Quiz' }));
+  }, [uid, myAttempts, quizzes]);
+
   if (!user) return null;
 
   return (
@@ -105,6 +143,20 @@ export default function Dashboard() {
                 <a href={lc.meetingLink} target="_blank" rel="noreferrer" className="px-5 py-2.5 rounded-full bg-red-500 text-white font-bold text-xs">JOIN CLASS</a>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Continue Learning — resume the exact lesson where you stopped */}
+        {resume && (
+          <div className="mb-6 rounded-[24px] bg-gradient-to-r from-cyan-500/15 to-blue-600/15 border border-cyan-400/30 p-5 md:p-6 flex flex-wrap items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div className="text-[11px] font-black tracking-widest text-cyan-300 mb-1.5">▶ CONTINUE LEARNING</div>
+              <div className="font-bold text-lg leading-tight truncate">{resume.lesson ? resume.lesson.title : resume.course.title}</div>
+              <div className="text-xs text-white/60 mt-1 truncate">{resume.course.title} • {resume.progress}% complete</div>
+            </div>
+            <Link to={`/learn/${resume.course.slug}`} className="px-6 py-3 rounded-full bg-cyan-400 text-black font-black text-xs flex items-center gap-2 hover:bg-cyan-300 transition shrink-0">
+              <Play className="h-4 w-4" /> RESUME LESSON
+            </Link>
           </div>
         )}
 
@@ -305,6 +357,48 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
+
+            {/* Recent quiz results */}
+            {recentAttempts.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="font-bold text-xl flex items-center gap-2"><HelpCircle className="h-5 w-5 text-purple-300" /> Recent Quiz Results</h2>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {recentAttempts.map((a) => (
+                    <div key={a.id} className="glass rounded-2xl p-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-bold text-sm truncate">{a.quizTitle}</span>
+                        <span className={`font-black text-sm shrink-0 ${a.passed ? 'text-green-300' : 'text-red-300'}`}>{a.score}%</span>
+                      </div>
+                      <div className="text-xs text-white/50 mt-1 flex items-center gap-1.5">
+                        {a.passed ? <CheckCircle2 className="h-3.5 w-3.5 text-green-400" /> : <XCircle className="h-3.5 w-3.5 text-red-400" />}
+                        {a.passed ? 'Passed' : 'Not passed yet'} • attempt {a.attemptNo}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Approved Payments — access confirmed by the backend */}
+            {manualPayments.filter((p) => p.status === 'approved' && p.courseId && isEnrolled(user.id, p.courseId)).slice(0, 3).map((p) => {
+              const approvedCourse = getCourseById(p.courseId);
+              return (
+                <div key={p.id} className="rounded-2xl border border-green-500/30 bg-green-500/10 p-5 flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center shrink-0"><CheckCircle2 className="h-5 w-5 text-green-300" /></div>
+                    <div>
+                      <div className="font-bold text-green-300 text-sm">Payment Approved</div>
+                      <div className="text-xs text-white/60 mt-0.5">{p.courseName} • Your course access is now active.</div>
+                    </div>
+                  </div>
+                  {approvedCourse && (
+                    <Link to={`/learn/${approvedCourse.slug}`} className="px-5 py-2.5 rounded-full bg-gradient-to-r from-green-400 to-emerald-600 text-white font-bold text-xs flex items-center gap-2">
+                      <Play className="h-3.5 w-3.5" /> START COURSE
+                    </Link>
+                  )}
+                </div>
+              );
+            })}
 
             {/* Pending Payments Section */}
             {manualPayments.filter((p) => p.status === 'pending').length > 0 && (
