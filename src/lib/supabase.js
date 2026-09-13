@@ -42,7 +42,12 @@ export function friendlyError(err, fallback = 'Something went wrong. Please try 
     return 'You do not have permission to do that.';
   }
   if (/jwt expired|invalid jwt|token expired/i.test(msg)) return 'Session expired. Please log in again.';
-  if (/Failed to fetch|NetworkError|network request failed/i.test(msg)) return 'Network error. Check your connection and retry.';
+  if (/Failed to fetch|NetworkError|network request failed/i.test(msg)) {
+    // This fires for a paused project, a mistyped URL, a CORS block or a dead
+    // network — all indistinguishable to the browser. Point at the page that
+    // tells them apart instead of blaming the visitor's connection.
+    return 'Cannot reach the database. Check your connection — if it persists, open /backend-status for diagnostics.';
+  }
   if (/Invalid login credentials/i.test(msg)) return 'Invalid email or password';
   if (/User already registered/i.test(msg)) return 'Email already registered. Try logging in instead.';
   if (/rate limit|too many requests|over_request_rate_limit/i.test(msg + code)) return 'Too many attempts. Please wait a moment and retry.';

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, Eye, EyeOff, Sparkles, Shield } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Eye, EyeOff, Sparkles, Shield, Stethoscope } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast, Toaster } from 'sonner';
 
@@ -9,6 +9,9 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Set when the failure is the backend connection rather than the password,
+  // so we can offer diagnostics instead of a toast that vanishes in 4 seconds.
+  const [backendIssue, setBackendIssue] = useState(null);
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -17,6 +20,7 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setBackendIssue(null);
     try {
       const user = await login(email, password);
       toast.success(`Welcome back, ${user.fullName}!`);
@@ -26,7 +30,10 @@ export default function Login() {
         else navigate(from);
       }, 500);
     } catch (err) {
-      toast.error(err.message);
+      const msg = err?.message || 'Login failed. Please try again.';
+      toast.error(msg);
+      const isBackend = /network|failed to fetch|cannot reach|backend not configured|check your connection|something went wrong/i.test(msg);
+      if (isBackend) setBackendIssue(msg);
     } finally {
       setLoading(false);
     }
@@ -42,6 +49,22 @@ export default function Login() {
             <h1 className="font-display font-black text-[32px] leading-none">Login to your account</h1>
             <p className="text-sm text-white/60">Continue your learning journey</p>
           </div>
+
+          {backendIssue && (
+            <div className="rounded-2xl bg-rose-500/10 border border-rose-500/25 p-4 text-left">
+              <div className="font-bold text-rose-300 text-sm">This isn’t your password</div>
+              <p className="mt-1 text-xs text-white/60 leading-relaxed">
+                The site could not reach its database, so no account can be verified right now.
+                Everyone will see this until the connection is fixed.
+              </p>
+              <Link
+                to="/backend-status"
+                className="mt-3 inline-flex items-center gap-2 h-9 px-4 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-bold transition"
+              >
+                <Stethoscope className="h-3.5 w-3.5 text-cyan-300" /> DIAGNOSE THE CONNECTION
+              </Link>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-4">

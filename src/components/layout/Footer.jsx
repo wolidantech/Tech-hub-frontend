@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { MessageCircle, Mail, Phone, MapPin, ArrowUpRight } from 'lucide-react';
+import { isConfigured } from '../../lib/backendHealth';
 
 export default function Footer() {
   return (
@@ -93,7 +94,17 @@ export default function Footer() {
           <div>© 2026 WOLI DAN TECH HUB. All Rights Reserved.</div>
           <div className="flex items-center gap-6">
             <span>Digital Skills • Better Opportunities • Real Income</span>
-            <span className="hidden md:inline-flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" /> All systems operational</span>
+            {/* Was a hardcoded "All systems operational" — a false claim whenever
+                the database is paused, misconfigured or unreachable, which is
+                exactly when someone is debugging an empty site. */}
+            <Link
+              to="/backend-status"
+              title="Test the database connection"
+              className="hidden md:inline-flex items-center gap-2 hover:text-white transition"
+            >
+              <span className={`h-2 w-2 rounded-full animate-pulse ${isConfigured() ? 'bg-green-400' : 'bg-amber-400'}`} />
+              {isConfigured() ? 'Backend status' : 'Backend not configured'}
+            </Link>
           </div>
         </div>
       </div>

@@ -5,10 +5,16 @@
 // covered by scripts/smoke-supabase.mjs against a live project.
 import { PGlite } from '@electric-sql/pglite';
 import { readFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 
-const MIG = '/home/user/Tech-hub-frontend/supabase/migrations';
+// Resolve relative to this file so the harness runs from any checkout
+// (it previously hardcoded one machine's absolute paths, and pointed at a
+// stubs file that was never committed there).
+const here = dirname(fileURLToPath(import.meta.url));
+const MIG = join(here, '../migrations');
 const db = new PGlite();
-await db.exec(readFileSync('/home/user/pgcheck/stubs.sql', 'utf8'));
+await db.exec(readFileSync(join(here, 'stubs.sql'), 'utf8'));
 for (const f of ['001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql', '004_notify_and_counts.sql', '005_showcase_reads.sql']) {
   await db.exec(readFileSync(`${MIG}/${f}`, 'utf8'));
 }

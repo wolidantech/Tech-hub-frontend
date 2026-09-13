@@ -1,15 +1,16 @@
 import { useState, useMemo } from 'react';
-import { Search, Filter, SlidersHorizontal, Sparkles, Package } from 'lucide-react';
+import { Search, SlidersHorizontal, Sparkles, Package } from 'lucide-react';
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
 import CourseCard from '../components/course/CourseCard';
+import CatalogEmpty from '../components/common/CatalogEmpty';
 import { recommendCourses } from '../lib/lms';
 import { formatNaira } from '../lib/utils';
 import { useNavigate, Link } from 'react-router-dom';
 
 export default function Courses() {
-  const { courses, getUserEnrollments, getProgress } = useCourses();
+  const { courses, coursesLoading, coursesError, getUserEnrollments, getProgress } = useCourses();
   const { categories, courseViews, bundles } = useLMS();
   const liveBundles = bundles.filter((b) => b.published !== false);
   const { user } = useAuth();
@@ -37,6 +38,10 @@ export default function Courses() {
     if (sort === 'rating') list.sort((a, b) => b.rating - a.rating);
     return list;
   }, [visible, activeCat, search, sort]);
+
+  // Did the visitor narrow the list themselves? Only then is an empty grid a
+  // search problem rather than a backend problem.
+  const filtering = Boolean(search.trim()) || activeCat !== 'All';
 
   const recommended = useMemo(() => {
     if (!user) return [];
@@ -130,12 +135,21 @@ export default function Courses() {
 
         <div>
           {activeCat !== 'All' && <h2 className="font-bold text-xl mb-4">{activeCat}</h2>}
-          {filtered.length === 0 ? (
-            <div className="text-center py-20 glass rounded-[24px]">
-              <Filter className="h-10 w-10 mx-auto text-white/20 mb-4" />
-              <div className="font-bold text-lg">No courses found</div>
-              <div className="text-sm text-white/50 mt-1">Try adjusting search or category</div>
+          {coursesLoading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="glass rounded-[24px] overflow-hidden animate-pulse">
+                  <div className="aspect-video bg-white/[0.06]" />
+                  <div className="p-5 space-y-3">
+                    <div className="h-3 w-24 rounded bg-white/10" />
+                    <div className="h-4 w-full rounded bg-white/10" />
+                    <div className="h-4 w-2/3 rounded bg-white/10" />
+                  </div>
+                </div>
+              ))}
             </div>
+          ) : filtered.length === 0 ? (
+            <CatalogEmpty filtering={filtering} error={coursesError} />
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filtered.map((c) => (

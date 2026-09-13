@@ -2,6 +2,9 @@
   "name": "lms-migration-verify",
   "private": true,
   "type": "module",
-  "scripts": { "verify": "node run.mjs" },
+  "scripts": {
+    "verify": "node run.mjs",
+    "verify:seed": "node verify-seed.mjs"
+  },
   "dependencies": { "@electric-sql/pglite": "^0.3.0" }
 }
