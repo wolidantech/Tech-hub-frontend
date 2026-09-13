@@ -22,11 +22,20 @@
 // Every video URL in the curriculum is a verified, real YouTube watch URL
 // for the lesson's topic. Placeholder videos are banned by policy and by
 // supabase/verify/verify-seed.mjs.
+//
+// Assessments (from src/data/assessments.js) are also seeded per course:
+//   * one FINAL quiz (10 real questions, passing score 70, linked to the
+//     capstone lesson), questions matched by text so re-runs never duplicate
+//   * one FINAL PROJECT assignment (real brief, linked to the capstone lesson)
+//   * course_completion_rules: 100% lessons + quiz avg ≥ 70 + final project
+//     approved → the server-side certificate trigger then issues the cert.
+// The last lesson of every course is typed 'project' (capstone).
 // ============================================================
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { coursesData } from '../../src/data/courses.js';
+import { finalQuizzes, finalProjects } from '../../src/data/assessments.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const out = join(here, 'seed_curriculum.sql');
@@ -73,6 +82,14 @@ let lessons = 0;
 let bodies = 0;
 let videos = 0;
 let resources = 0;
+let quizzes = 0;
+let questions = 0;
+let projects = 0;
+let rules = 0;
+
+/** True for the capstone lesson: last module, last lesson of a course. */
+const isCapstone = (curriculum, mi, li) =>
+  mi === curriculum.length - 1 && li === (curriculum[mi].lessons || []).length - 1;
 
 for (const course of coursesData) {
   const curriculum = course.curriculum || [];
@@ -94,7 +111,8 @@ for (const course of coursesData) {
 
     (mod.lessons || []).forEach((lesson, li) => {
       lessons += 1;
-      const type = lesson.videoUrl ? 'video' : (lesson.type === 'text' ? 'text' : 'video');
+      const capstone = isCapstone(curriculum, mi, li);
+      const type = lesson.type === 'text' ? 'text' : capstone ? 'project' : 'video';
       lines.push(
         [
           'with m as (',
@@ -108,6 +126,14 @@ for (const course of coursesData) {
           'where not exists (',
           `  select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = ${q(lesson.title)}`,
           ');',
+          // Keep the declared type in sync for rows that already exist.
+          'with m as (',
+          '  select mo.id as module_id, mo.course_id',
+          '  from public.course_modules mo join public.courses c on c.id = mo.course_id',
+          `  where c.slug = ${q(course.slug)} and mo.title = ${q(mod.title)}`,
+          ')',
+          'update public.course_lessons le set type = ' + q(type),
+          '  from m where le.module_id = m.module_id and le.title = ' + q(lesson.title) + ';',
         ].join('\n')
       );
 
@@ -169,6 +195,92 @@ for (const course of coursesData) {
       lines.push('');
     });
   });
+  // ---------- Final quiz + final project + completion rules ----------
+  const quiz = finalQuizzes[course.slug];
+  if (quiz) {
+    quizzes += 1;
+    const lessonTitle = (curriculum[curriculum.length - 1]?.lessons || []).slice(-1)[0]?.title;
+    lines.push(
+      [
+        `with c as (select id from public.courses where slug = ${q(course.slug)})`,
+        'insert into public.quizzes (course_id, title, description, passing_score, allow_retake, is_final, status, attempt_limit)',
+        `select c.id, ${q(quiz.title)}, ${q(quiz.description || 'Final assessment — pass to move toward your certificate.')}, ${quiz.passingScore || 70}, true, true, 'published', null from c`,
+        'where not exists (',
+        `  select 1 from public.quizzes z where z.course_id = c.id and z.title = ${q(quiz.title)}`,
+        ');',
+      ].join('\n')
+    );
+    // Keep the quiz linked to the capstone lesson (shown inside that lesson).
+    if (lessonTitle) {
+      lines.push(
+        [
+          `update public.quizzes z set lesson_id = le.id`,
+          '  from public.course_lessons le',
+          ` where z.course_id = le.course_id and le.title = ${q(lessonTitle)}`,
+          `   and z.title = ${q(quiz.title)} and exists (select 1 from public.courses c where c.id = z.course_id and c.slug = ${q(course.slug)});`,
+        ].join('\n')
+      );
+    }
+    (quiz.questions || []).forEach((question) => {
+      questions += 1;
+      const isMA = question.type === 'multiple_answer';
+      const options = question.type === 'true_false' ? ['True', 'False'] : question.options;
+      lines.push(
+        [
+          `with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id`,
+          `  where c.slug = ${q(course.slug)} and z.title = ${q(quiz.title)})`,
+          'insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)',
+          `select z.id, ${q(question.type)}, ${q(question.q)}, ${q(JSON.stringify(options))}::jsonb,`,
+          isMA ? `null, ${q(JSON.stringify(question.answers))}::jsonb,` : `${Number(question.answer)}, '[]'::jsonb,`,
+          `${q(question.why || '')} from z`,
+          'where not exists (',
+          `  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = ${q(question.q)}`,
+          ');',
+        ].join('\n')
+      );
+    });
+  }
+
+  const project = finalProjects[course.slug];
+  if (project) {
+    projects += 1;
+    const lessonTitle = (curriculum[curriculum.length - 1]?.lessons || []).slice(-1)[0]?.title;
+    lines.push(
+      [
+        `with c as (select id from public.courses where slug = ${q(course.slug)})`,
+        'insert into public.assignments (course_id, title, description, instructions, required_output, max_score, is_final_project, status)',
+        `select c.id, ${q(project.title)}, ${q(project.description)}, ${q(project.instructions)}, ${q(project.requiredOutput)}, 100, true, 'published' from c`,
+        'where not exists (',
+        `  select 1 from public.assignments a where a.course_id = c.id and a.title = ${q(project.title)}`,
+        ');',
+      ].join('\n')
+    );
+    if (lessonTitle) {
+      lines.push(
+        [
+          `update public.assignments a set lesson_id = le.id`,
+          '  from public.course_lessons le',
+          ` where a.course_id = le.course_id and le.title = ${q(lessonTitle)}`,
+          `   and a.title = ${q(project.title)} and exists (select 1 from public.courses c where c.id = a.course_id and c.slug = ${q(course.slug)});`,
+        ].join('\n')
+      );
+    }
+  }
+
+  rules += 1;
+  lines.push(
+    [
+      `with c as (select id from public.courses where slug = ${q(course.slug)})`,
+      'insert into public.course_completion_rules (course_id, require_lessons_pct, require_quiz_avg, require_assignments_approved, require_final_project)',
+      'select c.id, 100, 70, 0, true from c',
+      'on conflict (course_id) do update',
+      '  set require_lessons_pct = excluded.require_lessons_pct,',
+      '      require_quiz_avg = excluded.require_quiz_avg,',
+      '      require_assignments_approved = excluded.require_assignments_approved,',
+      '      require_final_project = excluded.require_final_project,',
+      '      updated_at = now();',
+    ].join('\n')
+  );
   lines.push('');
 }
 
@@ -179,7 +291,9 @@ lines.push('select c.slug, c.lessons_count,');
 lines.push('       (select count(*) from public.course_modules m where m.course_id = c.id) as modules,');
 lines.push('       (select count(*) from public.course_videos v');
 lines.push('          join public.course_lessons l on l.id = v.lesson_id');
-lines.push('         where l.course_id = c.id) as videos');
+lines.push('         where l.course_id = c.id) as videos,');
+lines.push('       (select count(*) from public.quizzes z where z.course_id = c.id) as quizzes,');
+lines.push('       (select count(*) from public.assignments a where a.course_id = c.id) as assignments');
 lines.push('from public.courses c order by c.slug;');
 lines.push('');
 
@@ -187,3 +301,4 @@ writeFileSync(out, lines.join('\n'), 'utf8');
 console.log(`wrote ${out}`);
 console.log(`  courses with curriculum: ${coursesData.filter((c) => (c.curriculum || []).length).length}`);
 console.log(`  modules: ${modules}, lessons: ${lessons}, bodies: ${bodies}, resources: ${resources}, videos: ${videos}`);
+console.log(`  final quizzes: ${quizzes}, questions: ${questions}, final projects: ${projects}, completion rules: ${rules}`);

@@ -59,11 +59,12 @@ async function tErr(name, fn, match) {
 // ---------- 1. migrations ----------
 for (const f of [
   '001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql',
-  '004_notify_and_counts.sql', '005_showcase_reads.sql',
+  '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql',
+  '007_classroom_upgrade.sql',
 ]) {
   await db.exec(read(join(here, '../migrations', f)));
 }
-console.log('migrations 001-005 applied clean');
+console.log('migrations 001-007 applied clean');
 
 // ---------- 2. catalog seed ----------
 await db.exec(read(join(here, '../seed/seed_12_courses.sql')));
@@ -107,8 +108,9 @@ await t('every lesson is attached to a module of its own course', async () => {
   assert(bad === 0, `${bad} lessons point at the wrong course`);
 });
 
-await t('lesson types satisfy the video/text check constraint', async () => {
-  const bad = await count(`select count(*)::int as n from course_lessons where type not in ('video','text')`);
+await t('lesson types satisfy the classroom type constraint', async () => {
+  const bad = await count(`select count(*)::int as n from course_lessons
+    where type not in ('video','text','practical','quiz','assignment','project','resource')`);
   assert(bad === 0, `${bad} lessons have an invalid type`);
 });
 
@@ -155,6 +157,56 @@ await t('every lesson has a full teaching body (enrolled-only reading)', async (
 await t('every lesson carries curated resources', async () => {
   const n = await count(`select count(*)::int as n from course_lessons where jsonb_array_length(resources) >= 1`);
   assert(n === 192, `expected resources on all 192 lessons, got ${n}`);
+});
+
+await t('every capstone lesson is typed as a project', async () => {
+  const n = await count(`select count(*)::int as n from course_lessons where type = 'project'`);
+  assert(n === 12, `expected 12 project (capstone) lessons, got ${n}`);
+});
+
+await t('every course ships a final quiz with 10 answerable questions', async () => {
+  const qz = await count(`select count(*)::int as n from quizzes where is_final and status = 'published'`);
+  assert(qz === 12, `expected 12 published final quizzes, got ${qz}`);
+  const total = await count(`select count(*)::int as n from quiz_questions`);
+  assert(total === 120, `expected 120 questions, got ${total}`);
+  const short = await count(`
+    select count(*)::int as n from quizzes z
+    where z.is_final and (select count(*) from quiz_questions qq where qq.quiz_id = z.id) <> 10`);
+  assert(short === 0, `${short} quizzes do not have exactly 10 questions`);
+  const unanswerable = await count(`
+    select count(*)::int as n from quiz_questions qq
+    where (qq.type = 'multiple_answer' and jsonb_array_length(qq.correct_answers) = 0)
+       or (qq.type <> 'multiple_answer' and (qq.correct_answer is null or qq.correct_answer < 0))`);
+  assert(unanswerable === 0, `${unanswerable} questions have no correct answer key`);
+  const linked = await count(`select count(*)::int as n from quizzes where is_final and lesson_id is not null`);
+  assert(linked === 12, `expected all final quizzes linked to their capstone lesson, got ${linked}`);
+});
+
+await t('every course ships a real final project assignment', async () => {
+  const n = await count(`select count(*)::int as n from assignments where is_final_project and status = 'published'`);
+  assert(n === 12, `expected 12 published final projects, got ${n}`);
+  const thin = await count(`
+    select count(*)::int as n from assignments
+    where is_final_project and (coalesce(length(instructions), 0) < 100 or coalesce(length(required_output), 0) < 40)`);
+  assert(thin === 0, `${thin} final projects lack real instructions/requirements`);
+  const linked = await count(`select count(*)::int as n from assignments where is_final_project and lesson_id is not null`);
+  assert(linked === 12, `expected final projects linked to capstone lessons, got ${linked}`);
+});
+
+await t('completion rules require lessons + quiz average + final project', async () => {
+  const n = await count(`
+    select count(*)::int as n from course_completion_rules
+    where require_lessons_pct = 100 and require_quiz_avg = 70 and require_final_project`);
+  assert(n === 12, `expected complete rules on all 12 courses, got ${n}`);
+});
+
+await t('lesson_activity (start/video tracking) exists with own-rows RLS', async () => {
+  const t1 = await count(`select count(*)::int as n from information_schema.tables where table_name = 'lesson_activity'`);
+  assert(t1 === 1, 'lesson_activity table missing (migration 007)');
+  const pol = await count(`select count(*)::int as n from pg_policies where tablename = 'lesson_activity'`);
+  assert(pol >= 1, 'lesson_activity has no RLS policy');
+  const cols = await count(`select count(*)::int as n from information_schema.columns where table_name = 'lesson_activity' and column_name in ('started_at','video_seconds')`);
+  assert(cols === 2, 'lesson_activity missing started_at/video_seconds');
 });
 
 // ---------- 4. idempotency ----------
@@ -237,7 +289,8 @@ const fresh = new PGlite();
 await fresh.exec(read(join(here, 'stubs.sql')));
 for (const f of [
   '001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql',
-  '004_notify_and_counts.sql', '005_showcase_reads.sql',
+  '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql',
+  '007_classroom_upgrade.sql',
 ]) {
   await fresh.exec(read(join(here, '../migrations', f)));
 }
@@ -264,13 +317,18 @@ await t('one-step setup leaves no course as an empty shell', async () => {
   assert(noLessons === 0, `${noLessons} published courses have no lessons`);
 });
 
-await t('one-step setup seeds bodies, resources and videos for every lesson', async () => {
+await t('one-step setup seeds bodies, resources, videos, quizzes and projects', async () => {
   const bodies = await fcount(`select count(*)::int as n from course_content where length(body_markdown) > 300`);
   const videos = await fcount(`select count(*)::int as n from course_videos where url like 'https://www.youtube.com/watch?v=%'`);
   const resources = await fcount(`select count(*)::int as n from course_lessons where jsonb_array_length(resources) >= 1`);
+  const quizzes = await fcount(`select count(*)::int as n from quizzes where is_final`);
+  const questions = await fcount(`select count(*)::int as n from quiz_questions`);
+  const projects = await fcount(`select count(*)::int as n from assignments where is_final_project`);
   assert(bodies === 192, `expected 192 bodies, got ${bodies}`);
   assert(videos === 192, `expected 192 real videos, got ${videos}`);
   assert(resources === 192, `expected 192 lessons with resources, got ${resources}`);
+  assert(quizzes === 12 && questions === 120, `expected 12 quizzes / 120 questions, got ${quizzes} / ${questions}`);
+  assert(projects === 12, `expected 12 final projects, got ${projects}`);
 });
 
 await t('one-step setup is idempotent on re-run', async () => {

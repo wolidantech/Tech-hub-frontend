@@ -8,6 +8,7 @@ import {
   fetchMyEnrollments, fetchAllEnrollments, adminGrantEnrollment, adminSetEnrollmentStatus,
   submitPaymentRow, fetchMyPayments, fetchAllPayments, approvePaymentRpc, rejectPaymentRpc, uploadReceipt,
   fetchMyProgress, fetchAllProgress, buildProgressMap, markLessonDb, unmarkLessonDb, resetProgressDb,
+  fetchMyActivity, markLessonStartedDb, reportVideoProgressDb,
   fetchMyCertificates, fetchAllCertificates, verifyCertificateRpc, issueCertificateRpc, revokeCertificateRpc,
   fetchMyNotifications, markNotificationRead, markAllNotificationsRead,
   sendNotificationRow, broadcastNotifications, fetchBundles, fetchAdminStats, logEvent,
@@ -33,6 +34,7 @@ export const CourseProvider = ({ children }) => {
   const [enrollments, setEnrollments] = useState([]);
   const [manualPayments, setManualPayments] = useState([]);
   const [progressRows, setProgressRows] = useState([]);
+  const [lessonActivity, setLessonActivity] = useState([]);
   const [certificates, setCertificates] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [bundleNames, setBundleNames] = useState({});
@@ -96,12 +98,13 @@ export const CourseProvider = ({ children }) => {
         setEnrollments(en); setManualPayments(pay); setProgressRows(prog); setCertificates(certs);
         try { setAdminStats(await fetchAdminStats()); } catch (e) { console.error('[courses] admin stats failed:', e.message); }
       } else {
-        const [en, pay, prog, certs, notifs] = await Promise.all([
+        const [en, pay, prog, certs, notifs, activity] = await Promise.all([
           fetchMyEnrollments(user.id), fetchMyPayments(user.id), fetchMyProgress(user.id),
           fetchMyCertificates(user.id), fetchMyNotifications(user.id),
+          fetchMyActivity(user.id).catch(() => []),
         ]);
         setEnrollments(en); setManualPayments(pay); setProgressRows(prog);
-        setCertificates(certs); setNotifications(notifs);
+        setCertificates(certs); setNotifications(notifs); setLessonActivity(activity);
       }
     } catch (err) {
       console.error('[courses] failed to load user data:', err.message);
@@ -281,6 +284,32 @@ export const CourseProvider = ({ children }) => {
     await unmarkLessonDb(userId, lessonId);
     setProgressRows((prev) => prev.filter((r) => !(r.user_id === userId && r.lesson_id === lessonId)));
   };
+
+  // ---------- Lesson activity: starts + video progress (never completion) ----------
+  const startedRef = useMemo(() => new Set(), []);
+  const markLessonStarted = useCallback(async (userId, courseId, lessonId) => {
+    const key = `${userId}_${lessonId}`;
+    if (startedRef.has(key)) return;
+    startedRef.add(key);
+    try {
+      await markLessonStartedDb(userId, courseId, lessonId);
+      setLessonActivity((prev) => {
+        const now = new Date().toISOString();
+        const rest = prev.filter((a) => !(a.userId === userId && a.lessonId === lessonId));
+        return [{ userId, courseId, lessonId, startedAt: now, videoSeconds: 0, updatedAt: now }, ...rest];
+      });
+    } catch { /* best-effort; never block learning on telemetry */ }
+  }, [startedRef]);
+
+  const reportVideoProgress = useCallback(async (userId, courseId, lessonId, seconds, duration = null) => {
+    try {
+      await reportVideoProgressDb(userId, courseId, lessonId, seconds, duration);
+      setLessonActivity((prev) => prev.map((a) =>
+        (a.userId === userId && a.lessonId === lessonId)
+          ? { ...a, videoSeconds: Math.floor(seconds), updatedAt: new Date().toISOString() }
+          : a));
+    } catch { /* best-effort */ }
+  }, []);
 
   const getUserCertificates = useCallback((userId) => certificates.filter((c) => c.userId === userId), [certificates]);
 
@@ -486,6 +515,9 @@ export const CourseProvider = ({ children }) => {
       getProgress,
       markLessonComplete,
       unmarkLesson,
+      lessonActivity,
+      markLessonStarted,
+      reportVideoProgress,
       getUserCertificates,
       verifyCertificate,
       addCourse,

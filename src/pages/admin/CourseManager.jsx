@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Plus, X, Edit, Trash2, Eye, EyeOff, Save, Image as ImageIcon, ChevronDown, ChevronUp, ListChecks, FolderPlus } from 'lucide-react';
 import { useCourses } from '../../context/CourseContext';
 import { useLMS } from '../../context/LMSContext';
@@ -112,6 +113,9 @@ export default function CourseManager() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <button onClick={() => setManaging(null)} className="text-sm text-white/60 hover:text-white">← Back to courses</button>
           <div className="flex gap-2">
+            <Link to={`/learn/${course.slug}?preview=1`} className="px-4 py-2 rounded-full text-xs font-bold glass flex items-center gap-1.5 hover:bg-white/10 transition">
+              <Eye className="h-3.5 w-3.5" /> PREVIEW AS STUDENT
+            </Link>
             <button onClick={async () => { try { await setCoursePublished(course.id, !course.published); audit(user, course.published ? 'course.unpublish' : 'course.publish', 'course', course.id, {}); toast.success(course.published ? 'Unpublished' : 'Published 🎉'); } catch (err) { toast.error(err.message); } }} className={`px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 ${course.published ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-green-500 text-white'}`}>
               {course.published ? <><EyeOff className="h-3.5 w-3.5" /> UNPUBLISH</> : <><Eye className="h-3.5 w-3.5" /> PUBLISH</>}
             </button>

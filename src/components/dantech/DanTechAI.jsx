@@ -57,6 +57,19 @@ export default function DanTechAI() {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, thinking, open]);
 
+  // The Learn classroom dispatches 'wdth_open_dantech' with an optional
+  // prefilled prompt ("Ask DanTECH AI" button) — open the tutor and prefill.
+  useEffect(() => {
+    const onOpen = (e) => {
+      setOpen(true);
+      setShowHistory(false);
+      const prompt = e?.detail?.prompt;
+      if (prompt) setInput(String(prompt));
+    };
+    window.addEventListener('wdth_open_dantech', onOpen);
+    return () => window.removeEventListener('wdth_open_dantech', onOpen);
+  }, []);
+
   // Hide for admins/guests (when disabled, hide for all). After all hooks.
   if (!enabled || !isStudent || onAdmin) return null;
 

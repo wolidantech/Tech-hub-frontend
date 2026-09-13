@@ -122,24 +122,30 @@ Paste and run each file from supabase/migrations/ IN THIS ORDER:
   4. 004_notify_and_counts.sql   — notifications + lessons_count trigger
   5. 005_showcase_reads.sql      — showcase/student-proof reads
   6. 006_payment_notes.sql       — payment note column (bank-transfer flow)
+  7. 007_classroom_upgrade.sql   — lesson types, lesson_activity (start/video
+                                   tracking), lesson descriptions
 
 STEP 3 — SEED + PUBLISH THE FULL CATALOG (one paste)
 Paste and run supabase/seed/setup_full_catalog.sql. It seeds the 12 courses,
 then for every course: 4 modules × 4 lessons, full teaching bodies, curated
-resources, one real YouTube video per lesson — and publishes them.
-Expected end state: 12 published courses, 192 lessons, 192 videos.
+resources, one real YouTube video per lesson, ONE FINAL QUIZ (10 questions),
+ONE FINAL PROJECT assignment, certificate completion rules — and publishes.
+Expected end state: 12 published courses, 192 lessons, 192 videos,
+12 quizzes / 120 questions, 12 final projects.
 
 STEP 4 — VERIFY
-Run this in SQL Editor; results must be 12 / 48 / 192 / 192 / 12:
+Run this in SQL Editor; results must be 12 / 48 / 192 / 192 / 12 / 12 / 12:
   select
     (select count(*) from courses)                                     as courses,
     (select count(*) from course_modules)                              as modules,
     (select count(*) from course_lessons)                              as lessons,
     (select count(*) from course_videos)                               as videos,
-    (select count(*) filter (where published) from courses)            as published;
+    (select count(*) filter (where published) from courses)            as published,
+    (select count(*) from quizzes where is_final)                      as final_quizzes,
+    (select count(*) from assignments where is_final_project)          as final_projects;
 Optional full proof on any machine with Node:
   cd supabase/verify && npm install && npm run verify && npm run verify:seed
-(must print "42 passed, 0 failed" and "24 passed, 0 failed").
+(must print "44 passed, 0 failed" and "29 passed, 0 failed").
 
 STEP 5 — CREATE THE OWNER/ADMIN ACCOUNT
 - In the app (or Supabase Auth UI) sign up the owner email — this creates
@@ -186,6 +192,19 @@ Report back the STEP 4 numbers and confirm the admin login works.
 | 2 — Setup & Publish | New Supabase project, or re-provisioning | Live storefront: 12 courses, 192 lessons, 192 videos, admin account |
 
 Current verified catalog state (checked by `supabase/verify/verify-seed.mjs`,
-24 assertions): **12 courses × 4 modules × 4 lessons = 192 lessons**, every
+29 assertions): **12 courses × 4 modules × 4 lessons = 192 lessons**, every
 lesson with a full professional teaching body, curated global resources, and
-one real verified YouTube video.
+one real verified YouTube video. Every course also ships **one final quiz
+(10 questions)** and **one final project**, with completion rules of
+100% lessons + quiz average ≥ 70% + approved final project before the
+server-side certificate trigger issues the certificate.
+
+## The complete classroom chain (what students experience)
+
+COURSE → MODULES → LESSONS (video → read → examples → practical) →
+QUIZ → ASSIGNMENTS → MODULE COMPLETION → FINAL PROJECT → FINAL ASSESSMENT →
+CERTIFICATE. Lesson starts and video progress are tracked in
+`lesson_activity` (never counts as completion); completion happens only via
+the student's explicit "Mark as complete" and is stored server-side in
+`lesson_progress`. Admin previews the exact student classroom via
+Admin → Courses → PREVIEW AS STUDENT (`/learn/<slug>?preview=1`).

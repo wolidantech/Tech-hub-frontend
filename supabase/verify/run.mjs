@@ -15,10 +15,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 const MIG = join(here, '../migrations');
 const db = new PGlite();
 await db.exec(readFileSync(join(here, 'stubs.sql'), 'utf8'));
-for (const f of ['001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql', '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql']) {
+for (const f of ['001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql', '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql', '007_classroom_upgrade.sql']) {
   await db.exec(readFileSync(`${MIG}/${f}`, 'utf8'));
 }
-console.log('migrations 001-006 applied clean');
+console.log('migrations 001-007 applied clean');
 
 const ADMIN = '11111111-1111-1111-1111-111111111111';
 const STU = '22222222-2222-2222-2222-222222222222';
@@ -466,6 +466,40 @@ await t('H23 manual_payments.note is optional and stored', async () => {
   const withoutNote = await one(`insert into manual_payments (user_id, course_id, amount, reference, status)
     values ('${STU}','${COURSE}',100,'REF-006-X','pending') returning note`);
   assert(withoutNote.note === null, 'note should default to null');
+  await anon();
+});
+
+// ---------- H24: 007 classroom upgrade ----------
+await t('H24a lesson types cover the full classroom spectrum', async () => {
+  await as(ADMIN);
+  const mod = await one(`select id from course_modules where course_id='${COURSE}' limit 1`);
+  for (const type of ['practical', 'quiz', 'assignment', 'project', 'resource']) {
+    const r = await one(`insert into course_lessons (module_id, course_id, title, type, position)
+      values ('${mod.id}','${COURSE}','H24 ${type}','${type}',90) returning type`);
+    assert(r.type === type, `lesson type '${type}' rejected by constraint`);
+    await q(`delete from course_lessons where course_id='${COURSE}' and title='H24 ${type}'`);
+  }
+  let rejected = false;
+  try {
+    await one(`insert into course_lessons (module_id, course_id, title, type, position)
+      values ('${mod.id}','${COURSE}','H24 bad','hologram',90) returning id`);
+  } catch { rejected = true; }
+  assert(rejected, 'invalid lesson type was accepted by the constraint');
+  await anon();
+});
+
+await t('H24b lesson_activity: students track own starts, never anyone else\u2019s', async () => {
+  const less = await one(`select id from course_lessons where course_id='${COURSE}' order by position limit 1`);
+  await as(STU);
+  const row = await one(`insert into lesson_activity (user_id, course_id, lesson_id, video_seconds)
+    values ('${STU}','${COURSE}','${less.id}',45)
+    on conflict (user_id, lesson_id) do update set video_seconds = excluded.video_seconds
+    returning video_seconds`);
+  assert(Number(row.video_seconds) === 45, 'start/video progress not stored');
+  // PGlite runs as superuser (RLS not enforced), so assert the policy that
+  // protects this table on a real server exists and is scoped to user_id.
+  const pol = await one(`select qual from pg_policies where tablename='lesson_activity' and policyname='own activity'`);
+  assert(pol && String(pol.qual).includes('user_id'), 'own-rows policy missing on lesson_activity');
   await anon();
 });
 

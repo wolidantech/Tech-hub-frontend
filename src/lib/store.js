@@ -569,6 +569,26 @@ export const resetProgressDb = async (userId, courseId) => {
   await one(sb().from('lesson_progress').delete().eq('user_id', userId).eq('course_id', courseId));
 };
 
+// ---------- Lesson activity (starts + video progress; NOT completion) ----------
+// lesson_activity is deliberately separate from lesson_progress: opening or
+// watching a lesson must never count as completing it. RLS keeps rows private.
+export const fetchMyActivity = async (userId) =>
+  (await one(sb().from('lesson_activity').select('*').eq('user_id', userId).order('updated_at', { ascending: false }).limit(200)))
+    .map((r) => ({ userId: r.user_id, courseId: r.course_id, lessonId: r.lesson_id, startedAt: r.started_at, videoSeconds: r.video_seconds || 0, updatedAt: r.updated_at }));
+
+export const markLessonStartedDb = async (userId, courseId, lessonId) =>
+  one(sb().from('lesson_activity').upsert(
+    { user_id: userId, course_id: courseId, lesson_id: lessonId },
+    { onConflict: 'user_id,lesson_id', ignoreDuplicates: true },
+  ));
+
+export const reportVideoProgressDb = async (userId, courseId, lessonId, seconds, duration = null) =>
+  one(sb().from('lesson_activity').upsert({
+    user_id: userId, course_id: courseId, lesson_id: lessonId,
+    video_seconds: Math.max(0, Math.floor(seconds)),
+    ...(duration ? { video_duration: Math.max(0, Math.floor(duration)) } : {}),
+  }, { onConflict: 'user_id,lesson_id' }));
+
 // ============================================================ QUIZZES
 export const fetchQuizzes = async (courseId = null) => {
   let q = sb().from('quizzes').select('*').order('created_at', { ascending: true });

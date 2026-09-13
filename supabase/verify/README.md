@@ -12,12 +12,12 @@ npm run verify:seed   # the seed chain an administrator is told to run
 
 Expected:
 
-- `npm run verify` → `42 passed, 0 failed`
-- `npm run verify:seed` → `24 passed, 0 failed`
+- `npm run verify` → `44 passed, 0 failed`
+- `npm run verify:seed` → `29 passed, 0 failed`
 
 ## What each covers
 
-`run.mjs` applies `migrations/001`–`006` on top of `stubs.sql` (which emulates
+`run.mjs` applies `migrations/001`–`007` on top of `stubs.sql` (which emulates
 the Supabase-managed bits: `auth.users`, `auth.uid()`, `storage.buckets`) and
 then exercises scoring, coupon redemption, payment approval, certificate
 issuance, bundles, portfolios and the RLS hardening in 003.

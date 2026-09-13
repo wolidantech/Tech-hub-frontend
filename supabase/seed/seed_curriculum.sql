@@ -38,6 +38,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'What Is AI Video Creation & Why It Matters'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ai-video-content-creation' and mo.title = 'Module 1: Foundations of AI Video'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'What Is AI Video Creation & Why It Matters';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -106,6 +113,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'How AI Video Generators Think: Prompts → Clips'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ai-video-content-creation' and mo.title = 'Module 1: Foundations of AI Video'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'How AI Video Generators Think: Prompts → Clips';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -177,6 +191,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Choosing Your AI Tool Stack (Runway, Pika & Friends)'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ai-video-content-creation' and mo.title = 'Module 1: Foundations of AI Video'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Choosing Your AI Tool Stack (Runway, Pika & Friends)';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -248,6 +269,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Setting Up Your AI Video Studio (Folder System & Workflow)'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ai-video-content-creation' and mo.title = 'Module 1: Foundations of AI Video'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Setting Up Your AI Video Studio (Folder System & Workflow)';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -326,6 +354,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'From Idea to Hook: Script Writing with ChatGPT'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ai-video-content-creation' and mo.title = 'Module 2: Scripting & Storytelling with AI'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'From Idea to Hook: Script Writing with ChatGPT';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -397,6 +432,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Writing Video Prompts That Actually Work (Shot Language)'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ai-video-content-creation' and mo.title = 'Module 2: Scripting & Storytelling with AI'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Writing Video Prompts That Actually Work (Shot Language)';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -468,6 +510,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Storyboarding with AI Image Frames'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ai-video-content-creation' and mo.title = 'Module 2: Scripting & Storytelling with AI'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Storyboarding with AI Image Frames';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -536,6 +585,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Voice & Narration: Scripts That Sound Human'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ai-video-content-creation' and mo.title = 'Module 2: Scripting & Storytelling with AI'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Voice & Narration: Scripts That Sound Human';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -609,6 +665,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Generating Clips: Text-to-Video & Image-to-Video'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ai-video-content-creation' and mo.title = 'Module 3: Production — Generate, Voice, Edit'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Generating Clips: Text-to-Video & Image-to-Video';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -679,6 +742,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'AI Voiceover Production & Lip-Sync Basics'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ai-video-content-creation' and mo.title = 'Module 3: Production — Generate, Voice, Edit'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'AI Voiceover Production & Lip-Sync Basics';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -748,6 +818,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Assembling in CapCut: Cuts, Captions & Music'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ai-video-content-creation' and mo.title = 'Module 3: Production — Generate, Voice, Edit'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Assembling in CapCut: Cuts, Captions & Music';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -816,6 +893,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Fixing AI Mistakes: Artifacts, Upscaling & Consistency'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ai-video-content-creation' and mo.title = 'Module 3: Production — Generate, Voice, Edit'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Fixing AI Mistakes: Artifacts, Upscaling & Consistency';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -893,6 +977,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Platform Formats: TikTok, Reels, YouTube & WhatsApp'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ai-video-content-creation' and mo.title = 'Module 4: Publishing, Ads & Monetization'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Platform Formats: TikTok, Reels, YouTube & WhatsApp';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -963,6 +1054,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Making Ads & Promo Videos with AI'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ai-video-content-creation' and mo.title = 'Module 4: Publishing, Ads & Monetization'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Making Ads & Promo Videos with AI';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -1030,6 +1128,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Faceless Channels & Content Systems'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ai-video-content-creation' and mo.title = 'Module 4: Publishing, Ads & Monetization'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Faceless Channels & Content Systems';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -1095,11 +1200,18 @@ with m as (
   where c.slug = 'ai-video-content-creation' and mo.title = 'Module 4: Publishing, Ads & Monetization'
 )
 insert into public.course_lessons (module_id, course_id, title, type, duration, position)
-select m.module_id, m.course_id, 'Monetization: Clients, Rates & Getting Paid', 'video', '18 min', 3
+select m.module_id, m.course_id, 'Monetization: Clients, Rates & Getting Paid', 'project', '18 min', 3
 from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Monetization: Clients, Rates & Getting Paid'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ai-video-content-creation' and mo.title = 'Module 4: Publishing, Ads & Monetization'
+)
+update public.course_lessons le set type = 'project'
+  from m where le.module_id = m.module_id and le.title = 'Monetization: Clients, Rates & Getting Paid';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -1159,6 +1271,129 @@ where not exists (
   select 1 from public.course_videos v where v.lesson_id = l.id and v.url = 'https://www.youtube.com/watch?v=T_-2M_1pgoE'
 );
 
+with c as (select id from public.courses where slug = 'ai-video-content-creation')
+insert into public.quizzes (course_id, title, description, passing_score, allow_retake, is_final, status, attempt_limit)
+select c.id, 'Final Assessment — AI Video Content Creation', 'Final assessment — pass to move toward your certificate.', 70, true, true, 'published', null from c
+where not exists (
+  select 1 from public.quizzes z where z.course_id = c.id and z.title = 'Final Assessment — AI Video Content Creation'
+);
+update public.quizzes z set lesson_id = le.id
+  from public.course_lessons le
+ where z.course_id = le.course_id and le.title = 'Monetization: Clients, Rates & Getting Paid'
+   and z.title = 'Final Assessment — AI Video Content Creation' and exists (select 1 from public.courses c where c.id = z.course_id and c.slug = 'ai-video-content-creation');
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ai-video-content-creation' and z.title = 'Final Assessment — AI Video Content Creation')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'What is the FIRST step of a professional AI video workflow?', '["Generate the video immediately","Write a clear script and shot plan","Pick background music","Add captions"]'::jsonb,
+1, '[]'::jsonb,
+'AI tools follow your instructions — a clear script and shot list is what makes the output usable.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'What is the FIRST step of a professional AI video workflow?'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ai-video-content-creation' and z.title = 'Final Assessment — AI Video Content Creation')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Which prompt element most improves AI video output quality?', '["All-caps text","Specific subject, style, camera and lighting details","Asking for 10 variations at once","Using only one-word prompts"]'::jsonb,
+1, '[]'::jsonb,
+'Specificity (subject, style, camera angle, lighting, mood) is the core prompting skill.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which prompt element most improves AI video output quality?'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ai-video-content-creation' and z.title = 'Final Assessment — AI Video Content Creation')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'You should always review AI-generated content for errors before publishing.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'AI output can contain mistakes and odd artifacts — human review is mandatory for professional work.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'You should always review AI-generated content for errors before publishing.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ai-video-content-creation' and z.title = 'Final Assessment — AI Video Content Creation')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'ElevenLabs is primarily used for…', '["Video upscaling","AI voice generation","Color grading","Thumbnail design"]'::jsonb,
+1, '[]'::jsonb,
+'ElevenLabs is a leading AI voice/text-to-speech platform used for narration and voiceovers.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'ElevenLabs is primarily used for…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ai-video-content-creation' and z.title = 'Final Assessment — AI Video Content Creation')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_answer', 'Which of these are legitimate ways to monetize AI video skills? (Select all that apply)', '["Creating ads for local businesses","Faceless content channels","Selling social media content packages","Publishing unedited AI output as your own original film"]'::jsonb,
+null, '[0,1,2]'::jsonb,
+'Client ads, content channels and packages are real income streams; misrepresenting raw AI output is not a sustainable business.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which of these are legitimate ways to monetize AI video skills? (Select all that apply)'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ai-video-content-creation' and z.title = 'Final Assessment — AI Video Content Creation')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'What does "image-to-video" mean in AI tools like Runway?', '["Printing video frames","Animating a still image into motion","Converting file formats","Compressing video size"]'::jsonb,
+1, '[]'::jsonb,
+'Image-to-video models take a still frame and generate believable motion from it.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'What does "image-to-video" mean in AI tools like Runway?'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ai-video-content-creation' and z.title = 'Final Assessment — AI Video Content Creation')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'The best hook for a short-form video appears…', '["After 30 seconds","In the first 1–3 seconds","Only in the caption","At the end"]'::jsonb,
+1, '[]'::jsonb,
+'Viewers decide in seconds — the hook must land immediately.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'The best hook for a short-form video appears…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ai-video-content-creation' and z.title = 'Final Assessment — AI Video Content Creation')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'Captions/subtitles improve watch time on social video, especially for sound-off viewing.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'A large share of social video is watched muted; captions keep those viewers.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Captions/subtitles improve watch time on social video, especially for sound-off viewing.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ai-video-content-creation' and z.title = 'Final Assessment — AI Video Content Creation')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Before using AI-generated voices or faces commercially, you should…', '["Assume everything is allowed","Check the tool’s license and any likeness/consent rules","Credit the AI in the video title","Nothing — AI content has no rules"]'::jsonb,
+1, '[]'::jsonb,
+'Commercial use, likeness and consent rules vary by tool and jurisdiction — check before publishing.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Before using AI-generated voices or faces commercially, you should…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ai-video-content-creation' and z.title = 'Final Assessment — AI Video Content Creation')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A content calendar helps creators mainly by…', '["Replacing creativity","Keeping publishing consistent and planned","Increasing video file size","Automating client payments"]'::jsonb,
+1, '[]'::jsonb,
+'Consistency wins on every platform; a calendar turns ideas into a reliable pipeline.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A content calendar helps creators mainly by…'
+);
+with c as (select id from public.courses where slug = 'ai-video-content-creation')
+insert into public.assignments (course_id, title, description, instructions, required_output, max_score, is_final_project, status)
+select c.id, 'Final Project: AI Video Campaign for a Real Brand', 'Produce a complete short AI-video campaign for a real business or brand (yours or a volunteer client’s).', '1) Write a 30–60 second script using the hook → value → CTA structure.
+2) Generate all visuals/video clips with AI tools (text-to-video and/or image-to-video).
+3) Add an AI voiceover, captions and music.
+4) Edit everything into a finished vertical (9:16) video.
+5) Write a short reflection: what prompts worked, what you would improve.', 'One exported vertical video (MP4 or link), the script document, and your 1-page reflection. Submit the video file or a hosted link with a note describing your tools and process.', 100, true, 'published' from c
+where not exists (
+  select 1 from public.assignments a where a.course_id = c.id and a.title = 'Final Project: AI Video Campaign for a Real Brand'
+);
+update public.assignments a set lesson_id = le.id
+  from public.course_lessons le
+ where a.course_id = le.course_id and le.title = 'Monetization: Clients, Rates & Getting Paid'
+   and a.title = 'Final Project: AI Video Campaign for a Real Brand' and exists (select 1 from public.courses c where c.id = a.course_id and c.slug = 'ai-video-content-creation');
+with c as (select id from public.courses where slug = 'ai-video-content-creation')
+insert into public.course_completion_rules (course_id, require_lessons_pct, require_quiz_avg, require_assignments_approved, require_final_project)
+select c.id, 100, 70, 0, true from c
+on conflict (course_id) do update
+  set require_lessons_pct = excluded.require_lessons_pct,
+      require_quiz_avg = excluded.require_quiz_avg,
+      require_assignments_approved = excluded.require_assignments_approved,
+      require_final_project = excluded.require_final_project,
+      updated_at = now();
 
 -- ---------- video-editing-capcut ----------
 with c as (select id from public.courses where slug = 'video-editing-capcut')
@@ -1178,6 +1413,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Installing CapCut & Mastering the Interface'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'video-editing-capcut' and mo.title = 'Module 1: CapCut Fundamentals'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Installing CapCut & Mastering the Interface';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -1247,6 +1489,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Your First Edit: Import, Arrange, Trim'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'video-editing-capcut' and mo.title = 'Module 1: CapCut Fundamentals'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Your First Edit: Import, Arrange, Trim';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -1315,6 +1564,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Cuts, Transitions & the Art of Timing'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'video-editing-capcut' and mo.title = 'Module 1: CapCut Fundamentals'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Cuts, Transitions & the Art of Timing';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -1383,6 +1639,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Aspect Ratios & Platform-Perfect Exports'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'video-editing-capcut' and mo.title = 'Module 1: CapCut Fundamentals'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Aspect Ratios & Platform-Perfect Exports';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -1458,6 +1721,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Keyframes: The Skill That Separates Pros'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'video-editing-capcut' and mo.title = 'Module 2: Motion, Effects & Keyframes'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Keyframes: The Skill That Separates Pros';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -1526,6 +1796,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Speed Ramps, Overlays & Picture-in-Picture'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'video-editing-capcut' and mo.title = 'Module 2: Motion, Effects & Keyframes'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Speed Ramps, Overlays & Picture-in-Picture';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -1594,6 +1871,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Effects, Filters & Motion Tracking'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'video-editing-capcut' and mo.title = 'Module 2: Motion, Effects & Keyframes'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Effects, Filters & Motion Tracking';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -1665,6 +1949,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Removing Backgrounds, Masks & Creative Tricks'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'video-editing-capcut' and mo.title = 'Module 2: Motion, Effects & Keyframes'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Removing Backgrounds, Masks & Creative Tricks';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -1742,6 +2033,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Music, Beats & Sound Design'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'video-editing-capcut' and mo.title = 'Module 3: Audio & Text'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Music, Beats & Sound Design';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -1812,6 +2110,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Auto-Captions & Text Animation'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'video-editing-capcut' and mo.title = 'Module 3: Audio & Text'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Auto-Captions & Text Animation';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -1883,6 +2188,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Voiceovers, TTS & Audio Cleanup'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'video-editing-capcut' and mo.title = 'Module 3: Audio & Text'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Voiceovers, TTS & Audio Cleanup';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -1952,6 +2264,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Stickers, Emojis & Engagement Layers'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'video-editing-capcut' and mo.title = 'Module 3: Audio & Text'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Stickers, Emojis & Engagement Layers';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -2027,6 +2346,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Color Grading & Filters for a Cinematic Look'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'video-editing-capcut' and mo.title = 'Module 4: Color, Viral Styles & Real Projects'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Color Grading & Filters for a Cinematic Look';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -2097,6 +2423,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Trending Edit Styles: Reels, TikTok & Transitions'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'video-editing-capcut' and mo.title = 'Module 4: Color, Viral Styles & Real Projects'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Trending Edit Styles: Reels, TikTok & Transitions';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -2167,6 +2500,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Export Settings, Codecs & Quality Control'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'video-editing-capcut' and mo.title = 'Module 4: Color, Viral Styles & Real Projects'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Export Settings, Codecs & Quality Control';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -2236,11 +2576,18 @@ with m as (
   where c.slug = 'video-editing-capcut' and mo.title = 'Module 4: Color, Viral Styles & Real Projects'
 )
 insert into public.course_lessons (module_id, course_id, title, type, duration, position)
-select m.module_id, m.course_id, 'Capstone: Produce a Complete 30-Second Viral Edit', 'video', '22 min', 3
+select m.module_id, m.course_id, 'Capstone: Produce a Complete 30-Second Viral Edit', 'project', '22 min', 3
 from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Capstone: Produce a Complete 30-Second Viral Edit'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'video-editing-capcut' and mo.title = 'Module 4: Color, Viral Styles & Real Projects'
+)
+update public.course_lessons le set type = 'project'
+  from m where le.module_id = m.module_id and le.title = 'Capstone: Produce a Complete 30-Second Viral Edit';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -2300,6 +2647,129 @@ where not exists (
   select 1 from public.course_videos v where v.lesson_id = l.id and v.url = 'https://www.youtube.com/watch?v=qfHX2cNA4MY'
 );
 
+with c as (select id from public.courses where slug = 'video-editing-capcut')
+insert into public.quizzes (course_id, title, description, passing_score, allow_retake, is_final, status, attempt_limit)
+select c.id, 'Final Assessment — Video Editing with CapCut', 'Final assessment — pass to move toward your certificate.', 70, true, true, 'published', null from c
+where not exists (
+  select 1 from public.quizzes z where z.course_id = c.id and z.title = 'Final Assessment — Video Editing with CapCut'
+);
+update public.quizzes z set lesson_id = le.id
+  from public.course_lessons le
+ where z.course_id = le.course_id and le.title = 'Capstone: Produce a Complete 30-Second Viral Edit'
+   and z.title = 'Final Assessment — Video Editing with CapCut' and exists (select 1 from public.courses c where c.id = z.course_id and c.slug = 'video-editing-capcut');
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'video-editing-capcut' and z.title = 'Final Assessment — Video Editing with CapCut')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'What is a "cut" in video editing?', '["A color filter","The point where one clip changes to the next","A music track","A caption style"]'::jsonb,
+1, '[]'::jsonb,
+'Cuts are the fundamental building blocks of every edit.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'What is a "cut" in video editing?'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'video-editing-capcut' and z.title = 'Final Assessment — Video Editing with CapCut')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Why do editors trim clip beginnings and endings?', '["To add effects","To remove dead space and keep pacing tight","To reduce file names","To change aspect ratio"]'::jsonb,
+1, '[]'::jsonb,
+'Tight trims remove hesitations and keep viewer attention.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Why do editors trim clip beginnings and endings?'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'video-editing-capcut' and z.title = 'Final Assessment — Video Editing with CapCut')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'J-cuts and L-cuts let audio and video transition at different moments for smoother edits.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'J/L cuts overlap audio across edits — a core professional technique.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'J-cuts and L-cuts let audio and video transition at different moments for smoother edits.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'video-editing-capcut' and z.title = 'Final Assessment — Video Editing with CapCut')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Auto-captions in CapCut should always be…', '["Left exactly as generated","Proofread and corrected","Deleted before export","Set to the largest font"]'::jsonb,
+1, '[]'::jsonb,
+'Auto-caption engines make mistakes; wrong words look unprofessional.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Auto-captions in CapCut should always be…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'video-editing-capcut' and z.title = 'Final Assessment — Video Editing with CapCut')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_answer', 'Which export settings matter for platform delivery? (Select all that apply)', '["Resolution (e.g. 1080p)","Frame rate","Aspect ratio (9:16 vs 16:9)","The camera brand used to film"]'::jsonb,
+null, '[0,1,2]'::jsonb,
+'Resolution, frame rate and aspect ratio must match the target platform; camera brand is irrelevant to export.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which export settings matter for platform delivery? (Select all that apply)'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'video-editing-capcut' and z.title = 'Final Assessment — Video Editing with CapCut')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Keyframes are used to…', '["Lock the timeline","Animate properties (position, scale, opacity) over time","Save project backups","Sync audio"]'::jsonb,
+1, '[]'::jsonb,
+'Keyframes record values at moments so the software interpolates motion between them.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Keyframes are used to…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'video-editing-capcut' and z.title = 'Final Assessment — Video Editing with CapCut')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'The safest place for important on-screen text is…', '["Touching the very edge","Inside the platform-safe center area","Behind the subject","At 5% opacity"]'::jsonb,
+1, '[]'::jsonb,
+'Platforms crop edges and overlay UI; safe areas keep text visible.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'The safest place for important on-screen text is…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'video-editing-capcut' and z.title = 'Final Assessment — Video Editing with CapCut')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Sound design (SFX + music) mainly improves…', '["File compression","Emotional impact and perceived quality","Storage space","Upload speed"]'::jsonb,
+1, '[]'::jsonb,
+'Audio is half the experience — well-chosen sound sells the edit.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Sound design (SFX + music) mainly improves…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'video-editing-capcut' and z.title = 'Final Assessment — Video Editing with CapCut')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'You should organize footage into folders/bins before starting a big edit.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'Organization saves hours on any project with many clips.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'You should organize footage into folders/bins before starting a big edit.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'video-editing-capcut' and z.title = 'Final Assessment — Video Editing with CapCut')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A viral short-form edit typically changes something visually every…', '["30 seconds","1–3 seconds","2 minutes","It never changes"]'::jsonb,
+1, '[]'::jsonb,
+'Frequent visual changes (cuts, zooms, text) hold attention in short-form.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A viral short-form edit typically changes something visually every…'
+);
+with c as (select id from public.courses where slug = 'video-editing-capcut')
+insert into public.assignments (course_id, title, description, instructions, required_output, max_score, is_final_project, status)
+select c.id, 'Final Project: 60-Second Client-Style Edit', 'Edit a 45–60 second video for a real or realistic client brief (product promo, event recap, or creator reel).', '1) Gather or shoot 8–15 clips (phone footage is fine).
+2) Edit with tight cuts, at least 2 transitions used intentionally, background music and sound effects.
+3) Add auto-captions and CORRECT every mistake.
+4) Apply one consistent color style.
+5) Export twice: 9:16 for TikTok/Reels and 16:9 for YouTube, both 1080p.', 'Both exported files (or links), plus a short note listing the techniques used (J/L cuts, keyframes, captions, sound design).', 100, true, 'published' from c
+where not exists (
+  select 1 from public.assignments a where a.course_id = c.id and a.title = 'Final Project: 60-Second Client-Style Edit'
+);
+update public.assignments a set lesson_id = le.id
+  from public.course_lessons le
+ where a.course_id = le.course_id and le.title = 'Capstone: Produce a Complete 30-Second Viral Edit'
+   and a.title = 'Final Project: 60-Second Client-Style Edit' and exists (select 1 from public.courses c where c.id = a.course_id and c.slug = 'video-editing-capcut');
+with c as (select id from public.courses where slug = 'video-editing-capcut')
+insert into public.course_completion_rules (course_id, require_lessons_pct, require_quiz_avg, require_assignments_approved, require_final_project)
+select c.id, 100, 70, 0, true from c
+on conflict (course_id) do update
+  set require_lessons_pct = excluded.require_lessons_pct,
+      require_quiz_avg = excluded.require_quiz_avg,
+      require_assignments_approved = excluded.require_assignments_approved,
+      require_final_project = excluded.require_final_project,
+      updated_at = now();
 
 -- ---------- graphic-design-canva ----------
 with c as (select id from public.courses where slug = 'graphic-design-canva')
@@ -2319,6 +2789,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'How Designers Think: Hierarchy, Balance, Space'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'graphic-design-canva' and mo.title = 'Module 1: Design Foundations & Canva Mastery'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'How Designers Think: Hierarchy, Balance, Space';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -2387,6 +2864,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Canva Interface, Templates & Smart Tools'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'graphic-design-canva' and mo.title = 'Module 1: Design Foundations & Canva Mastery'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Canva Interface, Templates & Smart Tools';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -2457,6 +2941,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Typography & Color: The Two Fastest Upgrades'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'graphic-design-canva' and mo.title = 'Module 1: Design Foundations & Canva Mastery'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Typography & Color: The Two Fastest Upgrades';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -2525,6 +3016,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Working with Images, Icons & Brand Assets'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'graphic-design-canva' and mo.title = 'Module 1: Design Foundations & Canva Mastery'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Working with Images, Icons & Brand Assets';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -2600,6 +3098,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Instagram Post & Carousel Design'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'graphic-design-canva' and mo.title = 'Module 2: Social Media Design Pack'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Instagram Post & Carousel Design';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -2669,6 +3174,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Story, Reel Cover & Status Graphics'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'graphic-design-canva' and mo.title = 'Module 2: Social Media Design Pack'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Story, Reel Cover & Status Graphics';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -2734,6 +3246,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'YouTube Thumbnails & Banners'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'graphic-design-canva' and mo.title = 'Module 2: Social Media Design Pack'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'YouTube Thumbnails & Banners';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -2803,6 +3322,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Ad Creative That Converts'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'graphic-design-canva' and mo.title = 'Module 2: Social Media Design Pack'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Ad Creative That Converts';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -2878,6 +3404,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Flyer & Poster Design (Events, Churches, Business)'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'graphic-design-canva' and mo.title = 'Module 3: Flyers, Logos & Brand Kits'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Flyer & Poster Design (Events, Churches, Business)';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -2946,6 +3479,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Logo Design & Brand Identity Basics'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'graphic-design-canva' and mo.title = 'Module 3: Flyers, Logos & Brand Kits'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Logo Design & Brand Identity Basics';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -3015,6 +3555,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Business Cards, Letterheads & Stationery'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'graphic-design-canva' and mo.title = 'Module 3: Flyers, Logos & Brand Kits'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Business Cards, Letterheads & Stationery';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -3080,6 +3627,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Menus, Price Lists & Product Catalogs'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'graphic-design-canva' and mo.title = 'Module 3: Flyers, Logos & Brand Kits'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Menus, Price Lists & Product Catalogs';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -3153,6 +3707,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Presentation Design (Slides People Remember)'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'graphic-design-canva' and mo.title = 'Module 4: Presentations, Clients & Income'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Presentation Design (Slides People Remember)';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -3222,6 +3783,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Client Workflow: Brief → Draft → Delivery'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'graphic-design-canva' and mo.title = 'Module 4: Presentations, Clients & Income'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Client Workflow: Brief → Draft → Delivery';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -3291,6 +3859,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Selling Design Services Online'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'graphic-design-canva' and mo.title = 'Module 4: Presentations, Clients & Income'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Selling Design Services Online';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -3354,11 +3929,18 @@ with m as (
   where c.slug = 'graphic-design-canva' and mo.title = 'Module 4: Presentations, Clients & Income'
 )
 insert into public.course_lessons (module_id, course_id, title, type, duration, position)
-select m.module_id, m.course_id, 'Capstone: Complete Brand Package for a Real Business', 'video', '22 min', 3
+select m.module_id, m.course_id, 'Capstone: Complete Brand Package for a Real Business', 'project', '22 min', 3
 from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Capstone: Complete Brand Package for a Real Business'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'graphic-design-canva' and mo.title = 'Module 4: Presentations, Clients & Income'
+)
+update public.course_lessons le set type = 'project'
+  from m where le.module_id = m.module_id and le.title = 'Capstone: Complete Brand Package for a Real Business';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -3419,6 +4001,129 @@ where not exists (
   select 1 from public.course_videos v where v.lesson_id = l.id and v.url = 'https://www.youtube.com/watch?v=rXLvN1FEkOE'
 );
 
+with c as (select id from public.courses where slug = 'graphic-design-canva')
+insert into public.quizzes (course_id, title, description, passing_score, allow_retake, is_final, status, attempt_limit)
+select c.id, 'Final Assessment — Graphic Design with Canva', 'Final assessment — pass to move toward your certificate.', 70, true, true, 'published', null from c
+where not exists (
+  select 1 from public.quizzes z where z.course_id = c.id and z.title = 'Final Assessment — Graphic Design with Canva'
+);
+update public.quizzes z set lesson_id = le.id
+  from public.course_lessons le
+ where z.course_id = le.course_id and le.title = 'Capstone: Complete Brand Package for a Real Business'
+   and z.title = 'Final Assessment — Graphic Design with Canva' and exists (select 1 from public.courses c where c.id = z.course_id and c.slug = 'graphic-design-canva');
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'graphic-design-canva' and z.title = 'Final Assessment — Graphic Design with Canva')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Visual hierarchy means…', '["Using as many fonts as possible","Guiding the viewer’s eye to what matters first","Centering everything","Using only photos"]'::jsonb,
+1, '[]'::jsonb,
+'Hierarchy (size, weight, color, position) controls what the viewer sees first.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Visual hierarchy means…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'graphic-design-canva' and z.title = 'Final Assessment — Graphic Design with Canva')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A professional design should usually use at most…', '["1–2 font families","5–6 fonts","Any number","Only images, never text"]'::jsonb,
+0, '[]'::jsonb,
+'One or two consistent font families keep designs clean and professional.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A professional design should usually use at most…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'graphic-design-canva' and z.title = 'Final Assessment — Graphic Design with Canva')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'Contrast between text and background is both a design and an accessibility requirement.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'Low contrast text is unreadable for many people and looks unprofessional to everyone.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Contrast between text and background is both a design and an accessibility requirement.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'graphic-design-canva' and z.title = 'Final Assessment — Graphic Design with Canva')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Which file format is best for a logo that must scale without quality loss?', '["JPG","SVG","TXT","MP4"]'::jsonb,
+1, '[]'::jsonb,
+'SVG is vector — it scales infinitely without pixelation.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which file format is best for a logo that must scale without quality loss?'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'graphic-design-canva' and z.title = 'Final Assessment — Graphic Design with Canva')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_answer', 'Which elements make a business flyer effective? (Select all that apply)', '["One clear call to action","Readable contact details","Strong visual focus","Ten different messages competing for attention"]'::jsonb,
+null, '[0,1,2]'::jsonb,
+'Focus, readability and a single CTA convert; competing messages confuse.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which elements make a business flyer effective? (Select all that apply)'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'graphic-design-canva' and z.title = 'Final Assessment — Graphic Design with Canva')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'White space (empty space) in a design is…', '["Wasted space","A tool that improves focus and elegance","A printing error","Only for luxury brands"]'::jsonb,
+1, '[]'::jsonb,
+'White space lets content breathe and directs attention.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'White space (empty space) in a design is…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'graphic-design-canva' and z.title = 'Final Assessment — Graphic Design with Canva')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A brand kit typically contains…', '["Server passwords","Colors, fonts and logo variations","Client invoices","Stock subscriptions"]'::jsonb,
+1, '[]'::jsonb,
+'Brand kits enforce visual consistency across every design.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A brand kit typically contains…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'graphic-design-canva' and z.title = 'Final Assessment — Graphic Design with Canva')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Before delivering client designs you should…', '["Export in the formats the client needs","Watermark them permanently","Keep the source hidden forever","Only send screenshots"]'::jsonb,
+0, '[]'::jsonb,
+'Professional delivery means the right formats (print PDF, PNG, SVG…) for the use case.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Before delivering client designs you should…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'graphic-design-canva' and z.title = 'Final Assessment — Graphic Design with Canva')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'Alignment of elements is one of the fastest ways to make a design look professional.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'Misalignment is the most common amateur tell; alignment instantly adds polish.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Alignment of elements is one of the fastest ways to make a design look professional.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'graphic-design-canva' and z.title = 'Final Assessment — Graphic Design with Canva')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Color psychology in branding means…', '["Picking your favorite color","Choosing colors that support the brand’s message and feelings","Using rainbow gradients always","Avoiding color entirely"]'::jsonb,
+1, '[]'::jsonb,
+'Colors carry associations (trust, energy, luxury) that support brand messaging.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Color psychology in branding means…'
+);
+with c as (select id from public.courses where slug = 'graphic-design-canva')
+insert into public.assignments (course_id, title, description, instructions, required_output, max_score, is_final_project, status)
+select c.id, 'Final Project: Complete Brand Mini-Kit', 'Design a brand mini-kit for a real or invented business: logo, social media set and one flyer.', '1) Define the brand: name, audience, 2 fonts, 3–4 colors (document why).
+2) Design a primary logo + one variation (e.g. icon-only).
+3) Create a social pack: 1 profile frame, 2 post templates, 1 story template.
+4) Design one A5 flyer with a clear single CTA.
+5) Apply hierarchy, alignment and white-space rules throughout.', 'A presentation (PDF) showing all pieces with your design rationale, plus the flyer exported as print-ready PDF.', 100, true, 'published' from c
+where not exists (
+  select 1 from public.assignments a where a.course_id = c.id and a.title = 'Final Project: Complete Brand Mini-Kit'
+);
+update public.assignments a set lesson_id = le.id
+  from public.course_lessons le
+ where a.course_id = le.course_id and le.title = 'Capstone: Complete Brand Package for a Real Business'
+   and a.title = 'Final Project: Complete Brand Mini-Kit' and exists (select 1 from public.courses c where c.id = a.course_id and c.slug = 'graphic-design-canva');
+with c as (select id from public.courses where slug = 'graphic-design-canva')
+insert into public.course_completion_rules (course_id, require_lessons_pct, require_quiz_avg, require_assignments_approved, require_final_project)
+select c.id, 100, 70, 0, true from c
+on conflict (course_id) do update
+  set require_lessons_pct = excluded.require_lessons_pct,
+      require_quiz_avg = excluded.require_quiz_avg,
+      require_assignments_approved = excluded.require_assignments_approved,
+      require_final_project = excluded.require_final_project,
+      updated_at = now();
 
 -- ---------- digital-marketing ----------
 with c as (select id from public.courses where slug = 'digital-marketing')
@@ -3438,6 +4143,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Digital Marketing Landscape: Channels & Careers'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'digital-marketing' and mo.title = 'Module 1: Marketing Foundations & Funnels'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Digital Marketing Landscape: Channels & Careers';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -3510,6 +4222,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Customer Personas & the Marketing Funnel'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'digital-marketing' and mo.title = 'Module 1: Marketing Foundations & Funnels'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Customer Personas & the Marketing Funnel';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -3578,6 +4297,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Positioning, Offers & the Value Ladder'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'digital-marketing' and mo.title = 'Module 1: Marketing Foundations & Funnels'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Positioning, Offers & the Value Ladder';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -3648,6 +4374,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Brand Voice & Messaging Basics'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'digital-marketing' and mo.title = 'Module 1: Marketing Foundations & Funnels'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Brand Voice & Messaging Basics';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -3722,6 +4455,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'How Google Works: Search & Keywords'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'digital-marketing' and mo.title = 'Module 2: SEO & Content Marketing'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'How Google Works: Search & Keywords';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -3794,6 +4534,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'On-Page SEO: Titles, Content & Local Business'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'digital-marketing' and mo.title = 'Module 2: SEO & Content Marketing'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'On-Page SEO: Titles, Content & Local Business';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -3864,6 +4611,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Content Marketing & Blogging That Attracts'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'digital-marketing' and mo.title = 'Module 2: SEO & Content Marketing'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Content Marketing & Blogging That Attracts';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -3933,6 +4687,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Repurposing: One Idea, Ten Pieces'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'digital-marketing' and mo.title = 'Module 2: SEO & Content Marketing'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Repurposing: One Idea, Ten Pieces';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -4010,6 +4771,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Instagram & TikTok Growth Systems'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'digital-marketing' and mo.title = 'Module 3: Social Media & Paid Ads'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Instagram & TikTok Growth Systems';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -4079,6 +4847,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'WhatsApp Marketing & Community Selling'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'digital-marketing' and mo.title = 'Module 3: Social Media & Paid Ads'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'WhatsApp Marketing & Community Selling';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -4147,6 +4922,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Meta Ads: Your First Profitable Campaign'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'digital-marketing' and mo.title = 'Module 3: Social Media & Paid Ads'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Meta Ads: Your First Profitable Campaign';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -4218,6 +5000,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Google Ads Basics & Retargeting'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'digital-marketing' and mo.title = 'Module 3: Social Media & Paid Ads'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Google Ads Basics & Retargeting';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -4294,6 +5083,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Email Marketing & Automation Basics'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'digital-marketing' and mo.title = 'Module 4: Email, Analytics & Freelancing'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Email Marketing & Automation Basics';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -4364,6 +5160,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Analytics: Reading Numbers That Matter'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'digital-marketing' and mo.title = 'Module 4: Email, Analytics & Freelancing'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Analytics: Reading Numbers That Matter';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -4437,6 +5240,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Marketing Freelance: Packages, Clients & Retainers'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'digital-marketing' and mo.title = 'Module 4: Email, Analytics & Freelancing'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Marketing Freelance: Packages, Clients & Retainers';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -4506,11 +5316,18 @@ with m as (
   where c.slug = 'digital-marketing' and mo.title = 'Module 4: Email, Analytics & Freelancing'
 )
 insert into public.course_lessons (module_id, course_id, title, type, duration, position)
-select m.module_id, m.course_id, 'Capstone: Full Marketing Plan for a Real Business', 'video', '22 min', 3
+select m.module_id, m.course_id, 'Capstone: Full Marketing Plan for a Real Business', 'project', '22 min', 3
 from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Capstone: Full Marketing Plan for a Real Business'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'digital-marketing' and mo.title = 'Module 4: Email, Analytics & Freelancing'
+)
+update public.course_lessons le set type = 'project'
+  from m where le.module_id = m.module_id and le.title = 'Capstone: Full Marketing Plan for a Real Business';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -4572,6 +5389,129 @@ where not exists (
   select 1 from public.course_videos v where v.lesson_id = l.id and v.url = 'https://www.youtube.com/watch?v=G6DmDqYLWL8'
 );
 
+with c as (select id from public.courses where slug = 'digital-marketing')
+insert into public.quizzes (course_id, title, description, passing_score, allow_retake, is_final, status, attempt_limit)
+select c.id, 'Final Assessment — Digital Marketing', 'Final assessment — pass to move toward your certificate.', 70, true, true, 'published', null from c
+where not exists (
+  select 1 from public.quizzes z where z.course_id = c.id and z.title = 'Final Assessment — Digital Marketing'
+);
+update public.quizzes z set lesson_id = le.id
+  from public.course_lessons le
+ where z.course_id = le.course_id and le.title = 'Capstone: Full Marketing Plan for a Real Business'
+   and z.title = 'Final Assessment — Digital Marketing' and exists (select 1 from public.courses c where c.id = z.course_id and c.slug = 'digital-marketing');
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'digital-marketing' and z.title = 'Final Assessment — Digital Marketing')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'SEO stands for…', '["Social Engagement Optimization","Search Engine Optimization","Sales Email Operations","Site Editing Online"]'::jsonb,
+1, '[]'::jsonb,
+'SEO = optimizing content so search engines rank it for relevant queries.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'SEO stands for…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'digital-marketing' and z.title = 'Final Assessment — Digital Marketing')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A marketing funnel describes…', '["The journey from stranger to customer","A type of advertisement","A pricing table","Email software"]'::jsonb,
+0, '[]'::jsonb,
+'Funnels model awareness → interest → decision → purchase.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A marketing funnel describes…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'digital-marketing' and z.title = 'Final Assessment — Digital Marketing')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'Organic reach means getting visibility without paying for ads.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'Organic = earned through content and engagement; paid = ads.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Organic reach means getting visibility without paying for ads.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'digital-marketing' and z.title = 'Final Assessment — Digital Marketing')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Which metric best measures ad profitability?', '["Likes","ROAS (return on ad spend)","Follower count","Impressions alone"]'::jsonb,
+1, '[]'::jsonb,
+'ROAS compares revenue generated to money spent — the business metric that matters.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which metric best measures ad profitability?'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'digital-marketing' and z.title = 'Final Assessment — Digital Marketing')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_answer', 'Which are valid lead-generation methods? (Select all that apply)', '["Lead magnet downloads","WhatsApp click-to-chat","Landing page forms","Deleting negative reviews"]'::jsonb,
+null, '[0,1,2]'::jsonb,
+'Magnets, chat and forms capture leads; deleting reviews is neither lead-gen nor wise.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which are valid lead-generation methods? (Select all that apply)'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'digital-marketing' and z.title = 'Final Assessment — Digital Marketing')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A content calendar primarily helps with…', '["Consistency and planning","Increasing ad budgets","Designing logos","Accounting"]'::jsonb,
+0, '[]'::jsonb,
+'Calendars turn strategy into a sustainable publishing habit.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A content calendar primarily helps with…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'digital-marketing' and z.title = 'Final Assessment — Digital Marketing')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'CTR measures…', '["Clicks divided by impressions","Total followers","Video length","Bounce time"]'::jsonb,
+0, '[]'::jsonb,
+'Click-through rate = clicks ÷ impressions; it signals how compelling your message is.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'CTR measures…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'digital-marketing' and z.title = 'Final Assessment — Digital Marketing')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'The best first audience for a local business’s ads is usually…', '["Everyone on earth","A defined local audience matching the ideal customer","Competitors’ employees","Random users"]'::jsonb,
+1, '[]'::jsonb,
+'Targeting the real ideal customer in the real service area maximizes limited budgets.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'The best first audience for a local business’s ads is usually…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'digital-marketing' and z.title = 'Final Assessment — Digital Marketing')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'Email marketing remains one of the highest-ROI digital channels.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'Owned audiences (email/WhatsApp lists) convert without paying per reach.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Email marketing remains one of the highest-ROI digital channels.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'digital-marketing' and z.title = 'Final Assessment — Digital Marketing')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A/B testing means…', '["Comparing two versions to see which performs better","Running two businesses","Testing website speed","Grading customers"]'::jsonb,
+0, '[]'::jsonb,
+'A/B tests replace opinions with evidence — one variable at a time.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A/B testing means…'
+);
+with c as (select id from public.courses where slug = 'digital-marketing')
+insert into public.assignments (course_id, title, description, instructions, required_output, max_score, is_final_project, status)
+select c.id, 'Final Project: Growth Plan for a Nigerian Business', 'Build a complete 30-day digital marketing plan for a real local business (yours, a friend’s, or a volunteer client).', '1) Audit their current online presence (profile, posts, reviews).
+2) Define the ideal customer and one primary goal (leads/sales/bookings).
+3) Create a 30-day content calendar (platforms, pillars, post types).
+4) Design one lead magnet or offer + landing message.
+5) Draft one paid ad (audience, budget, creative, expected result) and list the KPIs you will track.', 'Submit the plan as a PDF or slide deck: audit, customer definition, calendar, lead magnet, ad draft, KPI table.', 100, true, 'published' from c
+where not exists (
+  select 1 from public.assignments a where a.course_id = c.id and a.title = 'Final Project: Growth Plan for a Nigerian Business'
+);
+update public.assignments a set lesson_id = le.id
+  from public.course_lessons le
+ where a.course_id = le.course_id and le.title = 'Capstone: Full Marketing Plan for a Real Business'
+   and a.title = 'Final Project: Growth Plan for a Nigerian Business' and exists (select 1 from public.courses c where c.id = a.course_id and c.slug = 'digital-marketing');
+with c as (select id from public.courses where slug = 'digital-marketing')
+insert into public.course_completion_rules (course_id, require_lessons_pct, require_quiz_avg, require_assignments_approved, require_final_project)
+select c.id, 100, 70, 0, true from c
+on conflict (course_id) do update
+  set require_lessons_pct = excluded.require_lessons_pct,
+      require_quiz_avg = excluded.require_quiz_avg,
+      require_assignments_approved = excluded.require_assignments_approved,
+      require_final_project = excluded.require_final_project,
+      updated_at = now();
 
 -- ---------- mobile-app-development ----------
 with c as (select id from public.courses where slug = 'mobile-app-development')
@@ -4591,6 +5531,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'The Mobile Landscape & Why Flutter'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'mobile-app-development' and mo.title = 'Module 1: Dart & Environment Setup'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'The Mobile Landscape & Why Flutter';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -4662,6 +5609,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Dart 1: Variables, Types & Control Flow'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'mobile-app-development' and mo.title = 'Module 1: Dart & Environment Setup'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Dart 1: Variables, Types & Control Flow';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -4746,6 +5700,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Dart 2: Functions, Classes & Null Safety'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'mobile-app-development' and mo.title = 'Module 1: Dart & Environment Setup'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Dart 2: Functions, Classes & Null Safety';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -4829,6 +5790,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Flutter Setup & Your First Widget Tree'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'mobile-app-development' and mo.title = 'Module 1: Dart & Environment Setup'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Flutter Setup & Your First Widget Tree';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -4916,6 +5884,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Layout: Row, Column & Stack'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'mobile-app-development' and mo.title = 'Module 2: Building Real UIs'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Layout: Row, Column & Stack';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -4989,6 +5964,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Styling: Text, Containers, Colors & Themes'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'mobile-app-development' and mo.title = 'Module 2: Building Real UIs'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Styling: Text, Containers, Colors & Themes';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -5067,6 +6049,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'ScrollView, Lists & Images'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'mobile-app-development' and mo.title = 'Module 2: Building Real UIs'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'ScrollView, Lists & Images';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -5144,6 +6133,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Navigation: Moving Between Screens'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'mobile-app-development' and mo.title = 'Module 2: Building Real UIs'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Navigation: Moving Between Screens';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -5229,6 +6225,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'StatefulWidget: Making UI Respond'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'mobile-app-development' and mo.title = 'Module 3: State, Data & Real Apps'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'StatefulWidget: Making UI Respond';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -5307,6 +6310,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Forms & Validation: Collecting User Input'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'mobile-app-development' and mo.title = 'Module 3: State, Data & Real Apps'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Forms & Validation: Collecting User Input';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -5385,6 +6395,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'APIs & JSON: Your App Talks to the World'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'mobile-app-development' and mo.title = 'Module 3: State, Data & Real Apps'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'APIs & JSON: Your App Talks to the World';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -5467,6 +6484,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Local Storage: Saving Data on the Device'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'mobile-app-development' and mo.title = 'Module 3: State, Data & Real Apps'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Local Storage: Saving Data on the Device';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -5548,6 +6572,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Provider: State Management That Scales'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'mobile-app-development' and mo.title = 'Module 4: Advanced State & Publishing'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Provider: State Management That Scales';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -5624,6 +6655,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Firebase: Auth, Firestore & Real Backends'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'mobile-app-development' and mo.title = 'Module 4: Advanced State & Publishing'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Firebase: Auth, Firestore & Real Backends';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -5704,6 +6742,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Polish: Themes, Icons, Splash & App Identity'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'mobile-app-development' and mo.title = 'Module 4: Advanced State & Publishing'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Polish: Themes, Icons, Splash & App Identity';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -5772,11 +6817,18 @@ with m as (
   where c.slug = 'mobile-app-development' and mo.title = 'Module 4: Advanced State & Publishing'
 )
 insert into public.course_lessons (module_id, course_id, title, type, duration, position)
-select m.module_id, m.course_id, 'Capstone: Build & Publish Your App', 'video', '26 min', 3
+select m.module_id, m.course_id, 'Capstone: Build & Publish Your App', 'project', '26 min', 3
 from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Capstone: Build & Publish Your App'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'mobile-app-development' and mo.title = 'Module 4: Advanced State & Publishing'
+)
+update public.course_lessons le set type = 'project'
+  from m where le.module_id = m.module_id and le.title = 'Capstone: Build & Publish Your App';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -5841,6 +6893,129 @@ where not exists (
   select 1 from public.course_videos v where v.lesson_id = l.id and v.url = 'https://www.youtube.com/watch?v=1bQwDO88Gyw'
 );
 
+with c as (select id from public.courses where slug = 'mobile-app-development')
+insert into public.quizzes (course_id, title, description, passing_score, allow_retake, is_final, status, attempt_limit)
+select c.id, 'Final Assessment — Mobile App Development', 'Final assessment — pass to move toward your certificate.', 70, true, true, 'published', null from c
+where not exists (
+  select 1 from public.quizzes z where z.course_id = c.id and z.title = 'Final Assessment — Mobile App Development'
+);
+update public.quizzes z set lesson_id = le.id
+  from public.course_lessons le
+ where z.course_id = le.course_id and le.title = 'Capstone: Build & Publish Your App'
+   and z.title = 'Final Assessment — Mobile App Development' and exists (select 1 from public.courses c where c.id = z.course_id and c.slug = 'mobile-app-development');
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'mobile-app-development' and z.title = 'Final Assessment — Mobile App Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Flutter’s main advantage is…', '["One codebase for Android and iOS","It only runs on the web","It requires two codebases","It cannot use APIs"]'::jsonb,
+0, '[]'::jsonb,
+'Cross-platform from one Dart codebase is Flutter’s core value.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Flutter’s main advantage is…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'mobile-app-development' and z.title = 'Final Assessment — Mobile App Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'In Flutter, user interfaces are built from…', '["Widgets","Spreadsheets","SQL tables","PDFs"]'::jsonb,
+0, '[]'::jsonb,
+'Everything on screen is a widget, nested into a tree.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'In Flutter, user interfaces are built from…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'mobile-app-development' and z.title = 'Final Assessment — Mobile App Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'setState tells Flutter to rebuild the widget with new data.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'State changes + setState = rebuild — the foundation of interactive UI.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'setState tells Flutter to rebuild the widget with new data.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'mobile-app-development' and z.title = 'Final Assessment — Mobile App Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'ListView.builder differs from a plain ListView because it…', '["Builds items on demand as they scroll into view","Only shows 5 items","Cannot scroll","Loads everything into memory at once"]'::jsonb,
+0, '[]'::jsonb,
+'On-demand building keeps huge lists fast and memory-light.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'ListView.builder differs from a plain ListView because it…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'mobile-app-development' and z.title = 'Final Assessment — Mobile App Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'In Dart, a String? type means…', '["The value may be null and must be handled","It is always empty","It is a number","It cannot be printed"]'::jsonb,
+0, '[]'::jsonb,
+'Null safety forces you to handle missing values — preventing a whole class of crashes.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'In Dart, a String? type means…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'mobile-app-development' and z.title = 'Final Assessment — Mobile App Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_answer', 'Which are valid ways to share state across screens? (Select all that apply)', '["Provider","Constructor parameters + navigation arguments","Riverpod/Bloc","Printing to console"]'::jsonb,
+null, '[0,1,2]'::jsonb,
+'State management patterns and navigation arguments carry data; console printing does not.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which are valid ways to share state across screens? (Select all that apply)'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'mobile-app-development' and z.title = 'Final Assessment — Mobile App Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'FutureBuilder is used to…', '["Render loading/error/data states of async work","Compile the app","Style buttons","Create databases"]'::jsonb,
+0, '[]'::jsonb,
+'It watches a Future and rebuilds the UI through its states.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'FutureBuilder is used to…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'mobile-app-development' and z.title = 'Final Assessment — Mobile App Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A release build for the Play Store is distributed as…', '["An Android App Bundle (.aab)","A .docx file","A website zip","An .apk.exe"]'::jsonb,
+0, '[]'::jsonb,
+'The Play Store expects .aab; direct installs can use .apk.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A release build for the Play Store is distributed as…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'mobile-app-development' and z.title = 'Final Assessment — Mobile App Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'Hot reload shows code changes in a running app within about a second.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'Hot reload is Flutter’s famous speed feature — state is preserved.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Hot reload shows code changes in a running app within about a second.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'mobile-app-development' and z.title = 'Final Assessment — Mobile App Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Firebase Firestore’s snapshots() method gives you…', '["A realtime stream that updates when data changes","A one-time screenshot","A PDF export","A compiled binary"]'::jsonb,
+0, '[]'::jsonb,
+'Streams power live UIs — pair them with StreamBuilder.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Firebase Firestore’s snapshots() method gives you…'
+);
+with c as (select id from public.courses where slug = 'mobile-app-development')
+insert into public.assignments (course_id, title, description, instructions, required_output, max_score, is_final_project, status)
+select c.id, 'Final Project: Ship a Real Flutter App', 'Build, polish and distribute a complete Flutter application solving a real need.', '1) Choose a brief: marketplace, learning app, or an app for a real local business.
+2) Implement: 4+ screens with navigation, a list built with ListView.builder, forms with validation, state via Provider, and data from an API or Firebase.
+3) Polish: branded icon + splash, themed fonts/colors, loading/empty/error states everywhere.
+4) Build a signed release (APK and/or App Bundle).
+5) Distribute to at least 10 real users (Play Store, APK share, or TestFlight) and collect their feedback.', 'Repository link + release APK/AAB (or store listing) + a short report: features, architecture, user feedback, next improvements.', 100, true, 'published' from c
+where not exists (
+  select 1 from public.assignments a where a.course_id = c.id and a.title = 'Final Project: Ship a Real Flutter App'
+);
+update public.assignments a set lesson_id = le.id
+  from public.course_lessons le
+ where a.course_id = le.course_id and le.title = 'Capstone: Build & Publish Your App'
+   and a.title = 'Final Project: Ship a Real Flutter App' and exists (select 1 from public.courses c where c.id = a.course_id and c.slug = 'mobile-app-development');
+with c as (select id from public.courses where slug = 'mobile-app-development')
+insert into public.course_completion_rules (course_id, require_lessons_pct, require_quiz_avg, require_assignments_approved, require_final_project)
+select c.id, 100, 70, 0, true from c
+on conflict (course_id) do update
+  set require_lessons_pct = excluded.require_lessons_pct,
+      require_quiz_avg = excluded.require_quiz_avg,
+      require_assignments_approved = excluded.require_assignments_approved,
+      require_final_project = excluded.require_final_project,
+      updated_at = now();
 
 -- ---------- portfolio-creation ----------
 with c as (select id from public.courses where slug = 'portfolio-creation')
@@ -5860,6 +7035,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Your Portfolio Is Your CV: The Mindset Shift'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'portfolio-creation' and mo.title = 'Module 1: Portfolio Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Your Portfolio Is Your CV: The Mindset Shift';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -5930,6 +7112,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Choosing Your Platform: Where Your Work Lives'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'portfolio-creation' and mo.title = 'Module 1: Portfolio Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Choosing Your Platform: Where Your Work Lives';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -6003,6 +7192,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Anatomy of a Winning Case Study'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'portfolio-creation' and mo.title = 'Module 1: Portfolio Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Anatomy of a Winning Case Study';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -6074,6 +7270,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Before/After, Mockups & Presentation Magic'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'portfolio-creation' and mo.title = 'Module 1: Portfolio Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Before/After, Mockups & Presentation Magic';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -6151,6 +7354,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'LinkedIn: Your 24/7 Salesperson'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'portfolio-creation' and mo.title = 'Module 2: Personal Brand & Online Presence'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'LinkedIn: Your 24/7 Salesperson';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -6225,6 +7435,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Instagram, X & TikTok for Creators'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'portfolio-creation' and mo.title = 'Module 2: Personal Brand & Online Presence'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Instagram, X & TikTok for Creators';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -6299,6 +7516,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Personal Brand Basics: Name, Story & Consistency'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'portfolio-creation' and mo.title = 'Module 2: Personal Brand & Online Presence'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Personal Brand Basics: Name, Story & Consistency';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -6366,6 +7590,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Networking: The Hidden Job Market'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'portfolio-creation' and mo.title = 'Module 2: Personal Brand & Online Presence'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Networking: The Hidden Job Market';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -6441,6 +7672,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Freelance Platforms: Fiverr & Upwork Done Right'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'portfolio-creation' and mo.title = 'Module 3: Getting Paid Work'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Freelance Platforms: Fiverr & Upwork Done Right';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -6514,6 +7752,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Pricing Your Skills in Naira & Dollars'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'portfolio-creation' and mo.title = 'Module 3: Getting Paid Work'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Pricing Your Skills in Naira & Dollars';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -6590,6 +7835,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Proposals, Contracts & Professional Delivery'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'portfolio-creation' and mo.title = 'Module 3: Getting Paid Work'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Proposals, Contracts & Professional Delivery';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -6666,6 +7918,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Getting Your First Client Without Experience'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'portfolio-creation' and mo.title = 'Module 3: Getting Paid Work'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Getting Your First Client Without Experience';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -6740,6 +7999,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Client Management: From First Call to Repeat Business'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'portfolio-creation' and mo.title = 'Module 4: Growth & Systems'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Client Management: From First Call to Repeat Business';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -6807,6 +8073,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Tools & Systems: Running Your Hustle Like a Business'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'portfolio-creation' and mo.title = 'Module 4: Growth & Systems'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Tools & Systems: Running Your Hustle Like a Business';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -6877,6 +8150,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Building an Income Ladder: One-offs → Products → Agency'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'portfolio-creation' and mo.title = 'Module 4: Growth & Systems'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Building an Income Ladder: One-offs → Products → Agency';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -6941,11 +8221,18 @@ with m as (
   where c.slug = 'portfolio-creation' and mo.title = 'Module 4: Growth & Systems'
 )
 insert into public.course_lessons (module_id, course_id, title, type, duration, position)
-select m.module_id, m.course_id, 'Capstone: Launch Your Portfolio & 30-Day Client Plan', 'video', '20 min', 3
+select m.module_id, m.course_id, 'Capstone: Launch Your Portfolio & 30-Day Client Plan', 'project', '20 min', 3
 from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Capstone: Launch Your Portfolio & 30-Day Client Plan'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'portfolio-creation' and mo.title = 'Module 4: Growth & Systems'
+)
+update public.course_lessons le set type = 'project'
+  from m where le.module_id = m.module_id and le.title = 'Capstone: Launch Your Portfolio & 30-Day Client Plan';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -7011,6 +8298,129 @@ where not exists (
   select 1 from public.course_videos v where v.lesson_id = l.id and v.url = 'https://www.youtube.com/watch?v=3KiMwhCuJWs'
 );
 
+with c as (select id from public.courses where slug = 'portfolio-creation')
+insert into public.quizzes (course_id, title, description, passing_score, allow_retake, is_final, status, attempt_limit)
+select c.id, 'Final Assessment — Portfolio Creation & Freelance Success', 'Final assessment — pass to move toward your certificate.', 70, true, true, 'published', null from c
+where not exists (
+  select 1 from public.quizzes z where z.course_id = c.id and z.title = 'Final Assessment — Portfolio Creation & Freelance Success'
+);
+update public.quizzes z set lesson_id = le.id
+  from public.course_lessons le
+ where z.course_id = le.course_id and le.title = 'Capstone: Launch Your Portfolio & 30-Day Client Plan'
+   and z.title = 'Final Assessment — Portfolio Creation & Freelance Success' and exists (select 1 from public.courses c where c.id = z.course_id and c.slug = 'portfolio-creation');
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'portfolio-creation' and z.title = 'Final Assessment — Portfolio Creation & Freelance Success')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A portfolio’s primary job is to…', '["Prove you can solve real problems","List every project ever made","Show your hobbies","Replace contracts"]'::jsonb,
+0, '[]'::jsonb,
+'Buyers hire evidence — curated proof beats volume.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A portfolio’s primary job is to…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'portfolio-creation' and z.title = 'Final Assessment — Portfolio Creation & Freelance Success')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A strong case study follows which structure?', '["Problem → approach → work → outcome","Only final screenshots","Only pricing tables","Random image dumps"]'::jsonb,
+0, '[]'::jsonb,
+'The story of a solved problem is what convinces clients.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A strong case study follows which structure?'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'portfolio-creation' and z.title = 'Final Assessment — Portfolio Creation & Freelance Success')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'Specializing in one clear offer usually beats listing ten unrelated skills.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'Specialists are remembered and paid more; generalists compete on price.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Specializing in one clear offer usually beats listing ten unrelated skills.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'portfolio-creation' and z.title = 'Final Assessment — Portfolio Creation & Freelance Success')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'On Fiverr, the first reviews are typically earned by…', '["Low introductory pricing with overdelivery","Charging the highest rate immediately","Buying fake reviews","Waiting passively"]'::jsonb,
+0, '[]'::jsonb,
+'Early reviews are the asset — price to win them, then raise rates.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'On Fiverr, the first reviews are typically earned by…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'portfolio-creation' and z.title = 'Final Assessment — Portfolio Creation & Freelance Success')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_answer', 'Which belong in a freelance proposal? (Select all that apply)', '["The client’s problem in their words","Deliverables, timeline and price","Relevant proof links","Your entire life story"]'::jsonb,
+null, '[0,1,2]'::jsonb,
+'Proposals answer: what, for whom, when, how much, why you.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which belong in a freelance proposal? (Select all that apply)'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'portfolio-creation' and z.title = 'Final Assessment — Portfolio Creation & Freelance Success')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A deposit before starting work protects you by…', '["Confirming commitment and covering initial effort","Replacing contracts entirely","Guaranteeing 5-star reviews","Avoiding all communication"]'::jsonb,
+0, '[]'::jsonb,
+'Deposits (30–60%) filter serious clients and de-risk your time.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A deposit before starting work protects you by…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'portfolio-creation' and z.title = 'Final Assessment — Portfolio Creation & Freelance Success')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'The fastest way to make a designer’s portfolio convincing is…', '["Before/after comparisons","Long biographies","Stock photos","Unfinished projects"]'::jsonb,
+0, '[]'::jsonb,
+'Before/after demonstrates value in one glance.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'The fastest way to make a designer’s portfolio convincing is…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'portfolio-creation' and z.title = 'Final Assessment — Portfolio Creation & Freelance Success')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A retainer is best described as…', '["Recurring monthly work for a fixed fee","A one-time gig","A type of invoice","A legal penalty"]'::jsonb,
+0, '[]'::jsonb,
+'Retainers turn freelance chaos into predictable income.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A retainer is best described as…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'portfolio-creation' and z.title = 'Final Assessment — Portfolio Creation & Freelance Success')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'Most work in many markets is filled through relationships and referrals rather than public job ads.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'Tell your circles what you do — the hidden market runs on trust.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Most work in many markets is filled through relationships and referrals rather than public job ads.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'portfolio-creation' and z.title = 'Final Assessment — Portfolio Creation & Freelance Success')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'When a client says "too expensive", the professional response is to…', '["Offer a smaller scope or clarify value","Disappear","Work for free","Argue aggressively"]'::jsonb,
+0, '[]'::jsonb,
+'Reframing scope preserves the relationship and your rates.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'When a client says "too expensive", the professional response is to…'
+);
+with c as (select id from public.courses where slug = 'portfolio-creation')
+insert into public.assignments (course_id, title, description, instructions, required_output, max_score, is_final_project, status)
+select c.id, 'Final Project: Your Live Portfolio + First Outreach Sprint', 'Launch your complete professional presence and run your first client outreach.', '1) Publish 3 case studies on your showcase platform (Behance/GitHub/YouTube/Drive as fits your skill).
+2) Launch your one-page home base: promise, top 3 works, WhatsApp/contact, portfolio link.
+3) Optimize LinkedIn (headline, About, Featured) and one social profile.
+4) Write your price list and proposal template.
+5) Run the outreach sprint: 10 personalized messages to potential clients/employers, logging every response.', 'Links to your published portfolio + home base + the outreach log (who, what you sent, replies) + a 1-page reflection on what you’ll improve next month.', 100, true, 'published' from c
+where not exists (
+  select 1 from public.assignments a where a.course_id = c.id and a.title = 'Final Project: Your Live Portfolio + First Outreach Sprint'
+);
+update public.assignments a set lesson_id = le.id
+  from public.course_lessons le
+ where a.course_id = le.course_id and le.title = 'Capstone: Launch Your Portfolio & 30-Day Client Plan'
+   and a.title = 'Final Project: Your Live Portfolio + First Outreach Sprint' and exists (select 1 from public.courses c where c.id = a.course_id and c.slug = 'portfolio-creation');
+with c as (select id from public.courses where slug = 'portfolio-creation')
+insert into public.course_completion_rules (course_id, require_lessons_pct, require_quiz_avg, require_assignments_approved, require_final_project)
+select c.id, 100, 70, 0, true from c
+on conflict (course_id) do update
+  set require_lessons_pct = excluded.require_lessons_pct,
+      require_quiz_avg = excluded.require_quiz_avg,
+      require_assignments_approved = excluded.require_assignments_approved,
+      require_final_project = excluded.require_final_project,
+      updated_at = now();
 
 -- ---------- frontend-web-development ----------
 with c as (select id from public.courses where slug = 'frontend-web-development')
@@ -7030,6 +8440,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'How the Web Works & Your First HTML Page'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'frontend-web-development' and mo.title = 'Module 1: HTML — The Structure of the Web'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'How the Web Works & Your First HTML Page';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -7102,6 +8519,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Text, Links, Images & Lists'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'frontend-web-development' and mo.title = 'Module 1: HTML — The Structure of the Web'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Text, Links, Images & Lists';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -7172,6 +8596,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Semantic HTML: Professional Page Structure'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'frontend-web-development' and mo.title = 'Module 1: HTML — The Structure of the Web'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Semantic HTML: Professional Page Structure';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -7246,6 +8677,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Tables, Forms & HTML Project: Profile Page'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'frontend-web-development' and mo.title = 'Module 1: HTML — The Structure of the Web'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Tables, Forms & HTML Project: Profile Page';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -7326,6 +8764,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'CSS Basics: Selectors, Colors & the Cascade'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'frontend-web-development' and mo.title = 'Module 2: CSS — Styling & Layout'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'CSS Basics: Selectors, Colors & the Cascade';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -7398,6 +8843,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'The Box Model: How Every Element Is Sized'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'frontend-web-development' and mo.title = 'Module 2: CSS — Styling & Layout'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'The Box Model: How Every Element Is Sized';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -7473,6 +8925,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Flexbox: One-Dimensional Layout Mastery'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'frontend-web-development' and mo.title = 'Module 2: CSS — Styling & Layout'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Flexbox: One-Dimensional Layout Mastery';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -7550,6 +9009,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Grid & Responsive Design (Media Queries)'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'frontend-web-development' and mo.title = 'Module 2: CSS — Styling & Layout'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Grid & Responsive Design (Media Queries)';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -7635,6 +9101,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Variables, Types & Operators'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'frontend-web-development' and mo.title = 'Module 3: JavaScript — Making Pages Think'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Variables, Types & Operators';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -7712,6 +9185,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Functions, Conditions & Loops'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'frontend-web-development' and mo.title = 'Module 3: JavaScript — Making Pages Think'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Functions, Conditions & Loops';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -7793,6 +9273,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'The DOM: Reading & Changing the Page'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'frontend-web-development' and mo.title = 'Module 3: JavaScript — Making Pages Think'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'The DOM: Reading & Changing the Page';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -7871,6 +9358,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Events & Mini Project: Interactive To-Do List'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'frontend-web-development' and mo.title = 'Module 3: JavaScript — Making Pages Think'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Events & Mini Project: Interactive To-Do List';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -7958,6 +9452,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Why React & Your First Component'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'frontend-web-development' and mo.title = 'Module 4: React & Going Professional'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Why React & Your First Component';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -8029,6 +9530,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Props, State & Handling Events in React'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'frontend-web-development' and mo.title = 'Module 4: React & Going Professional'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Props, State & Handling Events in React';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -8107,6 +9615,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Lists, Fetching Data & Showing Real Content'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'frontend-web-development' and mo.title = 'Module 4: React & Going Professional'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Lists, Fetching Data & Showing Real Content';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -8177,11 +9692,18 @@ with m as (
   where c.slug = 'frontend-web-development' and mo.title = 'Module 4: React & Going Professional'
 )
 insert into public.course_lessons (module_id, course_id, title, type, duration, position)
-select m.module_id, m.course_id, 'Capstone: Deploy a Portfolio Site & Get Hired', 'video', '22 min', 3
+select m.module_id, m.course_id, 'Capstone: Deploy a Portfolio Site & Get Hired', 'project', '22 min', 3
 from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Capstone: Deploy a Portfolio Site & Get Hired'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'frontend-web-development' and mo.title = 'Module 4: React & Going Professional'
+)
+update public.course_lessons le set type = 'project'
+  from m where le.module_id = m.module_id and le.title = 'Capstone: Deploy a Portfolio Site & Get Hired';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -8242,6 +9764,128 @@ where not exists (
   select 1 from public.course_videos v where v.lesson_id = l.id and v.url = 'https://www.youtube.com/watch?v=CgkZ7MvWUAA'
 );
 
+with c as (select id from public.courses where slug = 'frontend-web-development')
+insert into public.quizzes (course_id, title, description, passing_score, allow_retake, is_final, status, attempt_limit)
+select c.id, 'Final Assessment — Frontend Web Development', 'Final assessment — pass to move toward your certificate.', 70, true, true, 'published', null from c
+where not exists (
+  select 1 from public.quizzes z where z.course_id = c.id and z.title = 'Final Assessment — Frontend Web Development'
+);
+update public.quizzes z set lesson_id = le.id
+  from public.course_lessons le
+ where z.course_id = le.course_id and le.title = 'Capstone: Deploy a Portfolio Site & Get Hired'
+   and z.title = 'Final Assessment — Frontend Web Development' and exists (select 1 from public.courses c where c.id = z.course_id and c.slug = 'frontend-web-development');
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'frontend-web-development' and z.title = 'Final Assessment — Frontend Web Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'HTML is responsible for…', '["Page structure and meaning","Styling","Server databases","Animations only"]'::jsonb,
+0, '[]'::jsonb,
+'HTML provides the semantic structure; CSS styles; JavaScript adds behavior.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'HTML is responsible for…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'frontend-web-development' and z.title = 'Final Assessment — Frontend Web Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Which CSS property creates space INSIDE an element’s border?', '["margin","padding","gap","outline"]'::jsonb,
+1, '[]'::jsonb,
+'Padding is inner space; margin is outer space.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which CSS property creates space INSIDE an element’s border?'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'frontend-web-development' and z.title = 'Final Assessment — Frontend Web Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'display: flex primarily helps with…', '["One-dimensional layout along a row or column","Databases","HTTP requests","Fonts"]'::jsonb,
+0, '[]'::jsonb,
+'Flexbox distributes items along one axis — the workhorse of UI layout.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'display: flex primarily helps with…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'frontend-web-development' and z.title = 'Final Assessment — Frontend Web Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'JavaScript can change page content without reloading the page.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'DOM manipulation is the core of interactive frontends.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'JavaScript can change page content without reloading the page.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'frontend-web-development' and z.title = 'Final Assessment — Frontend Web Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_answer', 'Which are semantic HTML elements? (Select all that apply)', '["<nav>","<article>","<div>","<footer>"]'::jsonb,
+null, '[0,1,3]'::jsonb,
+'nav/article/footer describe meaning; div is a generic container.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which are semantic HTML elements? (Select all that apply)'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'frontend-web-development' and z.title = 'Final Assessment — Frontend Web Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'In React, useState is used to…', '["Store and update component state","Fetch images","Style components","Define routes"]'::jsonb,
+0, '[]'::jsonb,
+'useState gives a component memory that triggers re-renders when it changes.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'In React, useState is used to…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'frontend-web-development' and z.title = 'Final Assessment — Frontend Web Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A responsive website is one that…', '["Loads fast only on desktop","Adapts its layout to different screen sizes","Uses only images","Has no CSS"]'::jsonb,
+1, '[]'::jsonb,
+'Media queries, fluid layouts and flexible images adapt design to any device.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A responsive website is one that…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'frontend-web-development' and z.title = 'Final Assessment — Frontend Web Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Which HTTP status code means "Not Found"?', '["200","404","500","301"]'::jsonb,
+1, '[]'::jsonb,
+'404 = resource not found; 200 = OK; 500 = server error; 301 = redirect.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which HTTP status code means "Not Found"?'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'frontend-web-development' and z.title = 'Final Assessment — Frontend Web Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Git is used by developers mainly for…', '["Version control and collaboration","Designing logos","Email","Compiling images"]'::jsonb,
+0, '[]'::jsonb,
+'Git tracks history and enables team collaboration on code.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Git is used by developers mainly for…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'frontend-web-development' and z.title = 'Final Assessment — Frontend Web Development')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'Alt text on images improves accessibility and SEO.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'Alt text serves screen readers and search engines — always include it.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Alt text on images improves accessibility and SEO.'
+);
+with c as (select id from public.courses where slug = 'frontend-web-development')
+insert into public.assignments (course_id, title, description, instructions, required_output, max_score, is_final_project, status)
+select c.id, 'Final Project: Responsive Business Website', 'Build and deploy a responsive multi-section website for a business using HTML, CSS and JavaScript.', '1) Requirements: semantic HTML, responsive layout (mobile-first), at least one interactive feature built with JavaScript (menu toggle, form validation, gallery, or dark-mode switch).
+2) Include: header/nav, hero, services/features section, about, contact form (validated with JS), footer.
+3) Use Flexbox or Grid deliberately; test at 3 screen widths.
+4) Deploy the site (GitHub Pages, Netlify or similar).', 'Deployed site URL + repository link + a short README explaining your structure and the interactive feature.', 100, true, 'published' from c
+where not exists (
+  select 1 from public.assignments a where a.course_id = c.id and a.title = 'Final Project: Responsive Business Website'
+);
+update public.assignments a set lesson_id = le.id
+  from public.course_lessons le
+ where a.course_id = le.course_id and le.title = 'Capstone: Deploy a Portfolio Site & Get Hired'
+   and a.title = 'Final Project: Responsive Business Website' and exists (select 1 from public.courses c where c.id = a.course_id and c.slug = 'frontend-web-development');
+with c as (select id from public.courses where slug = 'frontend-web-development')
+insert into public.course_completion_rules (course_id, require_lessons_pct, require_quiz_avg, require_assignments_approved, require_final_project)
+select c.id, 100, 70, 0, true from c
+on conflict (course_id) do update
+  set require_lessons_pct = excluded.require_lessons_pct,
+      require_quiz_avg = excluded.require_quiz_avg,
+      require_assignments_approved = excluded.require_assignments_approved,
+      require_final_project = excluded.require_final_project,
+      updated_at = now();
 
 -- ---------- web-design-wordpress ----------
 with c as (select id from public.courses where slug = 'web-design-wordpress')
@@ -8261,6 +9905,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Why WordPress Powers 40%+ of the Web'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'web-design-wordpress' and mo.title = 'Module 1: WordPress Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Why WordPress Powers 40%+ of the Web';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -8330,6 +9981,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Domains, Hosting & Installing WordPress'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'web-design-wordpress' and mo.title = 'Module 1: WordPress Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Domains, Hosting & Installing WordPress';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -8399,6 +10057,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'The Dashboard Deep Tour'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'web-design-wordpress' and mo.title = 'Module 1: WordPress Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'The Dashboard Deep Tour';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -8470,6 +10135,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Gutenberg Editor: Building Content Beautifully'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'web-design-wordpress' and mo.title = 'Module 1: WordPress Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Gutenberg Editor: Building Content Beautifully';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -8545,6 +10217,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Choosing & Customizing Themes'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'web-design-wordpress' and mo.title = 'Module 2: Themes & Page Builders'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Choosing & Customizing Themes';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -8614,6 +10293,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Page Builders: Elementor Essentials'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'web-design-wordpress' and mo.title = 'Module 2: Themes & Page Builders'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Page Builders: Elementor Essentials';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -8685,6 +10371,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Menus, Navigation & Site Structure'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'web-design-wordpress' and mo.title = 'Module 2: Themes & Page Builders'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Menus, Navigation & Site Structure';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -8754,6 +10447,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Essential Plugins (and What NOT to Install)'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'web-design-wordpress' and mo.title = 'Module 2: Themes & Page Builders'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Essential Plugins (and What NOT to Install)';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -8831,6 +10531,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Blogging for Business: Categories, Tags & SEO Posts'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'web-design-wordpress' and mo.title = 'Module 3: Content, Commerce & Forms'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Blogging for Business: Categories, Tags & SEO Posts';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -8899,6 +10606,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Forms, Bookings & Lead Capture'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'web-design-wordpress' and mo.title = 'Module 3: Content, Commerce & Forms'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Forms, Bookings & Lead Capture';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -8968,6 +10682,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'WooCommerce: Turning WordPress into a Store'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'web-design-wordpress' and mo.title = 'Module 3: Content, Commerce & Forms'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'WooCommerce: Turning WordPress into a Store';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -9040,6 +10761,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Users, Roles & Content Updates Workflow'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'web-design-wordpress' and mo.title = 'Module 3: Content, Commerce & Forms'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Users, Roles & Content Updates Workflow';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -9118,6 +10846,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Speed, Security & Launch Checklist'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'web-design-wordpress' and mo.title = 'Module 4: Launch, SEO & Client Websites'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Speed, Security & Launch Checklist';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -9191,6 +10926,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'WordPress SEO: Rank Math/Yoast in Practice'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'web-design-wordpress' and mo.title = 'Module 4: Launch, SEO & Client Websites'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'WordPress SEO: Rank Math/Yoast in Practice';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -9261,6 +11003,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Client Projects: Brief to Handover'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'web-design-wordpress' and mo.title = 'Module 4: Launch, SEO & Client Websites'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Client Projects: Brief to Handover';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -9323,11 +11072,18 @@ with m as (
   where c.slug = 'web-design-wordpress' and mo.title = 'Module 4: Launch, SEO & Client Websites'
 )
 insert into public.course_lessons (module_id, course_id, title, type, duration, position)
-select m.module_id, m.course_id, 'Capstone: Build & Launch a Complete Business Website', 'video', '24 min', 3
+select m.module_id, m.course_id, 'Capstone: Build & Launch a Complete Business Website', 'project', '24 min', 3
 from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Capstone: Build & Launch a Complete Business Website'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'web-design-wordpress' and mo.title = 'Module 4: Launch, SEO & Client Websites'
+)
+update public.course_lessons le set type = 'project'
+  from m where le.module_id = m.module_id and le.title = 'Capstone: Build & Launch a Complete Business Website';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -9389,6 +11145,129 @@ where not exists (
   select 1 from public.course_videos v where v.lesson_id = l.id and v.url = 'https://www.youtube.com/watch?v=JNwTkewgRls'
 );
 
+with c as (select id from public.courses where slug = 'web-design-wordpress')
+insert into public.quizzes (course_id, title, description, passing_score, allow_retake, is_final, status, attempt_limit)
+select c.id, 'Final Assessment — Web Design with WordPress', 'Final assessment — pass to move toward your certificate.', 70, true, true, 'published', null from c
+where not exists (
+  select 1 from public.quizzes z where z.course_id = c.id and z.title = 'Final Assessment — Web Design with WordPress'
+);
+update public.quizzes z set lesson_id = le.id
+  from public.course_lessons le
+ where z.course_id = le.course_id and le.title = 'Capstone: Build & Launch a Complete Business Website'
+   and z.title = 'Final Assessment — Web Design with WordPress' and exists (select 1 from public.courses c where c.id = z.course_id and c.slug = 'web-design-wordpress');
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'web-design-wordpress' and z.title = 'Final Assessment — Web Design with WordPress')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'WordPress.org differs from WordPress.com because WordPress.org…', '["Is the free software you host yourself","Only works on phones","Is a paid-only service","Cannot use plugins"]'::jsonb,
+0, '[]'::jsonb,
+'WordPress.org = self-hosted software with full control; WordPress.com is a hosted service.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'WordPress.org differs from WordPress.com because WordPress.org…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'web-design-wordpress' and z.title = 'Final Assessment — Web Design with WordPress')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'In WordPress, "pages" are best for…', '["Timeless content like About and Contact","Daily news posts","Photos only","Plugins"]'::jsonb,
+0, '[]'::jsonb,
+'Pages are structural/timeless; posts are dated stream content.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'In WordPress, "pages" are best for…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'web-design-wordpress' and z.title = 'Final Assessment — Web Design with WordPress')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'You should back up a WordPress site before updating plugins.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'Updates occasionally break things — a backup makes recovery trivial.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'You should back up a WordPress site before updating plugins.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'web-design-wordpress' and z.title = 'Final Assessment — Web Design with WordPress')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A child theme is used to…', '["Customize safely without losing changes on parent updates","Make the site load slower","Replace hosting","Add a blog"]'::jsonb,
+0, '[]'::jsonb,
+'Child themes inherit the parent but keep your custom code safe from updates.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A child theme is used to…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'web-design-wordpress' and z.title = 'Final Assessment — Web Design with WordPress')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Which plugin type adds an online store to WordPress?', '["WooCommerce","SEO plugin","Backup plugin","Form plugin"]'::jsonb,
+0, '[]'::jsonb,
+'WooCommerce is the standard WordPress e-commerce plugin.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which plugin type adds an online store to WordPress?'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'web-design-wordpress' and z.title = 'Final Assessment — Web Design with WordPress')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_answer', 'Which practices improve WordPress speed? (Select all that apply)', '["Compressing images","Using caching","Removing unused plugins","Installing 40 plugins"]'::jsonb,
+null, '[0,1,2]'::jsonb,
+'Lighter sites load faster; plugin bloat slows everything down.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which practices improve WordPress speed? (Select all that apply)'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'web-design-wordpress' and z.title = 'Final Assessment — Web Design with WordPress')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Permalinks set to "Post name" give URLs like…', '["/?p=123","/about-us","wp-admin","index.php?id=9"]'::jsonb,
+1, '[]'::jsonb,
+'Readable URLs help humans and search engines.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Permalinks set to "Post name" give URLs like…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'web-design-wordpress' and z.title = 'Final Assessment — Web Design with WordPress')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'The safest source for plugins is…', '["The official WordPress plugin directory","Random file-sharing sites","Email attachments","Social media links"]'::jsonb,
+0, '[]'::jsonb,
+'The official directory vets plugins; unknown sources risk malware.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'The safest source for plugins is…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'web-design-wordpress' and z.title = 'Final Assessment — Web Design with WordPress')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'An SSL certificate enables https and is expected by browsers and Google.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'https protects visitors and is a ranking/trust signal.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'An SSL certificate enables https and is expected by browsers and Google.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'web-design-wordpress' and z.title = 'Final Assessment — Web Design with WordPress')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Before handing a site to a client you should…', '["Test forms, links and mobile view","Delete the admin account permanently","Disable all plugins","Remove the theme"]'::jsonb,
+0, '[]'::jsonb,
+'A launch checklist (forms, links, mobile, analytics) prevents embarrassing handovers.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Before handing a site to a client you should…'
+);
+with c as (select id from public.courses where slug = 'web-design-wordpress')
+insert into public.assignments (course_id, title, description, instructions, required_output, max_score, is_final_project, status)
+select c.id, 'Final Project: Complete Business Website on WordPress', 'Build a complete 5+ page WordPress website for a real or practice business and pass a professional launch checklist.', '1) Pages: Home, Services (or Products), About, Blog (2 posts with categories), Contact.
+2) Use a lightweight theme; customize branding via the Customizer or a page builder.
+3) Add a working contact form, WhatsApp button, menu (≤7 items) and footer CTA.
+4) Apply speed (compressed images, caching) and SEO basics (titles, meta, alt text).
+5) Complete the launch checklist: mobile pass, links tested, form tested, analytics installed.', 'The live site URL (or staging URL) + screenshots of each page + your completed launch checklist.', 100, true, 'published' from c
+where not exists (
+  select 1 from public.assignments a where a.course_id = c.id and a.title = 'Final Project: Complete Business Website on WordPress'
+);
+update public.assignments a set lesson_id = le.id
+  from public.course_lessons le
+ where a.course_id = le.course_id and le.title = 'Capstone: Build & Launch a Complete Business Website'
+   and a.title = 'Final Project: Complete Business Website on WordPress' and exists (select 1 from public.courses c where c.id = a.course_id and c.slug = 'web-design-wordpress');
+with c as (select id from public.courses where slug = 'web-design-wordpress')
+insert into public.course_completion_rules (course_id, require_lessons_pct, require_quiz_avg, require_assignments_approved, require_final_project)
+select c.id, 100, 70, 0, true from c
+on conflict (course_id) do update
+  set require_lessons_pct = excluded.require_lessons_pct,
+      require_quiz_avg = excluded.require_quiz_avg,
+      require_assignments_approved = excluded.require_assignments_approved,
+      require_final_project = excluded.require_final_project,
+      updated_at = now();
 
 -- ---------- ui-ux-design-figma ----------
 with c as (select id from public.courses where slug = 'ui-ux-design-figma')
@@ -9408,6 +11287,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'UX vs UI: The Difference That Pays'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ui-ux-design-figma' and mo.title = 'Module 1: UX Thinking & Figma Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'UX vs UI: The Difference That Pays';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -9479,6 +11365,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'User Research: Asking Questions That Reveal Truth'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ui-ux-design-figma' and mo.title = 'Module 1: UX Thinking & Figma Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'User Research: Asking Questions That Reveal Truth';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -9551,6 +11444,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Figma Basics: Frames, Shapes & Text'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ui-ux-design-figma' and mo.title = 'Module 1: UX Thinking & Figma Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Figma Basics: Frames, Shapes & Text';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -9620,6 +11520,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Auto Layout: The Skill Employers Test For'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ui-ux-design-figma' and mo.title = 'Module 1: UX Thinking & Figma Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Auto Layout: The Skill Employers Test For';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -9698,6 +11605,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Colors, Typography & Spacing Systems'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ui-ux-design-figma' and mo.title = 'Module 2: Design Systems & Components'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Colors, Typography & Spacing Systems';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -9765,6 +11679,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Components & Variants: Build Once, Use Everywhere'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ui-ux-design-figma' and mo.title = 'Module 2: Design Systems & Components'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Components & Variants: Build Once, Use Everywhere';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -9832,6 +11753,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Navigation Patterns & Information Architecture'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ui-ux-design-figma' and mo.title = 'Module 2: Design Systems & Components'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Navigation Patterns & Information Architecture';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -9904,6 +11832,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Wireframes First: Speed Beats Polish'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ui-ux-design-figma' and mo.title = 'Module 2: Design Systems & Components'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Wireframes First: Speed Beats Polish';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -9977,6 +11912,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Designing Onboarding & Auth Screens'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ui-ux-design-figma' and mo.title = 'Module 3: Designing a Mobile App UI'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Designing Onboarding & Auth Screens';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -10051,6 +11993,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Home Feeds, Lists & Cards That Scan'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ui-ux-design-figma' and mo.title = 'Module 3: Designing a Mobile App UI'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Home Feeds, Lists & Cards That Scan';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -10120,6 +12069,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Forms, Checkouts & Critical Flows'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ui-ux-design-figma' and mo.title = 'Module 3: Designing a Mobile App UI'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Forms, Checkouts & Critical Flows';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -10187,6 +12143,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Polish: Icons, Illustrations & Dark Mode'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ui-ux-design-figma' and mo.title = 'Module 3: Designing a Mobile App UI'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Polish: Icons, Illustrations & Dark Mode';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -10262,6 +12225,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Interactive Prototypes in Figma'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ui-ux-design-figma' and mo.title = 'Module 4: Prototype, Test & Get Hired'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Interactive Prototypes in Figma';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -10332,6 +12302,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Usability Testing: Watch, Learn, Fix'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ui-ux-design-figma' and mo.title = 'Module 4: Prototype, Test & Get Hired'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Usability Testing: Watch, Learn, Fix';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -10407,6 +12384,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Handoff to Developers & Design Tokens'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ui-ux-design-figma' and mo.title = 'Module 4: Prototype, Test & Get Hired'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Handoff to Developers & Design Tokens';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -10472,11 +12456,18 @@ with m as (
   where c.slug = 'ui-ux-design-figma' and mo.title = 'Module 4: Prototype, Test & Get Hired'
 )
 insert into public.course_lessons (module_id, course_id, title, type, duration, position)
-select m.module_id, m.course_id, 'Capstone: Case Study Portfolio & First Design Job', 'video', '22 min', 3
+select m.module_id, m.course_id, 'Capstone: Case Study Portfolio & First Design Job', 'project', '22 min', 3
 from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Capstone: Case Study Portfolio & First Design Job'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'ui-ux-design-figma' and mo.title = 'Module 4: Prototype, Test & Get Hired'
+)
+update public.course_lessons le set type = 'project'
+  from m where le.module_id = m.module_id and le.title = 'Capstone: Case Study Portfolio & First Design Job';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -10537,6 +12528,130 @@ where not exists (
   select 1 from public.course_videos v where v.lesson_id = l.id and v.url = 'https://www.youtube.com/watch?v=ZWYyiPwCi54'
 );
 
+with c as (select id from public.courses where slug = 'ui-ux-design-figma')
+insert into public.quizzes (course_id, title, description, passing_score, allow_retake, is_final, status, attempt_limit)
+select c.id, 'Final Assessment — UI/UX Design with Figma', 'Final assessment — pass to move toward your certificate.', 70, true, true, 'published', null from c
+where not exists (
+  select 1 from public.quizzes z where z.course_id = c.id and z.title = 'Final Assessment — UI/UX Design with Figma'
+);
+update public.quizzes z set lesson_id = le.id
+  from public.course_lessons le
+ where z.course_id = le.course_id and le.title = 'Capstone: Case Study Portfolio & First Design Job'
+   and z.title = 'Final Assessment — UI/UX Design with Figma' and exists (select 1 from public.courses c where c.id = z.course_id and c.slug = 'ui-ux-design-figma');
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ui-ux-design-figma' and z.title = 'Final Assessment — UI/UX Design with Figma')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'UX design is primarily concerned with…', '["How a product works and feels to use","Only colors","Logo animation","Printing"]'::jsonb,
+0, '[]'::jsonb,
+'UX = the full experience of achieving goals; UI is the visual layer.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'UX design is primarily concerned with…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ui-ux-design-figma' and z.title = 'Final Assessment — UI/UX Design with Figma')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Auto layout in Figma is best described as…', '["Frames that resize and space their content automatically","Automatic color picking","Auto-export","A plugin store"]'::jsonb,
+0, '[]'::jsonb,
+'Auto layout behaves like flexbox — content-driven, consistent spacing.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Auto layout in Figma is best described as…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ui-ux-design-figma' and z.title = 'Final Assessment — UI/UX Design with Figma')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'Testing with about 5 users uncovers most usability problems.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'Small, frequent tests reveal the majority of issues cheaply.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Testing with about 5 users uncovers most usability problems.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ui-ux-design-figma' and z.title = 'Final Assessment — UI/UX Design with Figma')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A component in Figma allows…', '["One master design reused as instances everywhere","Only text editing","Video playback","Database access"]'::jsonb,
+0, '[]'::jsonb,
+'Edit the master, update every instance — the foundation of design systems.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A component in Figma allows…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ui-ux-design-figma' and z.title = 'Final Assessment — UI/UX Design with Figma')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_answer', 'Which are established UX principles? (Select all that apply)', '["Hick’s law — more choices slow decisions","Jakob’s law — users expect familiar patterns","Fitts’s law — bigger/closer targets are faster to hit","The rule of more menus"]'::jsonb,
+null, '[0,1,2]'::jsonb,
+'These classic laws guide real design decisions; more menus is not a principle.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which are established UX principles? (Select all that apply)'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ui-ux-design-figma' and z.title = 'Final Assessment — UI/UX Design with Figma')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Wireframes are used early because…', '["Structure changes are cheap before visual polish","They are the final deliverable","Clients prefer gray screens","They replace research"]'::jsonb,
+0, '[]'::jsonb,
+'Fixing structure in grayscale costs minutes; fixing polished screens costs days.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Wireframes are used early because…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ui-ux-design-figma' and z.title = 'Final Assessment — UI/UX Design with Figma')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A design token/system helps teams by…', '["Centralizing colors, type and spacing decisions","Replacing designers","Increasing file sizes","Hiding components"]'::jsonb,
+0, '[]'::jsonb,
+'Systems keep many screens and many designers consistent.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A design token/system helps teams by…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ui-ux-design-figma' and z.title = 'Final Assessment — UI/UX Design with Figma')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'The minimum comfortable touch target size on mobile is about…', '["12px","48px","100px","2px"]'::jsonb,
+1, '[]'::jsonb,
+'Fingers need roughly 48px targets to tap reliably.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'The minimum comfortable touch target size on mobile is about…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ui-ux-design-figma' and z.title = 'Final Assessment — UI/UX Design with Figma')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'Dark mode should simply invert all colors of the light design.', '["True","False"]'::jsonb,
+1, '[]'::jsonb,
+'Naive inversion causes glare and broken contrast — dark themes need desaturated colors and layered surfaces.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Dark mode should simply invert all colors of the light design.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'ui-ux-design-figma' and z.title = 'Final Assessment — UI/UX Design with Figma')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'The best artifact to hand developers is…', '["Named layers, states and behavior notes in Dev Mode","A screenshot","A verbal description","A printed page"]'::jsonb,
+0, '[]'::jsonb,
+'Clean files with specs prevent questions and rework.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'The best artifact to hand developers is…'
+);
+with c as (select id from public.courses where slug = 'ui-ux-design-figma')
+insert into public.assignments (course_id, title, description, instructions, required_output, max_score, is_final_project, status)
+select c.id, 'Final Project: Mobile App Case Study', 'Design a complete mobile app experience in Figma and publish it as a professional case study.', '1) Research: interview 2–3 users or analyze reviews of a similar app; write the core problem statement.
+2) Map the user flow, then wireframe 4+ key screens in grayscale.
+3) Build a mini design system (colors, type scale, 2–3 components with variants).
+4) Produce the final UI for all screens including one empty state and one error state.
+5) Prototype the full flow (smart animate + at least one overlay) and test it with 2 people; note fixes.
+6) Publish the case study (problem → research → design → validation) on Behance.', 'Behance case study link + clickable Figma prototype link + summary of test findings and fixes.', 100, true, 'published' from c
+where not exists (
+  select 1 from public.assignments a where a.course_id = c.id and a.title = 'Final Project: Mobile App Case Study'
+);
+update public.assignments a set lesson_id = le.id
+  from public.course_lessons le
+ where a.course_id = le.course_id and le.title = 'Capstone: Case Study Portfolio & First Design Job'
+   and a.title = 'Final Project: Mobile App Case Study' and exists (select 1 from public.courses c where c.id = a.course_id and c.slug = 'ui-ux-design-figma');
+with c as (select id from public.courses where slug = 'ui-ux-design-figma')
+insert into public.course_completion_rules (course_id, require_lessons_pct, require_quiz_avg, require_assignments_approved, require_final_project)
+select c.id, 100, 70, 0, true from c
+on conflict (course_id) do update
+  set require_lessons_pct = excluded.require_lessons_pct,
+      require_quiz_avg = excluded.require_quiz_avg,
+      require_assignments_approved = excluded.require_assignments_approved,
+      require_final_project = excluded.require_final_project,
+      updated_at = now();
 
 -- ---------- microsoft-excel ----------
 with c as (select id from public.courses where slug = 'microsoft-excel')
@@ -10556,6 +12671,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'The Excel Interface: Ribbons, Sheets & Cells'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-excel' and mo.title = 'Module 1: Excel Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'The Excel Interface: Ribbons, Sheets & Cells';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -10628,6 +12750,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Data Entry, Formatting & Making Data Readable'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-excel' and mo.title = 'Module 1: Excel Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Data Entry, Formatting & Making Data Readable';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -10700,6 +12829,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Sorting, Filtering & Data Organization'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-excel' and mo.title = 'Module 1: Excel Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Sorting, Filtering & Data Organization';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -10771,6 +12907,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Tables: Excel''s Most Underrated Feature'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-excel' and mo.title = 'Module 1: Excel Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Tables: Excel''s Most Underrated Feature';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -10848,6 +12991,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Formula Basics & the Big 5 Functions'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-excel' and mo.title = 'Module 2: Formulas & Functions'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Formula Basics & the Big 5 Functions';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -10919,6 +13069,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'IF, COUNTIF & SUMIF: Decisions in Cells'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-excel' and mo.title = 'Module 2: Formulas & Functions'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'IF, COUNTIF & SUMIF: Decisions in Cells';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -10997,6 +13154,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'VLOOKUP & XLOOKUP: Joining Data Like a Pro'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-excel' and mo.title = 'Module 2: Formulas & Functions'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'VLOOKUP & XLOOKUP: Joining Data Like a Pro';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -11072,6 +13236,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Text & Date Functions: Cleaning Real-World Data'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-excel' and mo.title = 'Module 2: Formulas & Functions'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Text & Date Functions: Cleaning Real-World Data';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -11152,6 +13323,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Charts That Tell the Story'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-excel' and mo.title = 'Module 3: Analysis & Visualization'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Charts That Tell the Story';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -11226,6 +13404,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Conditional Formatting: Data That Highlights Itself'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-excel' and mo.title = 'Module 3: Analysis & Visualization'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Conditional Formatting: Data That Highlights Itself';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -11298,6 +13483,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Pivot Tables: Summarize 10,000 Rows in 10 Seconds'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-excel' and mo.title = 'Module 3: Analysis & Visualization'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Pivot Tables: Summarize 10,000 Rows in 10 Seconds';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -11371,6 +13563,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Dashboard Basics: Pivots + Charts + Slicers'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-excel' and mo.title = 'Module 3: Analysis & Visualization'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Dashboard Basics: Pivots + Charts + Slicers';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -11449,6 +13648,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Project 1: Personal Budget & Expense Tracker'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-excel' and mo.title = 'Module 4: Real-World Projects & Automation'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Project 1: Personal Budget & Expense Tracker';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -11523,6 +13729,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Project 2: Invoice & Sales System'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-excel' and mo.title = 'Module 4: Real-World Projects & Automation'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Project 2: Invoice & Sales System';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -11588,6 +13801,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Project 3: Data Cleaning & Reports Challenge'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-excel' and mo.title = 'Module 4: Real-World Projects & Automation'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Project 3: Data Cleaning & Reports Challenge';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -11653,11 +13873,18 @@ with m as (
   where c.slug = 'microsoft-excel' and mo.title = 'Module 4: Real-World Projects & Automation'
 )
 insert into public.course_lessons (module_id, course_id, title, type, duration, position)
-select m.module_id, m.course_id, 'Automation Basics: Macros, Shortcuts & Next Steps', 'video', '16 min', 3
+select m.module_id, m.course_id, 'Automation Basics: Macros, Shortcuts & Next Steps', 'project', '16 min', 3
 from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Automation Basics: Macros, Shortcuts & Next Steps'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-excel' and mo.title = 'Module 4: Real-World Projects & Automation'
+)
+update public.course_lessons le set type = 'project'
+  from m where le.module_id = m.module_id and le.title = 'Automation Basics: Macros, Shortcuts & Next Steps';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -11713,6 +13940,129 @@ where not exists (
   select 1 from public.course_videos v where v.lesson_id = l.id and v.url = 'https://www.youtube.com/watch?v=qY95fNIBhJE'
 );
 
+with c as (select id from public.courses where slug = 'microsoft-excel')
+insert into public.quizzes (course_id, title, description, passing_score, allow_retake, is_final, status, attempt_limit)
+select c.id, 'Final Assessment — Microsoft Excel', 'Final assessment — pass to move toward your certificate.', 70, true, true, 'published', null from c
+where not exists (
+  select 1 from public.quizzes z where z.course_id = c.id and z.title = 'Final Assessment — Microsoft Excel'
+);
+update public.quizzes z set lesson_id = le.id
+  from public.course_lessons le
+ where z.course_id = le.course_id and le.title = 'Automation Basics: Macros, Shortcuts & Next Steps'
+   and z.title = 'Final Assessment — Microsoft Excel' and exists (select 1 from public.courses c where c.id = z.course_id and c.slug = 'microsoft-excel');
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-excel' and z.title = 'Final Assessment — Microsoft Excel')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Every Excel formula starts with which character?', '["=","#","@","$"]'::jsonb,
+0, '[]'::jsonb,
+'= tells Excel you are entering a formula, not text.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Every Excel formula starts with which character?'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-excel' and z.title = 'Final Assessment — Microsoft Excel')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Pressing F4 on a cell reference toggles…', '["Absolute/relative reference ($ signs)","Spell check","Print preview","Font color"]'::jsonb,
+0, '[]'::jsonb,
+'F4 cycles $A$1 → A$1 → $A1 → A1 — essential for copied formulas.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Pressing F4 on a cell reference toggles…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-excel' and z.title = 'Final Assessment — Microsoft Excel')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'VLOOKUP’s final argument FALSE means…', '["Require an exact match","Allow approximate match","Hide errors","Sort the data"]'::jsonb,
+0, '[]'::jsonb,
+'FALSE = exact match — almost always what lookups need.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'VLOOKUP’s final argument FALSE means…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-excel' and z.title = 'Final Assessment — Microsoft Excel')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'Ctrl+T converts a data range into a Table that auto-expands with new rows.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'Tables absorb new rows automatically, keeping formulas and charts correct.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Ctrl+T converts a data range into a Table that auto-expands with new rows.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-excel' and z.title = 'Final Assessment — Microsoft Excel')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_answer', 'Which functions summarize data by condition? (Select all that apply)', '["SUMIF","COUNTIF","IF","TRIM"]'::jsonb,
+null, '[0,1]'::jsonb,
+'SUMIF/COUNTIF aggregate by condition; IF decides per cell, TRIM cleans text.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which functions summarize data by condition? (Select all that apply)'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-excel' and z.title = 'Final Assessment — Microsoft Excel')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A Pivot Table is the fastest tool for…', '["Summarizing large datasets by categories","Drawing pictures","Writing emails","Formatting fonts"]'::jsonb,
+0, '[]'::jsonb,
+'Drag fields into rows/columns/values and huge data summarizes instantly.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A Pivot Table is the fastest tool for…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-excel' and z.title = 'Final Assessment — Microsoft Excel')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'The error #REF! usually means…', '["A formula refers to deleted/invalid cells","Division by zero","The file is saved","The cell is text"]'::jsonb,
+0, '[]'::jsonb,
+'#REF! = broken reference; #DIV/0! and #VALUE! are different errors.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'The error #REF! usually means…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-excel' and z.title = 'Final Assessment — Microsoft Excel')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Conditional formatting is ideal for…', '["Making exceptions and patterns visible instantly","Renaming sheets","Protecting passwords","Sending emails"]'::jsonb,
+0, '[]'::jsonb,
+'Color rules flag outliers (low stock, high spend) at a glance.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Conditional formatting is ideal for…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-excel' and z.title = 'Final Assessment — Microsoft Excel')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'Formatting a cell as Currency changes how the number displays, not its value.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'Formats are display-only — formulas still see the raw number.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Formatting a cell as Currency changes how the number displays, not its value.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-excel' and z.title = 'Final Assessment — Microsoft Excel')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Which shortcut turns filters on/off for a data range?', '["Ctrl+Shift+L","Ctrl+P","Alt+F4","Ctrl+K"]'::jsonb,
+0, '[]'::jsonb,
+'Ctrl+Shift+L toggles AutoFilter dropdowns on the header row.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which shortcut turns filters on/off for a data range?'
+);
+with c as (select id from public.courses where slug = 'microsoft-excel')
+insert into public.assignments (course_id, title, description, instructions, required_output, max_score, is_final_project, status)
+select c.id, 'Final Project: Business Dashboard Workbook', 'Build an Excel workbook that manages and reports on a realistic business dataset (sales, inventory or expenses).', '1) Create a clean data table (50+ rows) with proper headers, no merged cells — convert it to a Table (Ctrl+T).
+2) Use formulas: at least SUMIF/COUNTIF summaries, one IF-based alert, one lookup (XLOOKUP or VLOOKUP).
+3) Apply conditional formatting rules that flag exceptions.
+4) Build a Pivot Table answering 3 business questions (e.g. totals by category, by month, top items).
+5) Assemble a one-screen dashboard: KPIs, 2 charts from the pivot, a slicer, and a clear title.', 'Submit the .xlsx workbook plus a one-page PDF explaining what each sheet does and the 3 questions your dashboard answers.', 100, true, 'published' from c
+where not exists (
+  select 1 from public.assignments a where a.course_id = c.id and a.title = 'Final Project: Business Dashboard Workbook'
+);
+update public.assignments a set lesson_id = le.id
+  from public.course_lessons le
+ where a.course_id = le.course_id and le.title = 'Automation Basics: Macros, Shortcuts & Next Steps'
+   and a.title = 'Final Project: Business Dashboard Workbook' and exists (select 1 from public.courses c where c.id = a.course_id and c.slug = 'microsoft-excel');
+with c as (select id from public.courses where slug = 'microsoft-excel')
+insert into public.course_completion_rules (course_id, require_lessons_pct, require_quiz_avg, require_assignments_approved, require_final_project)
+select c.id, 100, 70, 0, true from c
+on conflict (course_id) do update
+  set require_lessons_pct = excluded.require_lessons_pct,
+      require_quiz_avg = excluded.require_quiz_avg,
+      require_assignments_approved = excluded.require_assignments_approved,
+      require_final_project = excluded.require_final_project,
+      updated_at = now();
 
 -- ---------- microsoft-word ----------
 with c as (select id from public.courses where slug = 'microsoft-word')
@@ -11732,6 +14082,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Interface, Documents & Typing Like a Pro'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-word' and mo.title = 'Module 1: Word Fundamentals'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Interface, Documents & Typing Like a Pro';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -11803,6 +14160,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Paragraph Formatting & Spacing Done Right'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-word' and mo.title = 'Module 1: Word Fundamentals'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Paragraph Formatting & Spacing Done Right';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -11873,6 +14237,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Styles: The Single Most Important Word Skill'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-word' and mo.title = 'Module 1: Word Fundamentals'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Styles: The Single Most Important Word Skill';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -11940,6 +14311,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Tables, Images & Smart Layouts'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-word' and mo.title = 'Module 1: Word Fundamentals'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Tables, Images & Smart Layouts';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -12017,6 +14395,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Letters, Memos & Business Correspondence'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-word' and mo.title = 'Module 2: Professional Documents'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Letters, Memos & Business Correspondence';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -12084,6 +14469,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Reports & Long Documents: TOC, Captions, References'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-word' and mo.title = 'Module 2: Professional Documents'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Reports & Long Documents: TOC, Captions, References';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -12153,6 +14545,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Headers, Footers, Page Numbers & Cover Pages'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-word' and mo.title = 'Module 2: Professional Documents'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Headers, Footers, Page Numbers & Cover Pages';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -12221,6 +14620,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Review Tools: Track Changes, Comments & Compare'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-word' and mo.title = 'Module 2: Professional Documents'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Review Tools: Track Changes, Comments & Compare';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -12295,6 +14701,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Mail Merge: 500 Personalized Letters in 10 Minutes'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-word' and mo.title = 'Module 3: Mail Merge & Productivity'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Mail Merge: 500 Personalized Letters in 10 Minutes';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -12367,6 +14780,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Templates: Build Once, Reuse Forever'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-word' and mo.title = 'Module 3: Mail Merge & Productivity'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Templates: Build Once, Reuse Forever';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -12435,6 +14855,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Forms & Fillable Documents'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-word' and mo.title = 'Module 3: Mail Merge & Productivity'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Forms & Fillable Documents';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -12506,6 +14933,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Speed Word: Shortcuts, Find/Replace & Macros'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-word' and mo.title = 'Module 3: Mail Merge & Productivity'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Speed Word: Shortcuts, Find/Replace & Macros';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -12582,6 +15016,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Project 1: Professional CV & Cover Letter'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-word' and mo.title = 'Module 4: Real Projects & Getting Paid'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Project 1: Professional CV & Cover Letter';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -12652,6 +15093,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Project 2: Branded Report (Case Study Document)'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-word' and mo.title = 'Module 4: Real Projects & Getting Paid'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Project 2: Branded Report (Case Study Document)';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -12725,6 +15173,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Project 3: Mail Merge Campaign (Certificates/Letters)'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-word' and mo.title = 'Module 4: Real Projects & Getting Paid'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Project 3: Mail Merge Campaign (Certificates/Letters)';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -12794,11 +15249,18 @@ with m as (
   where c.slug = 'microsoft-word' and mo.title = 'Module 4: Real Projects & Getting Paid'
 )
 insert into public.course_lessons (module_id, course_id, title, type, duration, position)
-select m.module_id, m.course_id, 'Getting Hired: Word Skills That Pay', 'video', '15 min', 3
+select m.module_id, m.course_id, 'Getting Hired: Word Skills That Pay', 'project', '15 min', 3
 from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Getting Hired: Word Skills That Pay'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-word' and mo.title = 'Module 4: Real Projects & Getting Paid'
+)
+update public.course_lessons le set type = 'project'
+  from m where le.module_id = m.module_id and le.title = 'Getting Hired: Word Skills That Pay';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -12858,6 +15320,128 @@ where not exists (
   select 1 from public.course_videos v where v.lesson_id = l.id and v.url = 'https://www.youtube.com/watch?v=C4sYQffoxAU'
 );
 
+with c as (select id from public.courses where slug = 'microsoft-word')
+insert into public.quizzes (course_id, title, description, passing_score, allow_retake, is_final, status, attempt_limit)
+select c.id, 'Final Assessment — Microsoft Word', 'Final assessment — pass to move toward your certificate.', 70, true, true, 'published', null from c
+where not exists (
+  select 1 from public.quizzes z where z.course_id = c.id and z.title = 'Final Assessment — Microsoft Word'
+);
+update public.quizzes z set lesson_id = le.id
+  from public.course_lessons le
+ where z.course_id = le.course_id and le.title = 'Getting Hired: Word Skills That Pay'
+   and z.title = 'Final Assessment — Microsoft Word' and exists (select 1 from public.courses c where c.id = z.course_id and c.slug = 'microsoft-word');
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-word' and z.title = 'Final Assessment — Microsoft Word')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Styles in Word are important because they…', '["Enable instant reformatting, navigation and automatic TOCs","Only change font color","Slow down typing","Replace spell check"]'::jsonb,
+0, '[]'::jsonb,
+'Real styles (Heading 1/2/3, Normal) power consistency and automatic tables of contents.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Styles in Word are important because they…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-word' and z.title = 'Final Assessment — Microsoft Word')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'The ¶ button reveals…', '["Hidden formatting marks","Word count","Page numbers","Comments"]'::jsonb,
+0, '[]'::jsonb,
+'Showing marks exposes stray Enters, tabs and spaces that cause layout problems.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'The ¶ button reveals…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-word' and z.title = 'Final Assessment — Microsoft Word')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'Mail merge can personalize hundreds of letters from one Excel list.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'Merge fields pull each row into the template — bulk personalization.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Mail merge can personalize hundreds of letters from one Excel list.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-word' and z.title = 'Final Assessment — Microsoft Word')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'To move to a new page correctly you should use…', '["Ctrl+Enter (page break)","Press Enter many times","Ctrl+P","Space bar"]'::jsonb,
+0, '[]'::jsonb,
+'Page breaks survive edits; repeated Enters break layout later.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'To move to a new page correctly you should use…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-word' and z.title = 'Final Assessment — Microsoft Word')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Which format should you send a final, uneditable document as?', '["PDF",".txt","XML",".dotx"]'::jsonb,
+0, '[]'::jsonb,
+'PDF preserves layout everywhere and resists casual edits.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which format should you send a final, uneditable document as?'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-word' and z.title = 'Final Assessment — Microsoft Word')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_answer', 'Which features protect a document’s structure while others fill it? (Select all that apply)', '["Restrict Editing","Content controls (Developer tab)","Templates (.dotx)","Track Changes"]'::jsonb,
+null, '[0,1,2]'::jsonb,
+'Restriction, controls and templates enforce fill-only behavior; Track Changes records edits but does not restrict them.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which features protect a document’s structure while others fill it? (Select all that apply)'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-word' and z.title = 'Final Assessment — Microsoft Word')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Track Changes is the professional way to…', '["Review edits from multiple people","Compress files","Add images","Print envelopes"]'::jsonb,
+0, '[]'::jsonb,
+'Every insertion/deletion stays visible until accepted or rejected.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Track Changes is the professional way to…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-word' and z.title = 'Final Assessment — Microsoft Word')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A table of contents in Word is generated from…', '["Heading styles","Bold text","Underlined text","Page colors"]'::jsonb,
+0, '[]'::jsonb,
+'The TOC reads Heading 1/2/3 styles — another reason styles matter.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A table of contents in Word is generated from…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-word' and z.title = 'Final Assessment — Microsoft Word')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'Document Inspector can remove hidden comments and metadata before sharing.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'Always run it before sending files externally.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Document Inspector can remove hidden comments and metadata before sharing.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-word' and z.title = 'Final Assessment — Microsoft Word')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Professional letter spacing between paragraphs should come from…', '["Space Before/After paragraph settings","Multiple Enter keys","Blank text boxes","Manual dashes"]'::jsonb,
+0, '[]'::jsonb,
+'Paragraph spacing survives edits and looks identical across pages.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Professional letter spacing between paragraphs should come from…'
+);
+with c as (select id from public.courses where slug = 'microsoft-word')
+insert into public.assignments (course_id, title, description, instructions, required_output, max_score, is_final_project, status)
+select c.id, 'Final Project: Professional Document Portfolio', 'Produce three polished professional documents demonstrating full Word mastery.', '1) A one-page CV with a matching cover letter (consistent style, quantified bullets).
+2) A branded report (6+ pages): cover page, automatic TOC, Heading styles throughout, one table, one captioned figure, headers/footers with page numbers starting after the TOC.
+3) A reusable template (.dotx) with Restricted Editing for one of the documents.
+Run spell check and Document Inspector on everything.', 'Three final PDFs + the .dotx template + a short note describing the techniques used in each.', 100, true, 'published' from c
+where not exists (
+  select 1 from public.assignments a where a.course_id = c.id and a.title = 'Final Project: Professional Document Portfolio'
+);
+update public.assignments a set lesson_id = le.id
+  from public.course_lessons le
+ where a.course_id = le.course_id and le.title = 'Getting Hired: Word Skills That Pay'
+   and a.title = 'Final Project: Professional Document Portfolio' and exists (select 1 from public.courses c where c.id = a.course_id and c.slug = 'microsoft-word');
+with c as (select id from public.courses where slug = 'microsoft-word')
+insert into public.course_completion_rules (course_id, require_lessons_pct, require_quiz_avg, require_assignments_approved, require_final_project)
+select c.id, 100, 70, 0, true from c
+on conflict (course_id) do update
+  set require_lessons_pct = excluded.require_lessons_pct,
+      require_quiz_avg = excluded.require_quiz_avg,
+      require_assignments_approved = excluded.require_assignments_approved,
+      require_final_project = excluded.require_final_project,
+      updated_at = now();
 
 -- ---------- microsoft-powerpoint ----------
 with c as (select id from public.courses where slug = 'microsoft-powerpoint')
@@ -12877,6 +15461,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Interface, Slides & the Golden Rule of Decks'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-powerpoint' and mo.title = 'Module 1: PowerPoint Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Interface, Slides & the Golden Rule of Decks';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -12944,6 +15535,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Layouts, Placeholders & Consistent Structure'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-powerpoint' and mo.title = 'Module 1: PowerPoint Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Layouts, Placeholders & Consistent Structure';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -13015,6 +15613,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Slide Master: Style Once, Apply Everywhere'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-powerpoint' and mo.title = 'Module 1: PowerPoint Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Slide Master: Style Once, Apply Everywhere';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -13086,6 +15691,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Working with Text: Hierarchy & Readability'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-powerpoint' and mo.title = 'Module 1: PowerPoint Foundations'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Working with Text: Hierarchy & Readability';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -13165,6 +15777,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Images, Icons & Removing Backgrounds'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-powerpoint' and mo.title = 'Module 2: Visual Design'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Images, Icons & Removing Backgrounds';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -13235,6 +15854,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Shapes, SmartArt & Data Slides'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-powerpoint' and mo.title = 'Module 2: Visual Design'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Shapes, SmartArt & Data Slides';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -13305,6 +15931,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Alignment, Whitespace & the Design Eye'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-powerpoint' and mo.title = 'Module 2: Visual Design'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Alignment, Whitespace & the Design Eye';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -13379,6 +16012,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Transitions & Animations: Motion With Purpose'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-powerpoint' and mo.title = 'Module 2: Visual Design'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Transitions & Animations: Motion With Purpose';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -13457,6 +16097,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Presenter View, Notes & Rehearsal'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-powerpoint' and mo.title = 'Module 3: Presenting & Delivering'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Presenter View, Notes & Rehearsal';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -13527,6 +16174,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Storytelling: Structure That Persuades'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-powerpoint' and mo.title = 'Module 3: Presenting & Delivering'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Storytelling: Structure That Persuades';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -13602,6 +16256,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Exporting, Sharing & File Hygiene'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-powerpoint' and mo.title = 'Module 3: Presenting & Delivering'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Exporting, Sharing & File Hygiene';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -13675,6 +16336,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Slide Makeover: From Wall of Text to Wow'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-powerpoint' and mo.title = 'Module 3: Presenting & Delivering'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Slide Makeover: From Wall of Text to Wow';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -13751,6 +16419,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Capstone: Build a Complete Pitch Deck'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-powerpoint' and mo.title = 'Module 4: Capstone & Freelance'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Capstone: Build a Complete Pitch Deck';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -13828,6 +16503,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Teaching Decks & Training Materials'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-powerpoint' and mo.title = 'Module 4: Capstone & Freelance'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Teaching Decks & Training Materials';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -13897,6 +16579,13 @@ from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'Selling Presentation Services'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-powerpoint' and mo.title = 'Module 4: Capstone & Freelance'
+)
+update public.course_lessons le set type = 'video'
+  from m where le.module_id = m.module_id and le.title = 'Selling Presentation Services';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -13960,11 +16649,18 @@ with m as (
   where c.slug = 'microsoft-powerpoint' and mo.title = 'Module 4: Capstone & Freelance'
 )
 insert into public.course_lessons (module_id, course_id, title, type, duration, position)
-select m.module_id, m.course_id, 'The Full Office Pro: Word + Excel + PowerPoint Careers', 'video', '15 min', 3
+select m.module_id, m.course_id, 'The Full Office Pro: Word + Excel + PowerPoint Careers', 'project', '15 min', 3
 from m
 where not exists (
   select 1 from public.course_lessons l where l.module_id = m.module_id and l.title = 'The Full Office Pro: Word + Excel + PowerPoint Careers'
 );
+with m as (
+  select mo.id as module_id, mo.course_id
+  from public.course_modules mo join public.courses c on c.id = mo.course_id
+  where c.slug = 'microsoft-powerpoint' and mo.title = 'Module 4: Capstone & Freelance'
+)
+update public.course_lessons le set type = 'project'
+  from m where le.module_id = m.module_id and le.title = 'The Full Office Pro: Word + Excel + PowerPoint Careers';
 with l as (
   select le.id from public.course_lessons le
   join public.course_modules mo on mo.id = le.module_id
@@ -14025,6 +16721,129 @@ where not exists (
   select 1 from public.course_videos v where v.lesson_id = l.id and v.url = 'https://www.youtube.com/watch?v=QxkXikn-cr0'
 );
 
+with c as (select id from public.courses where slug = 'microsoft-powerpoint')
+insert into public.quizzes (course_id, title, description, passing_score, allow_retake, is_final, status, attempt_limit)
+select c.id, 'Final Assessment — Microsoft PowerPoint', 'Final assessment — pass to move toward your certificate.', 70, true, true, 'published', null from c
+where not exists (
+  select 1 from public.quizzes z where z.course_id = c.id and z.title = 'Final Assessment — Microsoft PowerPoint'
+);
+update public.quizzes z set lesson_id = le.id
+  from public.course_lessons le
+ where z.course_id = le.course_id and le.title = 'The Full Office Pro: Word + Excel + PowerPoint Careers'
+   and z.title = 'Final Assessment — Microsoft PowerPoint' and exists (select 1 from public.courses c where c.id = z.course_id and c.slug = 'microsoft-powerpoint');
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-powerpoint' and z.title = 'Final Assessment — Microsoft PowerPoint')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'The golden rule of slide design is…', '["One idea per slide","As much text as possible","Ten fonts per deck","No images"]'::jsonb,
+0, '[]'::jsonb,
+'Slides support the speaker; one idea each keeps the audience listening.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'The golden rule of slide design is…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-powerpoint' and z.title = 'Final Assessment — Microsoft PowerPoint')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'The Slide Master controls…', '["The theme for every slide at once","Slide transitions only","Speaker notes","File saving"]'::jsonb,
+0, '[]'::jsonb,
+'Edit the master once — fonts, logos and colors update deck-wide.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'The Slide Master controls…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-powerpoint' and z.title = 'Final Assessment — Microsoft PowerPoint')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'The Morph transition animates objects between duplicated slides.', '["True","False"]'::jsonb,
+0, '[]'::jsonb,
+'Move/resize objects on the copy, apply Morph, and PowerPoint animates the change.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'The Morph transition animates objects between duplicated slides.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-powerpoint' and z.title = 'Final Assessment — Microsoft PowerPoint')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Body text on projected slides should be at least about…', '["18pt","8pt","10pt","6pt"]'::jsonb,
+0, '[]'::jsonb,
+'Audiences at the back need ~18pt minimum to read comfortably.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Body text on projected slides should be at least about…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-powerpoint' and z.title = 'Final Assessment — Microsoft PowerPoint')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_answer', 'Which make charts more persuasive? (Select all that apply)', '["A title stating the insight","Highlighting the key data point","Removing clutter like extra gridlines","Rainbow colors for every bar"]'::jsonb,
+null, '[0,1,2]'::jsonb,
+'Insight titles, focus and decluttering persuade; rainbow noise distracts.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Which make charts more persuasive? (Select all that apply)'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-powerpoint' and z.title = 'Final Assessment — Microsoft PowerPoint')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Presenter View shows the presenter…', '["Current slide, next slide, notes and timer","Only the slides","The audience’s faces","Email"]'::jsonb,
+0, '[]'::jsonb,
+'The audience sees slides; you see everything else.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Presenter View shows the presenter…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-powerpoint' and z.title = 'Final Assessment — Microsoft PowerPoint')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Pressing B during a slideshow…', '["Blanks the screen to refocus attention on you","Deletes a slide","Ends the show","Starts music"]'::jsonb,
+0, '[]'::jsonb,
+'B/W blanks the screen — a classic speaker trick.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Pressing B during a slideshow…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-powerpoint' and z.title = 'Final Assessment — Microsoft PowerPoint')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'A deck’s opening should…', '["State the pain or opportunity in one line","List the agenda for 5 minutes","Thank sponsors first","Define every term"]'::jsonb,
+0, '[]'::jsonb,
+'Hooks earn attention; agendas can follow.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'A deck’s opening should…'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-powerpoint' and z.title = 'Final Assessment — Microsoft PowerPoint')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'true_false', 'Multiple different transitions per deck looks more professional than one consistent transition.', '["True","False"]'::jsonb,
+1, '[]'::jsonb,
+'One subtle transition deck-wide looks professional; mixing many looks chaotic.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Multiple different transitions per deck looks more professional than one consistent transition.'
+);
+with z as (select z.id from public.quizzes z join public.courses c on c.id = z.course_id
+  where c.slug = 'microsoft-powerpoint' and z.title = 'Final Assessment — Microsoft PowerPoint')
+insert into public.quiz_questions (quiz_id, type, question, options, correct_answer, correct_answers, explanation)
+select z.id, 'multiple_choice', 'Before emailing a deck with custom fonts you should…', '["Embed fonts (File → Options → Save)","Convert it to .txt","Remove all images","Increase slide count"]'::jsonb,
+0, '[]'::jsonb,
+'Embedded fonts keep your typography on any machine.' from z
+where not exists (
+  select 1 from public.quiz_questions qq where qq.quiz_id = z.id and qq.question = 'Before emailing a deck with custom fonts you should…'
+);
+with c as (select id from public.courses where slug = 'microsoft-powerpoint')
+insert into public.assignments (course_id, title, description, instructions, required_output, max_score, is_final_project, status)
+select c.id, 'Final Project: A Presentation That Wins the Room', 'Create a 10–12 slide pitch or training deck and deliver it like a professional.', '1) Choose a real topic: a business pitch, a training lesson, or a project proposal.
+2) Structure with one idea per slide: hook → problem → solution → proof → ask.
+3) Apply design rules: master-based branding, 2 fonts max, full-bleed images or highlighted charts, aligned elements, generous white space.
+4) Use ONE transition deck-wide and at most 2 purposeful animations (include one Morph).
+5) Add speaker notes to every slide, rehearse once with the timer, and export both PPTX and PDF.', 'The PPTX + PDF + a 60–90 second video (or audio) of you presenting 2–3 key slides.', 100, true, 'published' from c
+where not exists (
+  select 1 from public.assignments a where a.course_id = c.id and a.title = 'Final Project: A Presentation That Wins the Room'
+);
+update public.assignments a set lesson_id = le.id
+  from public.course_lessons le
+ where a.course_id = le.course_id and le.title = 'The Full Office Pro: Word + Excel + PowerPoint Careers'
+   and a.title = 'Final Project: A Presentation That Wins the Room' and exists (select 1 from public.courses c where c.id = a.course_id and c.slug = 'microsoft-powerpoint');
+with c as (select id from public.courses where slug = 'microsoft-powerpoint')
+insert into public.course_completion_rules (course_id, require_lessons_pct, require_quiz_avg, require_assignments_approved, require_final_project)
+select c.id, 100, 70, 0, true from c
+on conflict (course_id) do update
+  set require_lessons_pct = excluded.require_lessons_pct,
+      require_quiz_avg = excluded.require_quiz_avg,
+      require_assignments_approved = excluded.require_assignments_approved,
+      require_final_project = excluded.require_final_project,
+      updated_at = now();
 
 commit;
 
@@ -14033,5 +16852,7 @@ select c.slug, c.lessons_count,
        (select count(*) from public.course_modules m where m.course_id = c.id) as modules,
        (select count(*) from public.course_videos v
           join public.course_lessons l on l.id = v.lesson_id
-         where l.course_id = c.id) as videos
+         where l.course_id = c.id) as videos,
+       (select count(*) from public.quizzes z where z.course_id = c.id) as quizzes,
+       (select count(*) from public.assignments a where a.course_id = c.id) as assignments
 from public.courses c order by c.slug;
