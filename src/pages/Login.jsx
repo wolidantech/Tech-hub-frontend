@@ -22,6 +22,7 @@ export default function Login() {
       toast.success(`Welcome back, ${user.fullName}!`);
       setTimeout(() => {
         if (user.role === 'admin') navigate('/admin/dashboard');
+        else if (!user.onboarded) navigate('/onboarding');
         else navigate(from);
       }, 500);
     } catch (err) {
@@ -59,7 +60,7 @@ export default function Login() {
 
             <div className="flex items-center justify-between text-xs">
               <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded" /> <span className="text-white/60">Remember me</span></label>
-              <button type="button" onClick={() => toast.info('Password reset: In production, a reset link would be sent to your email. For demo, contact admin or create new account.')} className="text-cyan-300 hover:text-cyan-200 font-semibold">Forgot password?</button>
+              <Link to="/forgot-password" className="text-cyan-300 hover:text-cyan-200 font-semibold">Forgot password?</Link>
             </div>
 
             <button disabled={loading} className="w-full btn-primary !py-4 !text-[14px] gap-2 disabled:opacity-60">

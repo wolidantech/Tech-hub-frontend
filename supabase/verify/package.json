@@ -1,0 +1,7 @@
+{
+  "name": "lms-migration-verify",
+  "private": true,
+  "type": "module",
+  "scripts": { "verify": "node run.mjs" },
+  "dependencies": { "@electric-sql/pglite": "^0.3.0" }
+}

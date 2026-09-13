@@ -1,42 +1,35 @@
 import { Link } from 'react-router-dom';
 import { Clock, BookOpen, Star, User, ArrowRight } from 'lucide-react';
-import { formatNaira, getCourseThumbnailGradient } from '../../lib/utils';
+import { formatNaira } from '../../lib/utils';
+import CourseArt from './CourseArt';
 
 export default function CourseCard({ course, onEnroll }) {
-  const gradient = getCourseThumbnailGradient(course.thumbnail);
-
+  const totalLessons = course.curriculum?.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) || course.lessonsCount || 0;
   return (
     <div className="group relative rounded-[24px] glass-card overflow-hidden hover:border-white/[0.15] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(0,0,0,0.4),0_0_40px_rgba(14,165,233,0.15)] flex flex-col">
-      {/* Thumbnail */}
-      <div className={`relative h-[200px] bg-gradient-to-br ${gradient} p-[1px]`}>
-        <div className="h-full w-full bg-[#0a1a4a] rounded-t-[23px] relative overflow-hidden flex items-center justify-center">
-          <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-60`} />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15),transparent_50%)]" />
-          
-          {/* Icon/Illustration */}
-          <div className="relative z-10 text-center">
-            <div className="mx-auto h-16 w-16 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center text-2xl font-black tracking-tighter">
-              {course.title.slice(0,2)}
-            </div>
-            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/30 backdrop-blur text-[11px] font-bold tracking-wide">
-              <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-              {course.category.toUpperCase()}
-            </div>
-          </div>
-
-          {/* Price badge */}
-          <div className="absolute top-4 right-4 z-20 px-3 py-1.5 rounded-full bg-white text-black font-black text-sm shadow-lg">
-            {formatNaira(course.price)}
-            {course.originalPrice > course.price && (
-              <span className="ml-2 text-[11px] line-through text-black/50 font-medium">{formatNaira(course.originalPrice)}</span>
-            )}
-          </div>
-
-          {/* Level */}
-          <div className="absolute bottom-4 left-4 z-20 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur border border-white/10 text-[11px] font-semibold">
-            {course.level}
-          </div>
+      {/* Premium 3D thumbnail */}
+      <div className="relative">
+        <CourseArt course={course} />
+        <div className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40 backdrop-blur border border-white/15 text-[11px] font-bold tracking-wide">
+          <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+          {course.category.toUpperCase()}
         </div>
+        {/* Price badge */}
+        <div className="absolute top-4 right-4 z-20 px-3 py-1.5 rounded-full bg-white text-black font-black text-sm shadow-lg">
+          {formatNaira(course.price)}
+          {course.originalPrice > course.price && (
+            <span className="ml-2 text-[11px] line-through text-black/50 font-medium">{formatNaira(course.originalPrice)}</span>
+          )}
+        </div>
+        {/* Level */}
+        <div className="absolute bottom-4 left-4 z-20 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur border border-white/10 text-[11px] font-semibold">
+          {course.level}
+        </div>
+        {course.featured && (
+          <div className="absolute bottom-4 right-4 z-20 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[11px] font-black">
+            ⭐ FEATURED
+          </div>
+        )}
       </div>
 
       <div className="p-5 flex flex-col flex-1">
@@ -55,7 +48,7 @@ export default function CourseCard({ course, onEnroll }) {
 
         <div className="mt-4 flex items-center gap-4 text-[12px] text-white/50">
           <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {course.duration}</span>
-          <span className="flex items-center gap-1.5"><BookOpen className="h-3.5 w-3.5" /> {course.lessonsCount} lessons</span>
+          <span className="flex items-center gap-1.5"><BookOpen className="h-3.5 w-3.5" /> {totalLessons} lessons</span>
           <span className="ml-auto flex items-center gap-1 text-white/40"><span className="h-1.5 w-1.5 rounded-full bg-green-400" /> {course.students} students</span>
         </div>
 

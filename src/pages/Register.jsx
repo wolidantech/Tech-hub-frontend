@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, User, Phone, ArrowRight, Eye, EyeOff, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLMS } from '../context/LMSContext';
 import { toast, Toaster } from 'sonner';
 
 export default function Register() {
@@ -9,12 +10,16 @@ export default function Register() {
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
+  const { siteSettings } = useLMS();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from || '/dashboard';
 
+  const registrationOpen = siteSettings?.allowRegistration !== false;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!registrationOpen) { toast.error('Registration is temporarily closed. Please check back soon.'); return; }
     if (form.password !== form.confirm) {
       toast.error('Passwords do not match');
       return;
@@ -25,9 +30,14 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      const user = await register({ fullName: form.fullName, email: form.email, phone: form.phone, password: form.password });
-      toast.success(`Welcome, ${user.fullName}! Account created.`);
-      setTimeout(() => navigate(from), 600);
+      const result = await register({ fullName: form.fullName, email: form.email, phone: form.phone, password: form.password });
+      if (result?.pendingConfirmation) {
+        toast.success('Account created! Please check your email to confirm, then log in.');
+        setTimeout(() => navigate('/login'), 1200);
+      } else {
+        toast.success(`Welcome, ${result.fullName}! Account created.`);
+        setTimeout(() => navigate('/onboarding'), 600);
+      }
     } catch (err) {
       toast.error(err.message);
     } finally {

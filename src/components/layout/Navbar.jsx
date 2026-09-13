@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, LogOut, LayoutDashboard, User, Shield, CreditCard, BookOpen } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, User, Shield, CreditCard, BookOpen, Search } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCourses } from '../../context/CourseContext';
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const { user, logout, isAdmin } = useAuth();
   const { getPendingManualPayments } = useCourses();
   const navigate = useNavigate();
@@ -14,10 +15,17 @@ export default function Navbar() {
   const navLinks = [
     { to: '/', label: 'Home' },
     { to: '/courses', label: 'Courses' },
-    { to: '/about', label: 'About' },
-    { to: '/contact', label: 'Contact' },
+    { to: '/learning-paths', label: 'Paths' },
+    { to: '/career-hub', label: 'Career' },
     { to: '/verify-certificate', label: 'Verify' },
   ];
+
+  const doSearch = (e) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+    setOpen(false);
+  };
 
   const isActive = (path) => location.pathname === path;
   const pendingCount = isAdmin ? getPendingManualPayments().length : 0;
@@ -43,6 +51,10 @@ export default function Navbar() {
                 {l.label}
               </Link>
             ))}
+            <form onSubmit={doSearch} className="relative ml-2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40" />
+              <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search..." className="h-9 w-[130px] focus:w-[190px] transition-all rounded-full glass pl-9 pr-3 text-xs placeholder:text-white/30 focus:outline-none focus:border-cyan-400/50" />
+            </form>
           </div>
 
           <div className="hidden md:flex items-center gap-3">
@@ -90,6 +102,10 @@ export default function Navbar() {
       {open && (
         <div className="md:hidden border-t border-white/10 bg-[#061236]/95 backdrop-blur-2xl">
           <div className="px-4 py-6 space-y-4">
+            <form onSubmit={doSearch} className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+              <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search courses, lessons, paths..." className="h-11 w-full rounded-full glass pl-11 pr-4 text-sm focus:outline-none" />
+            </form>
             {navLinks.map(l => (
               <Link key={l.to} to={l.to} onClick={() => setOpen(false)} className={`block px-4 py-3 rounded-xl font-medium ${isActive(l.to) ? 'bg-white/[0.08] text-white' : 'text-white/70'}`}>
                 {l.label}

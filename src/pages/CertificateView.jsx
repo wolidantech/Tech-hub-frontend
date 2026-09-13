@@ -3,15 +3,28 @@ import { Award, Download, Verified, Calendar, User, BookOpen, ArrowLeft, Share2 
 import { useCourses } from '../context/CourseContext';
 import { useAuth } from '../context/AuthContext';
 import { formatDate } from '../lib/utils';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 
 export default function CertificateView() {
   const { id } = useParams();
   const { verifyCertificate, getCourseById } = useCourses();
   const { user } = useAuth();
   const certRef = useRef(null);
+  const [cert, setCert] = useState(undefined); // undefined = loading
 
-  const cert = verifyCertificate(id);
+  useEffect(() => {
+    let alive = true;
+    verifyCertificate(id).then((c) => { if (alive) setCert(c || null); }).catch(() => { if (alive) setCert(null); });
+    return () => { alive = false; };
+  }, [id, verifyCertificate]);
+
+  if (cert === undefined) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-4">
+        <div className="h-10 w-10 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
   if (!cert) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center p-4">
@@ -19,6 +32,19 @@ export default function CertificateView() {
           <div className="h-16 w-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">❌</div>
           <h1 className="font-bold text-xl">Certificate Not Found</h1>
           <p className="text-sm text-white/50 mt-2">The certificate ID {id} does not exist or is invalid.</p>
+          <Link to="/verify-certificate" className="inline-flex mt-6 btn-primary">VERIFY ANOTHER</Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (cert.status === 'revoked') {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-4">
+        <div className="glass rounded-[24px] p-12 text-center max-w-[480px] border border-red-500/30">
+          <div className="h-16 w-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4 text-2xl">🚫</div>
+          <h1 className="font-bold text-xl text-red-300">Certificate Revoked</h1>
+          <p className="text-sm text-white/50 mt-2">This certificate ({cert.certificateId}) has been revoked by WOLI DAN TECH HUB and is no longer valid.</p>
           <Link to="/verify-certificate" className="inline-flex mt-6 btn-primary">VERIFY ANOTHER</Link>
         </div>
       </div>
@@ -37,12 +63,13 @@ export default function CertificateView() {
       <div className="mx-auto max-w-[960px] px-4 sm:px-6 lg:px-8">
         <Link to="/certificates" className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white mb-8"><ArrowLeft className="h-4 w-4" /> Back to Certificates</Link>
 
-        <div className="flex flex-wrap gap-3 justify-end mb-6 print:hidden">
+        <div className="flex flex-wrap gap-3 justify-end mb-6 print:hidden no-print">
           <button onClick={() => navigator.clipboard.writeText(window.location.href)} className="px-5 py-2.5 rounded-full glass font-bold text-sm flex items-center gap-2"><Share2 className="h-4 w-4" /> Share</button>
-          <button onClick={handlePrint} className="px-5 py-2.5 rounded-full bg-white text-black font-bold text-sm flex items-center gap-2"><Download className="h-4 w-4" /> Download / Print</button>
+          <button onClick={handlePrint} className="px-5 py-2.5 rounded-full bg-white text-black font-bold text-sm flex items-center gap-2"><Download className="h-4 w-4" /> Download PDF</button>
         </div>
+        <div className="text-xs text-white/40 mb-6 no-print">Tip: choose "Save as PDF" in the print dialog to download your certificate as a PDF.</div>
 
-        <div ref={certRef} className="relative rounded-[32px] bg-white p-[2px] shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
+        <div id="certificate-print-area" ref={certRef} className="relative rounded-[32px] bg-white p-[2px] shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
           <div className="rounded-[30px] bg-gradient-to-br from-[#020a1f] via-[#0a1a4a] to-[#020a1f] p-1">
             <div className="rounded-[28px] bg-white text-black p-8 md:p-12 relative overflow-hidden">
               {/* Decorative */}
@@ -78,13 +105,24 @@ export default function CertificateView() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-8 border-y border-black/10 max-w-[600px] mx-auto text-left">
                   <div><div className="text-[11px] font-bold tracking-widest text-black/40">DATE COMPLETED</div><div className="font-bold flex items-center gap-1 mt-1"><Calendar className="h-4 w-4" /> {formatDate(cert.issueDate)}</div></div>
                   <div><div className="text-[11px] font-bold tracking-widest text-black/40">CERTIFICATE ID</div><div className="font-mono font-bold mt-1 text-cyan-700">{cert.certificateId}</div></div>
-                  <div><div className="text-[11px] font-bold tracking-widest text-black/40">INSTRUCTOR</div><div className="font-bold mt-1 flex items-center gap-1"><User className="h-4 w-4" /> Woli Dan</div></div>
+                  <div><div className="text-[11px] font-bold tracking-widest text-black/40">VERIFICATION CODE</div><div className="font-mono font-bold mt-1">{cert.verificationCode || '—'}</div></div>
                 </div>
+                <div className="text-xs text-black/50 -mt-2">Verify at <span className="font-bold">/verify-certificate</span> • Issued by {cert.issuedBy || 'WOLI DAN TECH HUB'}</div>
 
                 <div className="flex flex-col md:flex-row items-center justify-between gap-6 max-w-[600px] mx-auto pt-4">
                   <div className="text-left">
                     <div className="h-12 w-32 border-b border-black/20 flex items-end pb-1"><span className="font-display font-bold italic text-lg">Woli Dan</span></div>
                     <div className="text-[11px] font-bold tracking-widest text-black/40 mt-1">DIRECTOR, WOLI DAN TECH HUB</div>
+                  </div>
+                  <div className="text-center">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(`${window.location.origin}/verify-certificate?code=${cert.verificationCode || cert.certificateId}`)}`}
+                      alt="Verification QR code"
+                      width="110" height="110"
+                      className="h-[110px] w-[110px] mx-auto rounded-lg border border-black/10"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                    <div className="text-[10px] font-bold tracking-widest text-black/40 mt-1">SCAN TO VERIFY</div>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center"><Verified className="h-8 w-8 text-white" /></div>
@@ -98,13 +136,11 @@ export default function CertificateView() {
           </div>
         </div>
 
-        <div className="mt-8 glass rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4 print:hidden">
+        <div className="mt-8 glass rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4 print:hidden no-print">
           <div className="flex items-center gap-3 text-sm"><BookOpen className="h-5 w-5 text-cyan-300" /><span>Share your achievement on LinkedIn, WhatsApp, or with employers</span></div>
           <Link to="/verify-certificate" className="text-sm font-bold text-cyan-300 hover:text-cyan-200">Verify Certificate →</Link>
         </div>
       </div>
-
-      <style>{`@media print { body * { visibility: hidden; } #root { display: none; } }`}</style>
     </div>
   );
 }

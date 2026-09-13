@@ -1,23 +1,114 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Clock, BookOpen, BarChart3, User, Star, CheckCircle2, Play, Award, ArrowRight, Shield, Zap, Globe, AlertTriangle } from 'lucide-react';
 import { useCourses } from '../context/CourseContext';
+import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
 import { formatNaira, getCourseThumbnailGradient } from '../lib/utils';
-import { useState } from 'react';
+import CourseArt from '../components/course/CourseArt';
+import { useState, useEffect } from 'react';
+import { toast, Toaster } from 'sonner';
+
+function ReviewsSection({ course, user, enrolled }) {
+  const { addReview, getCourseReviews, getCourseRating, ensureCourseReviews } = useLMS();
+  const [rating, setRating] = useState(5);
+  const [text, setText] = useState('');
+  const reviews = getCourseReviews(course.id);
+  const avg = getCourseRating(course.id, course.rating);
+  const mine = user ? reviews.find((r) => r.userId === user.id) : null;
+
+  useEffect(() => { ensureCourseReviews(course.id).catch(() => {}); }, [course.id, ensureCourseReviews]);
+
+  const submit = async () => {
+    if (!text.trim()) { toast.error('Please write your review'); return; }
+    try {
+      await addReview({ courseId: course.id, userId: user.id, studentName: user.fullName, rating, text });
+      setText('');
+      toast.success('Thanks for your review! ⭐');
+    } catch (err) { toast.error(err.message); }
+  };
+
+  return (
+    <div className="rounded-[24px] glass p-6 md:p-8">
+      <Toaster richColors />
+      <h3 className="font-bold text-lg">Student Reviews ({reviews.length})</h3>
+      <div className="flex items-center gap-2 mt-2">
+        <div className="flex">{[1, 2, 3, 4, 5].map((s) => <Star key={s} className={`h-5 w-5 ${s <= Math.round(avg) ? 'text-yellow-400 fill-yellow-400' : 'text-white/20'}`} />)}</div>
+        <span className="font-black text-xl">{avg}</span>
+        <span className="text-sm text-white/40">average rating</span>
+      </div>
+
+      {reviews.length > 0 ? (
+        <div className="mt-5 space-y-3 max-h-[380px] overflow-auto">
+          {reviews.map((r) => (
+            <div key={r.id} className="rounded-2xl bg-white/[0.03] border border-white/10 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-bold text-xs">{(r.studentName || '?').charAt(0)}</div>
+                  <span className="font-bold text-sm">{r.studentName}</span>
+                </div>
+                <div className="flex">{[1, 2, 3, 4, 5].map((s) => <Star key={s} className={`h-3.5 w-3.5 ${s <= r.rating ? 'text-yellow-400 fill-yellow-400' : 'text-white/20'}`} />)}</div>
+              </div>
+              <p className="text-sm text-white/70 mt-2">{r.text}</p>
+              <div className="text-[11px] text-white/30 mt-1">{new Date(r.createdAt).toLocaleDateString()}</div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-4 text-sm text-white/40">No reviews yet — be the first!</div>
+      )}
+
+      {user && enrolled && !mine && (
+        <div className="mt-5 rounded-2xl bg-white/[0.03] border border-white/10 p-4 space-y-3">
+          <div className="font-bold text-sm">Write a review</div>
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((s) => (
+              <button key={s} onClick={() => setRating(s)}><Star className={`h-7 w-7 ${s <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-white/20'} hover:scale-110 transition`} /></button>
+            ))}
+          </div>
+          <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Share your experience with this course..." className="w-full rounded-2xl glass p-3 text-sm h-20" />
+          <button onClick={submit} className="btn-primary !py-2.5 text-xs">SUBMIT REVIEW</button>
+        </div>
+      )}
+      {!user && <div className="mt-4 text-sm text-white/40">Enroll and log in to write a review.</div>}
+      {mine && <div className="mt-4 text-sm text-green-300">✓ You've reviewed this course. Thank you!</div>}
+    </div>
+  );
+}
 
 export default function CourseDetails() {
   const { slug } = useParams();
-  const { getCourseBySlug, isEnrolled, getManualPaymentByCourse } = useCourses();
+  const { getCourseBySlug, isEnrolled, getManualPaymentByCourse, ensureCourseDetail } = useCourses();
+  const { trackView, getCourseQuizzes, getCourseAssignments, siteSettings } = useLMS();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [openModule, setOpenModule] = useState('m1');
+  const [openModule, setOpenModule] = useState(null);
+  const [detailError, setDetailError] = useState('');
 
   const course = getCourseBySlug(slug);
+
+  useEffect(() => {
+    if (!course) return;
+    trackView(user?.id, course.id);
+    if (!course.curriculum) {
+      ensureCourseDetail(course.id).catch((err) => setDetailError(err.message));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, course?.id]);
+
+  useEffect(() => {
+    if (course?.curriculum?.length && !openModule) setOpenModule(course.curriculum[0].id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [course?.curriculum]);
+
   if (!course) return <div className="p-20 text-center">Course not found</div>;
 
   const enrolled = user ? isEnrolled(user.id, course.id) : false;
   const manualPayment = user ? getManualPaymentByCourse(user.id, course.id) : null;
-  const totalLessons = course.curriculum.reduce((acc, m) => acc + m.lessons.length, 0);
+  const totalLessons = course.curriculum
+    ? course.curriculum.reduce((acc, m) => acc + (m.lessons?.length || 0), 0)
+    : (course.lessonsCount || 0);
+  const quizCount = getCourseQuizzes(course.id).length;
+  const assignmentCount = getCourseAssignments(course.id).length;
   const gradient = getCourseThumbnailGradient(course.thumbnail);
 
   const handleEnroll = () => {
@@ -77,12 +168,9 @@ export default function CourseDetails() {
             <div className="lg:sticky lg:top-[100px]">
               <div className="rounded-[24px] glass-strong p-[1px]">
                 <div className="rounded-[23px] bg-[#0a1a4a]/80 backdrop-blur-xl overflow-hidden">
-                  <div className={`h-[220px] bg-gradient-to-br ${gradient} relative p-6 flex flex-col justify-end`}>
-                    <div className="absolute inset-0 bg-black/20" />
-                    <div className="relative">
-                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 backdrop-blur text-xs font-bold"><Play className="h-3 w-3" /> PREVIEW COURSE</div>
-                      <h3 className="mt-3 font-black text-2xl leading-none">{course.title.slice(0, 20)}</h3>
-                    </div>
+                  <div className="relative">
+                    <CourseArt course={course} className="h-[240px]" />
+                    <div className="absolute bottom-4 left-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 backdrop-blur text-xs font-bold"><Play className="h-3 w-3" /> PREVIEW COURSE</div>
                   </div>
                   <div className="p-6 space-y-5">
                     <div className="flex items-baseline gap-3">
@@ -119,6 +207,8 @@ export default function CourseDetails() {
                       {[
                         `${course.duration} on-demand video`,
                         `${totalLessons} lessons`,
+                        quizCount > 0 ? `${quizCount} quizzes with auto-grading` : 'Quizzes & assessments',
+                        assignmentCount > 0 ? `${assignmentCount} practical assignments` : 'Practical assignments',
                         'Downloadable resources',
                         'Lifetime access',
                         'Certificate of completion',
@@ -130,9 +220,9 @@ export default function CourseDetails() {
 
                     <div className="rounded-2xl bg-white/[0.05] border border-white/10 p-4 space-y-2">
                       <div className="text-[11px] font-bold tracking-widest text-white/40">MANUAL BANK TRANSFER</div>
-                      <div className="text-xs"><span className="text-white/50">Bank:</span> <span className="font-bold">MONIEPOINT</span></div>
-                      <div className="text-xs"><span className="text-white/50">Account:</span> <span className="font-mono font-bold text-cyan-300">69852663361</span></div>
-                      <div className="text-xs"><span className="text-white/50">Name:</span> <span className="font-bold">LUNA ENTRY SERVICES- WOLI DAN TECH HUB</span></div>
+                      <div className="text-xs"><span className="text-white/50">Bank:</span> <span className="font-bold">{siteSettings?.bankName || 'MONIEPOINT'}</span></div>
+                      <div className="text-xs"><span className="text-white/50">Account:</span> <span className="font-mono font-bold text-cyan-300">{siteSettings?.accountNumber || '69852663361'}</span></div>
+                      <div className="text-xs"><span className="text-white/50">Name:</span> <span className="font-bold">{siteSettings?.accountName || 'LUNA ENTRY SERVICES'}</span></div>
                       <div className="text-[11px] text-white/30 mt-2">Only approved payments grant course access</div>
                     </div>
 
@@ -160,21 +250,40 @@ export default function CourseDetails() {
             </div>
           </div>
 
+          {(course.requirements?.length > 0 || course.audience?.length > 0) && (
+            <div className="rounded-[24px] glass p-6 md:p-8 grid sm:grid-cols-2 gap-6">
+              {course.requirements?.length > 0 && (
+                <div>
+                  <h3 className="font-bold mb-4">Requirements</h3>
+                  <div className="space-y-2">{course.requirements.map((r, i) => <div key={i} className="flex gap-2 text-sm text-white/70"><AlertTriangle className="h-4 w-4 text-amber-300 shrink-0 mt-0.5" /> {r}</div>)}</div>
+                </div>
+              )}
+              {course.audience?.length > 0 && (
+                <div>
+                  <h3 className="font-bold mb-4">Who Is This For?</h3>
+                  <div className="space-y-2">{course.audience.map((a, i) => <div key={i} className="flex gap-2 text-sm text-white/70"><User className="h-4 w-4 text-green-300 shrink-0 mt-0.5" /> {a}</div>)}</div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="rounded-[24px] glass p-6 md:p-8">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-xl">Course Curriculum</h3>
-              <span className="text-xs px-3 py-1 rounded-full glass">{course.curriculum.length} modules • {totalLessons} lessons</span>
+              <span className="text-xs px-3 py-1 rounded-full glass">{(course.curriculum || []).length} modules • {totalLessons} lessons</span>
             </div>
+            {detailError && <div className="text-sm text-red-300 mb-3">Couldn't load full curriculum: {detailError}</div>}
+            {!course.curriculum && !detailError && <div className="text-sm text-white/40 py-4">Loading curriculum…</div>}
             <div className="space-y-3">
-              {course.curriculum.map(mod => (
+              {(course.curriculum || []).map(mod => (
                 <div key={mod.id} className="rounded-2xl border border-white/10 overflow-hidden">
                   <button onClick={() => setOpenModule(openModule === mod.id ? null : mod.id)} className="w-full flex items-center justify-between p-4 bg-white/[0.03] hover:bg-white/[0.05] transition text-left">
                     <div className="font-bold">{mod.title}</div>
-                    <div className="text-xs text-white/50">{mod.lessons.length} lessons</div>
+                    <div className="text-xs text-white/50">{(mod.lessons || []).length} lessons</div>
                   </button>
                   {openModule === mod.id && (
                     <div className="divide-y divide-white/5">
-                      {mod.lessons.map(lesson => (
+                      {(mod.lessons || []).map(lesson => (
                         <div key={lesson.id} className="flex items-center gap-3 p-4 text-sm">
                           <div className="h-8 w-8 rounded-full glass flex items-center justify-center shrink-0">
                             {lesson.type === 'video' ? <Play className="h-3.5 w-3.5" /> : <BookOpen className="h-3.5 w-3.5" />}
@@ -201,6 +310,8 @@ export default function CourseDetails() {
               <p className="mt-2 text-sm text-white/60 leading-relaxed">Professional instructor with years of experience helping students build practical skills that generate income.</p>
             </div>
           </div>
+
+          <ReviewsSection course={course} user={user} enrolled={enrolled} />
         </div>
 
         <div className="space-y-6">

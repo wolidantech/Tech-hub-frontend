@@ -1,13 +1,18 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Play, CheckCircle2, GraduationCap, Users, Monitor, Award, Sparkles, Zap, Globe, BookOpen, MessageCircle } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowRight, Play, CheckCircle2, GraduationCap, Users, Monitor, Award, Sparkles, Zap, Globe, BookOpen, MessageCircle, Search, Map, Bot, Star, ChevronDown, Briefcase } from 'lucide-react';
 import { useCourses } from '../context/CourseContext';
+import { useLMS } from '../context/LMSContext';
 import CourseCard from '../components/course/CourseCard';
 import { useNavigate } from 'react-router-dom';
 
 export default function Home() {
   const { courses } = useCourses();
+  const { learningPaths } = useLMS();
   const navigate = useNavigate();
-  const featured = courses.slice(0, 6);
+  const [heroSearch, setHeroSearch] = useState('');
+  const live = courses.filter((c) => c.published !== false && !c.archived);
+  const featured = [...live].sort((a, b) => (b.students || 0) - (a.students || 0)).slice(0, 6);
 
   return (
     <div className="overflow-hidden">
@@ -51,10 +56,16 @@ export default function Home() {
                 <Link to="/courses" className="btn-primary gap-2 text-[14px] !px-8 !py-4">
                   START LEARNING <ArrowRight className="h-4 w-4" />
                 </Link>
-                <Link to="/courses" className="btn-secondary gap-2 !px-8 !py-4">
-                  <Play className="h-4 w-4" /> VIEW COURSES
+                <Link to="/learning-paths" className="btn-secondary gap-2 !px-8 !py-4">
+                  <Map className="h-4 w-4" /> CAREER PATHS
                 </Link>
               </div>
+
+              <form onSubmit={(e) => { e.preventDefault(); if (heroSearch.trim()) navigate(`/search?q=${encodeURIComponent(heroSearch.trim())}`); }} className="relative max-w-[520px]">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
+                <input value={heroSearch} onChange={(e) => setHeroSearch(e.target.value)} placeholder="Search courses, lessons, career paths..." className="w-full h-[56px] rounded-full glass pl-13 pr-32 text-sm focus:outline-none focus:border-cyan-400/50" style={{ paddingLeft: '3.25rem' }} />
+                <button className="absolute right-2 top-1/2 -translate-y-1/2 h-[40px] px-6 rounded-full bg-gradient-to-r from-cyan-400 to-blue-600 font-bold text-xs">SEARCH</button>
+              </form>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6">
                 {[
@@ -214,9 +225,61 @@ export default function Home() {
                 ))}
                 <div className="pt-4 grid grid-cols-3 gap-3 text-center">
                   <div className="glass rounded-2xl p-4"><div className="font-black text-xl">₦5k</div><div className="text-[11px] text-white/50">Per Course</div></div>
-                  <div className="glass rounded-2xl p-4"><div className="font-black text-xl">12+</div><div className="text-[11px] text-white/50">Courses</div></div>
+                  <div className="glass rounded-2xl p-4"><div className="font-black text-xl">{live.length}+</div><div className="text-[11px] text-white/50">Courses</div></div>
                   <div className="glass rounded-2xl p-4"><div className="font-black text-xl">24/7</div><div className="text-[11px] text-white/50">Access</div></div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Learning Paths */}
+      <section className="py-20">
+        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-end justify-between gap-6 mb-10">
+            <div>
+              <div className="inline-flex items-center gap-2 text-[11px] font-bold tracking-widest text-green-300 mb-3"><Map className="h-4 w-4" /> CAREER ROADMAPS</div>
+              <h2 className="font-display font-bold text-[32px] md:text-[40px] leading-none">Follow a <span className="text-gradient">Learning Path</span></h2>
+              <p className="mt-3 text-white/60 max-w-[520px]">Don't learn randomly. Follow structured paths from Beginner → Advanced and build a career step by step.</p>
+            </div>
+            <Link to="/learning-paths" className="btn-secondary gap-2">ALL PATHS <ArrowRight className="h-4 w-4" /></Link>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {learningPaths.slice(0, 4).map((p) => (
+              <Link key={p.id} to="/learning-paths" className="glass rounded-[24px] p-6 hover:border-green-400/40 transition group">
+                <div className="text-5xl">{p.icon}</div>
+                <h3 className="font-bold text-lg mt-3 group-hover:text-green-300">{p.title}</h3>
+                <p className="text-sm text-white/50 mt-1.5 leading-relaxed line-clamp-2">{p.desc}</p>
+                <div className="text-xs text-green-300 font-bold mt-3">{p.courseSlugs?.length || 0} courses • {p.level}</div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* DanTECH AI */}
+      <section className="py-10">
+        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+          <div className="relative rounded-[32px] overflow-hidden bg-gradient-to-br from-violet-600/20 via-purple-600/15 to-indigo-600/20 border border-purple-500/25 p-8 md:p-12">
+            <div className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-purple-500/25 blur-[100px]" />
+            <div className="relative grid md:grid-cols-[1fr_1fr] gap-8 items-center">
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 text-[11px] font-bold text-purple-200 tracking-widest"><Bot className="h-4 w-4" /> AI LEARNING ASSISTANT</div>
+                <h2 className="font-display font-bold text-[32px] md:text-[40px] leading-tight">Meet <span className="text-gradient">DanTECH AI</span> 🤖</h2>
+                <p className="text-white/60 leading-relaxed">Your personal AI tutor built into every lesson. Ask questions, get examples, test yourself with quizzes and flashcards — 24/7, in simple language.</p>
+                <div className="flex flex-wrap gap-2">
+                  {['Explains lessons', 'Gives examples', 'Quizzes you', 'Code help', 'Study plans'].map((f) => (
+                    <span key={f} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full glass text-xs font-bold"><CheckCircle2 className="h-3.5 w-3.5 text-purple-300" /> {f}</span>
+                  ))}
+                </div>
+                <Link to="/register" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-gradient-to-r from-violet-500 to-indigo-600 font-bold shadow-[0_0_25px_rgba(139,92,246,0.5)] hover:scale-105 transition">TRY DANTECH AI FREE <ArrowRight className="h-4 w-4" /></Link>
+              </div>
+              <div className="glass-strong rounded-[24px] p-5 space-y-3 max-w-[420px] mx-auto w-full">
+                <div className="flex justify-end"><div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-sm">Explain video editing like I'm 10 🎬</div></div>
+                <div className="flex justify-start"><div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5 bg-white/[0.06] border border-white/10 text-sm"><span className="text-[10px] font-black text-purple-300">✨ DANTECH AI</span><br />Video editing is like arranging your favorite photos in a storybook — you cut the boring parts, keep the fun parts, and add music! 🎥</div></div>
+                <div className="flex justify-end"><div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-sm">Test me on this 📝</div></div>
+                <div className="text-center text-[11px] text-white/30 pt-1">Available inside every lesson for enrolled students</div>
               </div>
             </div>
           </div>
@@ -238,6 +301,55 @@ export default function Home() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {featured.map(c => (
               <CourseCard key={c.id} course={c} onEnroll={(course) => navigate(`/course/${course.slug}`)} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Career + Testimonials + FAQ */}
+      <section className="py-16">
+        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-8">
+          <Link to="/career-hub" className="rounded-[32px] bg-gradient-to-br from-cyan-500/15 to-blue-600/15 border border-cyan-500/25 p-8 md:p-10 hover:border-cyan-400/50 transition group">
+            <div className="inline-flex items-center gap-2 text-[11px] font-bold tracking-widest text-cyan-300 mb-3"><Briefcase className="h-4 w-4" /> WOLI DAN CAREER HUB</div>
+            <h3 className="font-display font-bold text-[28px] leading-tight">From Learning → <span className="text-gradient">Earning</span></h3>
+            <p className="text-white/60 mt-3 leading-relaxed">CV guides, portfolio advice, freelancing playbook and a showcase of real student projects. Skills pay when the world can see them.</p>
+            <span className="inline-flex items-center gap-2 mt-5 font-bold text-cyan-300 group-hover:gap-3 transition-all">EXPLORE CAREER HUB <ArrowRight className="h-4 w-4" /></span>
+          </Link>
+          <div className="glass rounded-[32px] p-8 md:p-10">
+            <div className="inline-flex items-center gap-2 text-[11px] font-bold tracking-widest text-amber-300 mb-4"><Star className="h-4 w-4" /> STUDENT STORIES</div>
+            <div className="space-y-4">
+              {[
+                { n: 'Adaeze O.', t: 'I went from zero to editing videos for clients in 6 weeks. The practical tasks made all the difference!', c: 'Video Editing' },
+                { n: 'Ibrahim M.', t: 'DanTECH AI explains things better than most humans 😅. I ask questions anytime I get stuck.', c: 'AI & Python' },
+                { n: 'Chioma E.', t: 'My certificate verified instantly and my portfolio got me my first design gig. Worth every naira!', c: 'Graphic Design' },
+              ].map((t) => (
+                <div key={t.n} className="rounded-2xl bg-white/[0.03] border border-white/10 p-4">
+                  <div className="text-amber-300 text-sm">★★★★★</div>
+                  <p className="text-sm text-white/75 mt-1 leading-relaxed">"{t.t}"</p>
+                  <div className="text-xs text-white/40 mt-2 font-bold">{t.n} • {t.c}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="pb-16">
+        <div className="mx-auto max-w-[860px] px-4 sm:px-6 lg:px-8">
+          <h2 className="font-display font-bold text-[28px] md:text-[36px] text-center">Frequently Asked <span className="text-gradient">Questions</span></h2>
+          <div className="mt-8 space-y-3">
+            {[
+              { q: 'How do I pay for a course?', a: 'Transfer the exact amount to our Moniepoint account (69852663361), upload your receipt on the enroll page, and get access once admin approves — usually within hours.' },
+              { q: 'Do I get a certificate?', a: 'Yes! Complete all lessons, pass the quizzes and get your assignments approved to earn a verifiable certificate with a unique ID and QR code.' },
+              { q: 'What is DanTECH AI?', a: 'DanTECH AI is your built-in AI learning assistant. It explains lessons, gives examples, quizzes you, and helps with code — available 24/7 inside every lesson.' },
+              { q: 'I\'m a complete beginner. Can I cope?', a: 'Absolutely. Most courses start from zero, and learning paths guide you step by step from Beginner to Advanced.' },
+              { q: 'Do courses expire?', a: 'No. You get lifetime access to every course you enroll in, including all future updates.' },
+            ].map((f, i) => (
+              <details key={i} className="glass rounded-2xl overflow-hidden group">
+                <summary className="flex items-center justify-between p-5 cursor-pointer font-bold text-sm list-none">{f.q}<ChevronDown className="h-4 w-4 text-cyan-300 group-open:rotate-180 transition shrink-0" /></summary>
+                <p className="px-5 pb-5 text-sm text-white/60 leading-relaxed">{f.a}</p>
+              </details>
             ))}
           </div>
         </div>
