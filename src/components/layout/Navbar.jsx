@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, LogOut, LayoutDashboard, User, Shield, CreditCard, BookOpen, Search } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, User, Shield, CreditCard, BookOpen, Search, FileText, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCourses } from '../../context/CourseContext';
 
@@ -14,9 +14,11 @@ export default function Navbar() {
 
   const navLinks = [
     { to: '/', label: 'Home' },
-    { to: '/courses', label: 'Courses' },
+    { to: '/courses', label: 'Skills Library' },
     { to: '/learning-paths', label: 'Paths' },
     { to: '/career-hub', label: 'Career' },
+    { to: '/cv-builder', label: 'CV Builder' },
+    ...(user && !isAdmin ? [{ to: '/ai', label: 'AI' }] : []),
     { to: '/verify-certificate', label: 'Verify' },
   ];
 
@@ -111,6 +113,14 @@ export default function Navbar() {
                 {l.label}
               </Link>
             ))}
+            <Link to="/cv-builder" onClick={() => setOpen(false)} className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-600 text-black font-black text-sm">
+              <FileText className="h-4 w-4" /> CREATE YOUR PROFESSIONAL CV — FREE
+            </Link>
+            {user && !isAdmin && (
+              <Link to="/ai" onClick={() => setOpen(false)} className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-purple-400/40 bg-purple-500/10 text-purple-200 font-bold text-sm">
+                <Sparkles className="h-4 w-4" /> Open DanTECH AI Full Page
+              </Link>
+            )}
             <div className="pt-4 border-t border-white/10 space-y-3">
               {user ? (
                 <>

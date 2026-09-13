@@ -245,3 +245,25 @@ export const SUGGESTED_PROMPTS = [
   'Summarize',
   'Help me understand',
 ];
+
+// ---------- AI MODES ----------
+// Modes are prompt configurations, NOT different models — the UI says so.
+export const AI_MODES = [
+  { id: 'quick', name: 'Quick Answer', icon: '⚡', hint: 'Short, direct answers', prefix: 'Give a short, direct answer (2–4 sentences) to: ' },
+  { id: 'deep', name: 'Deep Explanation', icon: '🔍', hint: 'Thorough, structured teaching', prefix: 'Give a deep, structured explanation (definition → how it works → example → common mistakes) of: ' },
+  { id: 'study', name: 'Study Mode', icon: '📚', hint: 'Learn step by step, then get tested', prefix: 'Teach me step by step, then end with 3 check questions on: ' },
+  { id: 'coding', name: 'Coding Mode', icon: '💻', hint: 'Code-first answers with examples', prefix: 'Answer as a senior developer: working code, brief explanation, and gotchas for: ' },
+  { id: 'research', name: 'Research Mode', icon: '🧪', hint: 'Balanced comparisons and context', prefix: 'Give a balanced research-style overview (context, key points, trade-offs, what to verify) of: ' },
+  { id: 'career', name: 'Career Mode', icon: '💼', hint: 'Jobs, CVs, freelancing & growth', prefix: 'Give practical career advice (steps, realistic expectations, next actions) about: ' },
+];
+
+export const QUICK_ACTIONS = [
+  { id: 'explain', label: 'EXPLAIN', prompt: 'Explain this lesson in simple terms.' },
+  { id: 'simplify', label: 'SIMPLIFY', prompt: 'Explain this like I am a complete beginner.' },
+  { id: 'example', label: 'EXAMPLE', prompt: 'Give me a worked example.' },
+  { id: 'quiz', label: 'QUIZ ME', prompt: 'Quiz me with 5 questions on this topic. Ask them one at a time.' },
+  { id: 'practice', label: 'PRACTICE', prompt: 'Give me a practical exercise I can do right now.' },
+  { id: 'summarize', label: 'SUMMARIZE', prompt: 'Summarize this lesson in 5 bullet points.' },
+  { id: 'debug', label: 'DEBUG', prompt: 'Help me debug an issue (I will paste my code).' },
+  { id: 'deeper', label: 'GO DEEPER', prompt: 'Go deeper — explain the advanced version of this topic.' },
+];

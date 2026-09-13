@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
-import { Sparkles, X, Send, Plus, Trash2, History } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Sparkles, X, Send, Plus, Trash2, History, Square, Copy, Check, RefreshCw, Maximize2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCourses } from '../../context/CourseContext';
 import { useLMS } from '../../context/LMSContext';
-import { askDanTech, buildCourseIndex, SUGGESTED_PROMPTS, DANTECH_NAME, isCloudDanTechEnabled } from '../../lib/dantech';
+import { askDanTech, buildCourseIndex, SUGGESTED_PROMPTS, DANTECH_NAME, isCloudDanTechEnabled, AI_MODES, QUICK_ACTIONS } from '../../lib/dantech';
 import { renderLessonMarkdown, downloadAsFile } from '../../lib/lms';
 
 function withCopyButtons(html) {
@@ -25,8 +25,11 @@ export default function DanTechAI() {
   const [convoId, setConvoId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [mode, setMode] = useState('quick');
+  const [copiedIdx, setCopiedIdx] = useState(null);
   const bottomRef = useRef(null);
   const boxRef = useRef(null);
+  const ctrlRef = useRef(null);
 
   const enabled = siteSettings?.dantechEnabled !== false;
   const isStudent = user && user.role !== 'admin';
@@ -87,28 +90,49 @@ export default function DanTechAI() {
     }
   };
 
-  const send = async (text) => {
+  const send = async (text, opts = {}) => {
     const msg = (text ?? input).trim();
     if (!msg || thinking) return;
     const userMsg = { role: 'user', text: msg, createdAt: new Date().toISOString() };
-    const next = [...messages, userMsg];
+    const base = opts.base || messages;
+    const next = [...base, userMsg];
     setMessages(next);
     setInput('');
     setThinking(true);
+    const mObj = AI_MODES.find((x) => x.id === mode);
+    const prompt = mObj?.prefix ? `${mObj.prefix}${msg}` : msg;
+    const ctrl = new AbortController();
+    ctrlRef.current = ctrl;
     try {
-      const reply = await askDanTech(msg, {
+      const reply = await askDanTech(prompt, {
         context: { courseId: course?.id, lessonId: lesson?.id, level: course?.level },
         history: next.map((x) => ({ role: x.role, text: x.text })),
+        signal: ctrl.signal, mode,
         index, course, lesson, nextLesson, progress,
       });
-      const final = [...next, { role: 'ai', text: reply.text, sources: reply.sources || [], createdAt: new Date().toISOString() }];
+      const final = [...next, { role: 'ai', text: reply.text, sources: reply.sources || [], mode, createdAt: new Date().toISOString() }];
       setMessages(final);
       persist(final);
     } catch (err) {
-      setMessages([...next, { role: 'ai', text: `Hmm, I hit a snag. Please try again in a moment. (Error: ${err.message})`, createdAt: new Date().toISOString() }]);
+      if (err?.name === 'AbortError') {
+        setMessages([...next, { role: 'ai', text: '_Stopped. Ask me to continue or rephrase._', mode, createdAt: new Date().toISOString() }]);
+      } else {
+        setMessages([...next, { role: 'ai', text: `Hmm, I hit a snag. Please try again in a moment. (Error: ${err.message})`, createdAt: new Date().toISOString() }]);
+      }
     } finally {
       setThinking(false);
+      ctrlRef.current = null;
     }
+  };
+
+  const stopGen = () => ctrlRef.current?.abort();
+  const regenerate = () => {
+    const lastUser = [...messages].reverse().find((x) => x.role === 'user');
+    if (!lastUser || thinking) return;
+    send(lastUser.text, { base: messages.slice(0, Math.max(0, messages.length - 2)) });
+  };
+  const copyMsg = async (text, idx) => {
+    try { await navigator.clipboard.writeText(text); setCopiedIdx(idx); setTimeout(() => setCopiedIdx(null), 1500); } catch { /* noop */ }
   };
 
   const newChat = () => { setMessages([]); setConvoId(null); setShowHistory(false); };
@@ -155,9 +179,20 @@ export default function DanTechAI() {
               <div className="font-black flex items-center gap-1.5">{DANTECH_NAME} <Sparkles className="h-3.5 w-3.5" /></div>
               <div className="text-[11px] text-white/70 truncate">Your AI Learning Assistant {course ? `• 📖 ${course.title.slice(0, 26)}` : ''}</div>
             </div>
+            <Link to="/ai" onClick={() => setOpen(false)} title="Open full page" className="h-8 w-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25"><Maximize2 className="h-4 w-4" /></Link>
             <button onClick={() => setShowHistory(!showHistory)} title="History" className="h-8 w-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25"><History className="h-4 w-4" /></button>
             <button onClick={newChat} title="New chat" className="h-8 w-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25"><Plus className="h-4 w-4" /></button>
             <button onClick={() => setOpen(false)} className="h-8 w-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25"><X className="h-4 w-4" /></button>
+          </div>
+
+          {/* AI modes */}
+          <div className="px-3 pt-2.5 pb-1 flex gap-1.5 overflow-x-auto bg-white/[0.03]" role="tablist" aria-label="AI modes">
+            {AI_MODES.map((mm) => (
+              <button key={mm.id} role="tab" aria-selected={mode === mm.id} onClick={() => setMode(mm.id)} title={mm.hint}
+                className={`whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-bold transition ${mode === mm.id ? 'bg-cyan-400 text-black' : 'glass text-white/50 hover:text-white'}`}>
+                {mm.icon} {mm.name}
+              </button>
+            ))}
           </div>
 
           {showHistory ? (
@@ -202,6 +237,16 @@ export default function DanTechAI() {
                       {msg.sources?.length > 0 && (
                         <div className="mt-2 pt-2 border-t border-white/10 text-[10px] text-white/40">📚 Sources: {msg.sources.map((s) => s.lessonTitle).join(' • ').slice(0, 120)}</div>
                       )}
+                      {msg.role === 'ai' && (
+                        <div className="flex gap-1 mt-2">
+                          <button onClick={() => copyMsg(msg.text, i)} title="Copy answer" className="h-6 px-2 rounded-full bg-white/5 text-[10px] font-bold text-white/50 hover:text-white flex items-center gap-1">
+                            {copiedIdx === i ? <><Check className="h-3 w-3 text-cyan-300" /> Copied</> : <><Copy className="h-3 w-3" /> Copy</>}
+                          </button>
+                          {i === messages.length - 1 && !thinking && (
+                            <button onClick={regenerate} title="Regenerate" className="h-6 px-2 rounded-full bg-white/5 text-[10px] font-bold text-white/50 hover:text-white flex items-center gap-1"><RefreshCw className="h-3 w-3" /> Retry</button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -219,11 +264,11 @@ export default function DanTechAI() {
 
               {/* Suggested follow-ups */}
               {messages.length > 0 && (
-                <div className="px-3 pb-1 flex gap-1.5 overflow-x-auto">
-                  {['Give me an example', 'Test me', 'Summarize'].map((s) => (
-                    <button key={s} onClick={() => send(s)} className="whitespace-nowrap px-3 py-1 rounded-full glass text-[11px] font-bold">{s}</button>
+                <div className="px-3 pb-1 flex gap-1.5 overflow-x-auto" aria-label="Quick actions">
+                  {QUICK_ACTIONS.map((qa) => (
+                    <button key={qa.id} onClick={() => send(qa.prompt)} disabled={thinking} className="whitespace-nowrap px-3 py-1 rounded-full glass text-[10px] font-bold text-white/60 hover:text-cyan-300 disabled:opacity-40">{qa.label}</button>
                   ))}
-                  <button onClick={exportChat} className="whitespace-nowrap px-3 py-1 rounded-full glass text-[11px] font-bold">Export</button>
+                  <button onClick={exportChat} className="whitespace-nowrap px-3 py-1 rounded-full glass text-[10px] font-bold">Export</button>
                 </div>
               )}
 
@@ -234,9 +279,13 @@ export default function DanTechAI() {
                   placeholder={lesson ? `Ask about "${lesson.title.slice(0, 30)}..."` : `Ask ${DANTECH_NAME} anything...`}
                   className="flex-1 h-11 rounded-full glass px-4 text-sm focus:outline-none focus:border-purple-400/50"
                 />
-                <button disabled={thinking || !input.trim()} className="h-11 w-11 rounded-full bg-gradient-to-r from-violet-500 to-indigo-600 flex items-center justify-center disabled:opacity-40 shrink-0">
-                  <Send className="h-4 w-4" />
-                </button>
+                {thinking ? (
+                  <button type="button" onClick={stopGen} title="Stop" className="h-11 w-11 rounded-full bg-red-500/90 flex items-center justify-center shrink-0"><Square className="h-4 w-4" /></button>
+                ) : (
+                  <button disabled={!input.trim()} className="h-11 w-11 rounded-full bg-gradient-to-r from-violet-500 to-indigo-600 flex items-center justify-center disabled:opacity-40 shrink-0">
+                    <Send className="h-4 w-4" />
+                  </button>
+                )}
               </form>
               <div className="px-4 pb-2.5 text-[10px] text-white/30 text-center">
                 {DANTECH_NAME} guides your learning — it won't do assignments for you 🙂 {isCloudDanTechEnabled() ? '• Cloud AI' : '• On-device'}

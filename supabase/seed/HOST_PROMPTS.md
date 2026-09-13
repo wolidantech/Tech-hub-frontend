@@ -124,17 +124,22 @@ Paste and run each file from supabase/migrations/ IN THIS ORDER:
   6. 006_payment_notes.sql       — payment note column (bank-transfer flow)
   7. 007_classroom_upgrade.sql   — lesson types, lesson_activity (start/video
                                    tracking), lesson descriptions
+  8. 008_cv_builder_and_study_tools.sql — CV documents + study notes/bookmarks
+                                   (own-rows RLS) for the free CV builder & AI
 
 STEP 3 — SEED + PUBLISH THE FULL CATALOG (one paste)
 Paste and run supabase/seed/setup_full_catalog.sql. It seeds the 12 courses,
 then for every course: 4 modules × 4 lessons, full teaching bodies, curated
 resources, one real YouTube video per lesson, ONE FINAL QUIZ (10 questions),
 ONE FINAL PROJECT assignment, certificate completion rules — and publishes.
-Expected end state: 12 published courses, 192 lessons, 192 videos,
-12 quizzes / 120 questions, 12 final projects.
+It also seeds 4 LEARNING PATHS (Web & Mobile Developer, Digital Creator,
+Office Productivity Pro, Digital Business Growth) whose steps resolve to
+real course ids via subselect. Expected end state: 12 published courses,
+192 lessons, 192 videos, 12 quizzes / 120 questions, 12 final projects,
+4 published learning paths.
 
 STEP 4 — VERIFY
-Run this in SQL Editor; results must be 12 / 48 / 192 / 192 / 12 / 12 / 12:
+Run this in SQL Editor; results must be 12 / 48 / 192 / 192 / 12 / 12 / 12 / 4 / 0:
   select
     (select count(*) from courses)                                     as courses,
     (select count(*) from course_modules)                              as modules,
@@ -142,10 +147,14 @@ Run this in SQL Editor; results must be 12 / 48 / 192 / 192 / 12 / 12 / 12:
     (select count(*) from course_videos)                               as videos,
     (select count(*) filter (where published) from courses)            as published,
     (select count(*) from quizzes where is_final)                      as final_quizzes,
-    (select count(*) from assignments where is_final_project)          as final_projects;
+    (select count(*) from assignments where is_final_project)          as final_projects,
+    (select count(*) from learning_paths where is_published)           as learning_paths,
+    (select count(*) from learning_paths lp
+       cross join lateral unnest(lp.course_ids) cid
+       where not exists (select 1 from courses c where c.id = cid))    as broken_path_steps;
 Optional full proof on any machine with Node:
   cd supabase/verify && npm install && npm run verify && npm run verify:seed
-(must print "44 passed, 0 failed" and "29 passed, 0 failed").
+(must print "45 passed, 0 failed" and "34 passed, 0 failed").
 
 STEP 5 — CREATE THE OWNER/ADMIN ACCOUNT
 - In the app (or Supabase Auth UI) sign up the owner email — this creates

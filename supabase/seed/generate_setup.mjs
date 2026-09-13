@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (f) => readFileSync(join(here, f), 'utf8').trim();
 
-const parts = ['seed_12_courses.sql', 'seed_curriculum.sql', 'publish_courses.sql'];
+const parts = ['seed_12_courses.sql', 'seed_curriculum.sql', 'publish_courses.sql', 'seed_learning_paths.sql'];
 
 const header = `-- ============================================================
 -- WOLI DAN TECH HUB — ONE-STEP CATALOG SETUP
@@ -26,14 +26,16 @@ const header = `-- ============================================================
 --
 -- Paste this ENTIRE file into Supabase Dashboard -> SQL Editor -> Run.
 -- It is the concatenation, in order, of:
---   1. seed_12_courses.sql   — the 12 launch courses (as drafts)
---   2. seed_curriculum.sql   — their modules, lessons and text bodies
---   3. publish_courses.sql   — flips published = true on courses with lessons
+--   1. seed_12_courses.sql       — the 12 launch courses (as drafts)
+--   2. seed_curriculum.sql       — their modules, lessons and text bodies
+--   3. publish_courses.sql       — flips published = true on courses with lessons
+--   4. seed_learning_paths.sql   — 4 guided learning paths over the live catalog
 --
--- Run AFTER migrations 001-005. Idempotent: safe to re-run; never duplicates
+-- Run AFTER migrations 001-008. Idempotent: safe to re-run; never duplicates
 -- rows and never unpublishes a course you deliberately hid.
 --
--- Expected end state: 12 published courses with real lesson counts.
+-- Expected end state: 12 published courses with real lesson counts and
+-- 4 published learning paths that reference real course ids.
 -- Verify with:
 --   select count(*) filter (where published) as published,
 --          count(*) as total from public.courses;

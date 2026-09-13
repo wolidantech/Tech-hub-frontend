@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
-import { ArrowRight, Play, CheckCircle2, GraduationCap, Users, Monitor, Award, Sparkles, Zap, Globe, BookOpen, MessageCircle, Search, Map, Bot, Star, ChevronDown, Briefcase } from 'lucide-react';
+import { ArrowRight, Play, CheckCircle2, GraduationCap, Users, Monitor, Award, Sparkles, Zap, Globe, BookOpen, MessageCircle, Search, Map, Bot, Star, ChevronDown, Briefcase, FileText } from 'lucide-react';
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import CourseCard from '../components/course/CourseCard';
@@ -56,6 +56,9 @@ export default function Home() {
               <div className="flex flex-wrap gap-3">
                 <Link to="/courses" className="btn-primary gap-2 text-[14px] !px-8 !py-4">
                   START LEARNING <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link to="/cv-builder" className="btn-secondary gap-2 !px-8 !py-4">
+                  <FileText className="h-4 w-4" /> CREATE YOUR PROFESSIONAL CV
                 </Link>
                 <Link to="/learning-paths" className="btn-secondary gap-2 !px-8 !py-4">
                   <Map className="h-4 w-4" /> CAREER PATHS

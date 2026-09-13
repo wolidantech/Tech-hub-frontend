@@ -37,6 +37,8 @@ const CertificateView = lazy(() => import('./pages/CertificateView'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Admin = lazy(() => import('./pages/Admin'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
+const CVBuilder = lazy(() => import('./pages/CVBuilder'));
+const AIPage = lazy(() => import('./pages/AIPage'));
 
 const RouteLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-[#020a1f]">
@@ -103,6 +105,7 @@ function GatedApp() {
               <Route path="/certificates/verify" element={<Layout><VerifyCertificate /></Layout>} />
               <Route path="/learning-paths" element={<Layout><LearningPaths /></Layout>} />
               <Route path="/career-hub" element={<Layout><CareerHub /></Layout>} />
+              <Route path="/cv-builder" element={lazyEl(<Layout><CVBuilder /></Layout>)} />
               <Route path="/student/:id" element={<StudentPortfolio />} />
               <Route path="/search" element={<Layout><Search /></Layout>} />
               <Route path="/forgot-password" element={<Layout><ForgotPassword /></Layout>} />
@@ -120,6 +123,7 @@ function GatedApp() {
               <Route path="/certificates" element={lazyEl(<ProtectedRoute><Layout><Certificates /></Layout></ProtectedRoute>)} />
               <Route path="/profile" element={lazyEl(<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>)} />
               <Route path="/onboarding" element={lazyEl(<ProtectedRoute><Onboarding /></ProtectedRoute>)} />
+              <Route path="/ai" element={lazyEl(<ProtectedRoute><AIPage /></ProtectedRoute>)} />
 
               <Route path="/admin" element={<AdminRedirect />} />
               <Route path="/admin/dashboard" element={lazyEl(<AdminRoute><Layout><Admin /></Layout></AdminRoute>)} />

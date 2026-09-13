@@ -9,6 +9,15 @@ export default function Footer() {
       <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[600px] w-[800px] rounded-full bg-gradient-to-r from-cyan-500/10 to-blue-600/10 blur-[120px] pointer-events-none" />
 
       <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+        {/* CV CTA strip */}
+        <div className="mt-12 rounded-3xl border border-cyan-400/25 bg-gradient-to-r from-cyan-500/15 via-blue-600/10 to-purple-600/15 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div>
+            <div className="font-display font-black text-xl md:text-2xl">Need a job-ready CV today?</div>
+            <p className="text-sm text-white/60 mt-1">Create a professional CV in minutes — free, no account required. Download as PDF instantly.</p>
+          </div>
+          <Link to="/cv-builder" className="shrink-0 btn-primary !py-3.5 !px-7 !text-sm whitespace-nowrap">CREATE YOUR PROFESSIONAL CV</Link>
+        </div>
+
         <div className="py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           <div className="space-y-5">
             <div className="flex items-center gap-3">
@@ -37,7 +46,10 @@ export default function Footer() {
             <ul className="space-y-3 text-sm text-white/60">
               {[
                 ['Home', '/'],
-                ['Courses', '/courses'],
+                ['Global Skills Library', '/courses'],
+                ['Learning Paths', '/learning-paths'],
+                ['Career Hub', '/career-hub'],
+                ['CV Builder — Free', '/cv-builder'],
                 ['About', '/about'],
                 ['Contact', '/contact'],
                 ['Login', '/login'],

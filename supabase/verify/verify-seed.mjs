@@ -60,11 +60,11 @@ async function tErr(name, fn, match) {
 for (const f of [
   '001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql',
   '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql',
-  '007_classroom_upgrade.sql',
+  '007_classroom_upgrade.sql', '008_cv_builder_and_study_tools.sql',
 ]) {
   await db.exec(read(join(here, '../migrations', f)));
 }
-console.log('migrations 001-007 applied clean');
+console.log('migrations 001-008 applied clean');
 
 // ---------- 2. catalog seed ----------
 await db.exec(read(join(here, '../seed/seed_12_courses.sql')));
@@ -245,6 +245,42 @@ await t('re-running publish_courses is stable', async () => {
   assert(before === after, `published count moved from ${before} to ${after}`);
 });
 
+// ---------- 5b. learning paths ----------
+await db.exec(read(join(here, '../seed/seed_learning_paths.sql')));
+
+await t('learning paths seed ships 4 published, multi-step paths', async () => {
+  const n = await count(`select count(*)::int as n from learning_paths where is_published`);
+  assert(n === 4, `expected 4 published learning paths, got ${n}`);
+  const titles = ['Web & Mobile Developer', 'Digital Creator', 'Office Productivity Pro', 'Digital Business Growth'];
+  for (const t of titles) {
+    const c = await count(`select count(*)::int as n from learning_paths where title = $1`, [t]);
+    assert(c === 1, `learning path "${t}" missing or duplicated`);
+  }
+});
+
+await t('every learning path step resolves to a real course', async () => {
+  const bad = await count(`
+    select count(*)::int as n from learning_paths lp
+    cross join lateral unnest(lp.course_ids) as cid
+    where not exists (select 1 from courses c where c.id = cid)`);
+  assert(bad === 0, `${bad} path steps point at courses that do not exist`);
+  const short = await count(`select count(*)::int as n from learning_paths where array_length(course_ids, 1) < 3`);
+  assert(short === 0, `${short} paths have fewer than 3 steps`);
+});
+
+await t('re-running the learning paths seed never duplicates', async () => {
+  await db.exec(read(join(here, '../seed/seed_learning_paths.sql')));
+  const n = await count(`select count(*)::int as n from learning_paths`);
+  assert(n === 4, `expected 4 paths after re-run, got ${n}`);
+});
+
+await t('CV builder + study tools tables exist for the seeded storefront', async () => {
+  for (const tbl of ['cv_documents', 'study_notes', 'study_bookmarks']) {
+    const c = await count(`select count(*)::int as n from information_schema.tables where table_name = $1`, [tbl]);
+    assert(c === 1, `${tbl} missing (migration 008)`);
+  }
+});
+
 // ---------- 6. admin bootstrap ----------
 const ADMIN_EMAIL = 'owner@wolidantech.com';
 await db.exec(`insert into auth.users (id, email, raw_user_meta_data)
@@ -290,7 +326,7 @@ await fresh.exec(read(join(here, 'stubs.sql')));
 for (const f of [
   '001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql',
   '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql',
-  '007_classroom_upgrade.sql',
+  '007_classroom_upgrade.sql', '008_cv_builder_and_study_tools.sql',
 ]) {
   await fresh.exec(read(join(here, '../migrations', f)));
 }
@@ -336,8 +372,20 @@ await t('one-step setup is idempotent on re-run', async () => {
   const total = await fcount(`select count(*)::int as n from courses`);
   const lessons = await fcount(`select count(*)::int as n from course_lessons`);
   const videos = await fcount(`select count(*)::int as n from course_videos`);
+  const paths = await fcount(`select count(*)::int as n from learning_paths`);
   assert(total === 12 && lessons === 192 && videos === 192,
     `got ${total} courses / ${lessons} lessons / ${videos} videos`);
+  assert(paths === 4, `expected 4 learning paths after re-run, got ${paths}`);
+});
+
+await t('one-step setup ships 4 learning paths wired to real courses', async () => {
+  const paths = await fcount(`select count(*)::int as n from learning_paths where is_published`);
+  assert(paths === 4, `expected 4 published paths, got ${paths}`);
+  const broken = await fcount(`
+    select count(*)::int as n from learning_paths lp
+    cross join lateral unnest(lp.course_ids) as cid
+    where not exists (select 1 from courses c where c.id = cid)`);
+  assert(broken === 0, `${broken} path steps reference nonexistent courses`);
 });
 
 // ---------- summary ----------
