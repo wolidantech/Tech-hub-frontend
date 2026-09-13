@@ -26,6 +26,9 @@ export const CourseProvider = ({ children }) => {
 
   const [courses, setCourses] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
+  // Last catalog failure, kept so the UI can say WHY it is empty instead of
+  // showing a bare "No courses found" (which reads like a search miss).
+  const [coursesError, setCoursesError] = useState(null);
   const [detailIds, setDetailIds] = useState(() => new Set());
   const [enrollments, setEnrollments] = useState([]);
   const [manualPayments, setManualPayments] = useState([]);
@@ -41,6 +44,7 @@ export const CourseProvider = ({ children }) => {
     setCoursesLoading(true);
     try {
       const list = await fetchCourses();
+      setCoursesError(null);
       setCourses((prev) => {
         // Preserve already-loaded curriculum details across refreshes
         const details = new Map(prev.filter((c) => c.curriculum).map((c) => [c.id, c.curriculum]));
@@ -52,6 +56,7 @@ export const CourseProvider = ({ children }) => {
       } catch { /* non-fatal: bundle names fall back */ }
     } catch (err) {
       console.error('[courses] failed to load catalog:', err.message);
+      setCoursesError(err?.message || 'Could not load the course catalog.');
     } finally {
       setCoursesLoading(false);
     }
@@ -425,6 +430,7 @@ export const CourseProvider = ({ children }) => {
     <CourseContext.Provider value={{
       courses,
       coursesLoading,
+      coursesError,
       dataLoading,
       ensureCourseDetail,
       refreshCourses,

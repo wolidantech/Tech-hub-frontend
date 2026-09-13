@@ -5,8 +5,19 @@
 import { createClient } from '@supabase/supabase-js';
 import { ALLOWED_SUBMISSION_TYPES, MAX_SUBMISSION_BYTES } from './lms';
 
-const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY || '';
+// Env values are pasted by hand into .env or a hosting dashboard, where a stray
+// trailing newline, space or wrapping quote is easy to introduce. Any of them
+// makes every fetch throw "TypeError: Failed to fetch" — which surfaces as a
+// generic "Network error" — while isSupabaseConfigured() still reports true, so
+// SetupGate waves the app through and the whole site silently fails. Normalize.
+const cleanEnv = (v) => String(v ?? '').trim().replace(/^["']|["']$/g, '').trim();
+
+// Exported so backendHealth.js normalizes identically — diagnostics that probed
+// a different URL than the client uses would be actively misleading.
+export { cleanEnv };
+
+const SUPABASE_URL = cleanEnv(import.meta.env?.VITE_SUPABASE_URL);
+const SUPABASE_ANON_KEY = cleanEnv(import.meta.env?.VITE_SUPABASE_ANON_KEY);
 
 export const isSupabaseConfigured = () => Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
@@ -42,7 +53,12 @@ export function friendlyError(err, fallback = 'Something went wrong. Please try 
     return 'You do not have permission to do that.';
   }
   if (/jwt expired|invalid jwt|token expired/i.test(msg)) return 'Session expired. Please log in again.';
-  if (/Failed to fetch|NetworkError|network request failed/i.test(msg)) return 'Network error. Check your connection and retry.';
+  if (/Failed to fetch|NetworkError|network request failed/i.test(msg)) {
+    // This fires for a paused project, a mistyped URL, a CORS block or a dead
+    // network — all indistinguishable to the browser. Point at the page that
+    // tells them apart instead of blaming the visitor's connection.
+    return 'Cannot reach the database. Check your connection — if it persists, open /backend-status for diagnostics.';
+  }
   if (/Invalid login credentials/i.test(msg)) return 'Invalid email or password';
   if (/User already registered/i.test(msg)) return 'Email already registered. Try logging in instead.';
   if (/rate limit|too many requests|over_request_rate_limit/i.test(msg + code)) return 'Too many attempts. Please wait a moment and retry.';

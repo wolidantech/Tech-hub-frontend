@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CourseProvider } from './context/CourseContext';
 import { LMSProvider } from './context/LMSContext';
@@ -23,6 +23,7 @@ import Search from './pages/Search';
 import ForgotPassword from './pages/ForgotPassword';
 import UpdatePassword from './pages/UpdatePassword';
 import SetupGate from './components/common/SetupGate';
+import BackendStatus from './pages/BackendStatus';
 
 // Code-split heavy routes for faster mobile loads
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -82,9 +83,9 @@ function AdminRedirect() {
 
 const lazyEl = (el) => <Suspense fallback={<RouteLoader />}>{el}</Suspense>;
 
-export default function App() {
+// The whole storefront + dashboard lives behind SetupGate and the providers.
+function GatedApp() {
   return (
-    <BrowserRouter>
       <SetupGate>
       <AuthProvider>
         <CourseProvider>
@@ -130,6 +131,22 @@ export default function App() {
         </CourseProvider>
       </AuthProvider>
       </SetupGate>
+  );
+}
+
+// /backend-status is deliberately NOT gated. When Supabase is unconfigured or
+// unreachable, SetupGate would otherwise hide the one page that explains why —
+// which is precisely when an administrator needs it.
+function Shell() {
+  const { pathname } = useLocation();
+  if (pathname === '/backend-status') return <BackendStatus />;
+  return <GatedApp />;
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Shell />
     </BrowserRouter>
   );
 }

@@ -1,8 +1,14 @@
 # WOLI DAN TECH HUB — Server Reference
 
-The frontend (`/src`) is fully functional standalone (local store + offline AI
-templates). This folder contains **reference implementations** for going to
-production with a real backend. Nothing here is bundled into the Vite build.
+The frontend (`/src`) is **not** standalone: it requires a Supabase backend for
+all accounts, courses, payments and certificates, and `SetupGate` blocks every
+route until `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are present. See
+[`../supabase/README.md`](../supabase/README.md) for the setup runbook.
+
+The only part of the frontend that degrades gracefully without a server is AI
+generation, which falls back to offline templates. This folder contains the
+**reference implementation** for running AI properly in production. Nothing here
+is bundled into the Vite build.
 
 ## Files
 
@@ -12,9 +18,12 @@ production with a real backend. Nothing here is bundled into the Vite build.
 
 ## Production checklist
 
-1. Create Supabase project → run `supabase/migrations/001_lms_core.sql`.
-2. `npm i @supabase/supabase-js` in frontend; set `VITE_SUPABASE_URL` /
-   `VITE_SUPABASE_ANON_KEY`. Storage buckets are created by the migration.
+1. Create Supabase project → run `supabase/migrations/001`…`005` **in order**,
+   then the seed files and `make_admin.sql`. Storage buckets are created by the
+   migrations; the full sequence is in [`../supabase/README.md`](../supabase/README.md).
+2. `@supabase/supabase-js` is already a dependency. Set `VITE_SUPABASE_URL` /
+   `VITE_SUPABASE_ANON_KEY` (the **anon/publishable** key — never `service_role`)
+   and rebuild.
 3. Deploy the AI gateway on your server with secrets (never in frontend):
    `OPENAI_API_KEY` (or Anthropic/Gemini), `ADMIN_TOKEN`, `ALLOWED_ORIGINS`.
 4. Set `VITE_AI_ENDPOINT` to `https://your-api/api/ai/generate`.

@@ -4,10 +4,11 @@ import { ArrowRight, Play, CheckCircle2, GraduationCap, Users, Monitor, Award, S
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import CourseCard from '../components/course/CourseCard';
+import CatalogEmpty from '../components/common/CatalogEmpty';
 import { useNavigate } from 'react-router-dom';
 
 export default function Home() {
-  const { courses } = useCourses();
+  const { courses, coursesLoading, coursesError } = useCourses();
   const { learningPaths } = useLMS();
   const navigate = useNavigate();
   const [heroSearch, setHeroSearch] = useState('');
@@ -298,11 +299,28 @@ export default function Home() {
             <Link to="/courses" className="btn-secondary gap-2">VIEW ALL COURSES <ArrowRight className="h-4 w-4" /></Link>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featured.map(c => (
-              <CourseCard key={c.id} course={c} onEnroll={(course) => navigate(`/course/${course.slug}`)} />
-            ))}
-          </div>
+          {coursesLoading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="glass rounded-[24px] overflow-hidden animate-pulse">
+                  <div className="aspect-video bg-white/[0.06]" />
+                  <div className="p-5 space-y-3">
+                    <div className="h-3 w-24 rounded bg-white/10" />
+                    <div className="h-4 w-full rounded bg-white/10" />
+                    <div className="h-4 w-2/3 rounded bg-white/10" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : featured.length === 0 ? (
+            <CatalogEmpty error={coursesError} />
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featured.map(c => (
+                <CourseCard key={c.id} course={c} onEnroll={(course) => navigate(`/course/${course.slug}`)} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
