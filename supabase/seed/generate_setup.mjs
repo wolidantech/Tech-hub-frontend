@@ -5,10 +5,9 @@
 //
 //   node supabase/seed/generate_setup.mjs
 //
-// Concatenates, in order: seed_12_courses.sql, seed_curriculum.sql,
-// publish_courses.sql. Generated rather than hand-maintained so it can never
-// drift from its three sources. All three are idempotent, so the combined
-// script is too.
+// Concatenates the four catalog seed files in their required order. Generated
+// rather than hand-maintained so it cannot drift from its sources. Every part
+// is idempotent, so the combined script is too.
 // ============================================================
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -27,14 +26,14 @@ const header = `-- ============================================================
 -- Paste this ENTIRE file into Supabase Dashboard -> SQL Editor -> Run.
 -- It is the concatenation, in order, of:
 --   1. seed_12_courses.sql       — the 12 launch courses (as drafts)
---   2. seed_curriculum.sql       — their modules, lessons and text bodies
---   3. publish_courses.sql       — flips published = true on courses with lessons
+--   2. seed_curriculum.sql       — modules, lessons, bodies, videos + resources
+--   3. publish_courses.sql       — publishes draft courses that have modules
 --   4. seed_learning_paths.sql   — 4 guided learning paths over the live catalog
 --
--- Run AFTER migrations 001-008. Idempotent: safe to re-run; never duplicates
--- rows and never unpublishes a course you deliberately hid.
+-- Run AFTER migrations 001-009. Idempotent: safe to re-run; never duplicates
+-- seed rows and never changes a published course to unpublished.
 --
--- Expected end state: 12 published courses with real lesson counts and
+-- Expected end state: all 12 launch courses published with 16 lessons each and
 -- 4 published learning paths that reference real course ids.
 -- Verify with:
 --   select count(*) filter (where published) as published,

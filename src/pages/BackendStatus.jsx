@@ -50,8 +50,8 @@ export default function BackendStatus() {
         : { tone: 'pass', text: 'Backend is healthy' };
 
   return (
-    <div className="min-h-screen bg-[#020a1f] text-white">
-      <div className="max-w-[820px] mx-auto px-4 py-10 sm:py-14 space-y-6">
+    <div className="mobile-safe-top min-h-screen bg-[#020a1f] text-white">
+      <div className="safe-inline safe-bottom max-w-[820px] mx-auto py-10 sm:py-14 space-y-6">
 
         <a href="/" className="inline-flex items-center gap-2 text-xs font-bold text-white/50 hover:text-white transition">
           <ArrowLeft className="h-3.5 w-3.5" /> BACK TO SITE

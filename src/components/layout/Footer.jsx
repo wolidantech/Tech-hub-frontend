@@ -8,14 +8,14 @@ export default function Footer() {
       <div className="absolute inset-0 bg-gradient-to-t from-blue-900/20 via-transparent to-transparent pointer-events-none" />
       <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[600px] w-[800px] rounded-full bg-gradient-to-r from-cyan-500/10 to-blue-600/10 blur-[120px] pointer-events-none" />
 
-      <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+      <div className="safe-inline safe-bottom relative mx-auto max-w-[1280px] lg:px-8">
         {/* CV CTA strip */}
         <div className="mt-12 rounded-3xl border border-cyan-400/25 bg-gradient-to-r from-cyan-500/15 via-blue-600/10 to-purple-600/15 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div>
             <div className="font-display font-black text-xl md:text-2xl">Need a job-ready CV today?</div>
             <p className="text-sm text-white/60 mt-1">Create a professional CV in minutes — free, no account required. Download as PDF instantly.</p>
           </div>
-          <Link to="/cv-builder" className="shrink-0 btn-primary !py-3.5 !px-7 !text-sm whitespace-nowrap">CREATE YOUR PROFESSIONAL CV</Link>
+          <Link to="/cv-builder" className="w-full sm:w-auto shrink-0 btn-primary !py-3.5 !px-5 sm:!px-7 !text-sm whitespace-normal text-center">CREATE YOUR PROFESSIONAL CV</Link>
         </div>
 
         <div className="py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
@@ -32,10 +32,10 @@ export default function Footer() {
               Making quality digital skills training accessible, practical and affordable for every Nigerian youth.
             </p>
             <div className="flex gap-3">
-              <a href="https://wa.me/2348159610509" target="_blank" className="h-10 w-10 rounded-full glass flex items-center justify-center hover:bg-green-500/20 hover:border-green-500/30 transition">
+              <a aria-label="Chat on WhatsApp" href="https://wa.me/2348159610509" target="_blank" rel="noreferrer" className="h-11 w-11 rounded-full glass flex items-center justify-center hover:bg-green-500/20 hover:border-green-500/30 transition">
                 <MessageCircle className="h-4 w-4" />
               </a>
-              <a href="mailto:info@wolidantech.com" className="h-10 w-10 rounded-full glass flex items-center justify-center hover:bg-white/10 transition">
+              <a aria-label="Email Woli Dan Tech Hub" href="mailto:info@wolidantech.com" className="h-11 w-11 rounded-full glass flex items-center justify-center hover:bg-white/10 transition">
                 <Mail className="h-4 w-4" />
               </a>
             </div>
@@ -56,7 +56,7 @@ export default function Footer() {
                 ['Sign Up', '/register'],
                 ['Verify Certificate', '/verify-certificate'],
               ].map(([label, to]) => (
-                <li key={to}><Link to={to} className="hover:text-cyan-300 transition flex items-center gap-1 group">{label} <ArrowUpRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition" /></Link></li>
+                <li key={to}><Link to={to} className="min-h-11 hover:text-cyan-300 transition inline-flex items-center gap-1 group">{label} <ArrowUpRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition" /></Link></li>
               ))}
             </ul>
           </div>
@@ -74,7 +74,7 @@ export default function Footer() {
                 'UI/UX Design',
                 'Microsoft Office'
               ].map(c => (
-                <li key={c}><Link to="/courses" className="hover:text-cyan-300 transition">{c}</Link></li>
+                <li key={c}><Link to="/courses" className="min-h-11 inline-flex items-center hover:text-cyan-300 transition">{c}</Link></li>
               ))}
             </ul>
           </div>
@@ -82,7 +82,7 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold mb-5 text-sm tracking-wide">CONTACT</h4>
             <div className="space-y-4 text-sm">
-              <a href="https://wa.me/2348159610509" className="flex items-center gap-3 text-white/70 hover:text-white transition">
+              <a href="https://wa.me/2348159610509" className="min-h-11 flex items-center gap-3 text-white/70 hover:text-white transition">
                 <span className="h-8 w-8 rounded-full bg-green-500/20 flex items-center justify-center"><Phone className="h-4 w-4 text-green-400" /></span>
                 WhatsApp: 08159610509
               </a>
@@ -95,7 +95,7 @@ export default function Footer() {
                 Lagos, Nigeria • Online
               </div>
 
-              <a href="https://chat.whatsapp.com/Hj9hsrcYSXHDIPW6DnW73z" target="_blank" className="mt-6 inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#25D366] text-white font-bold text-sm hover:bg-[#20bd5a] transition shadow-[0_0_20px_rgba(37,211,102,0.4)]">
+              <a href="https://chat.whatsapp.com/Hj9hsrcYSXHDIPW6DnW73z" target="_blank" rel="noreferrer" className="mt-6 min-h-11 inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#25D366] text-white font-bold text-sm hover:bg-[#20bd5a] transition shadow-[0_0_20px_rgba(37,211,102,0.4)]">
                 <MessageCircle className="h-4 w-4" /> JOIN WHATSAPP GROUP
               </a>
             </div>

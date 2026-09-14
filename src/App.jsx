@@ -69,9 +69,9 @@ function PublicAdminRoute({ children }) {
 
 function Layout({ children }) {
   return (
-    <div className="min-h-screen flex flex-col bg-[#020a1f]">
+    <div className="min-h-screen max-w-full overflow-x-clip flex flex-col bg-[#020a1f]">
       <Navbar />
-      <main className="flex-1">{children}</main>
+      <main className="app-main flex-1 min-w-0 max-w-full">{children}</main>
       <Footer />
     </div>
   );
@@ -97,6 +97,8 @@ function GatedApp() {
               <Route path="/courses" element={<Layout><Courses /></Layout>} />
               <Route path="/course/:slug" element={<Layout><CourseDetails /></Layout>} />
               <Route path="/courses/:slug" element={<Layout><CourseDetails /></Layout>} />
+              <Route path="/app/courses" element={<Layout><Courses /></Layout>} />
+              <Route path="/app/course/:slug" element={<Layout><CourseDetails /></Layout>} />
               <Route path="/login" element={<Layout><Login /></Layout>} />
               <Route path="/register" element={<Layout><Register /></Layout>} />
               <Route path="/about" element={<Layout><About /></Layout>} />

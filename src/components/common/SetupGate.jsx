@@ -12,8 +12,8 @@ import { isSupabaseConfigured } from '../../lib/supabase';
 export default function SetupGate({ children }) {
   if (isSupabaseConfigured()) return children;
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#020a1f]">
-      <div className="w-full max-w-[600px] glass-strong rounded-[24px] p-8 space-y-6">
+    <div className="mobile-safe-top safe-inline safe-bottom min-h-screen flex items-center justify-center bg-[#020a1f]">
+      <div className="w-full max-w-[600px] glass-strong rounded-[24px] p-5 sm:p-8 space-y-6">
         <div className="text-center space-y-3">
           <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center mx-auto">
             <Database className="h-8 w-8" />
@@ -34,7 +34,7 @@ export default function SetupGate({ children }) {
           </div>
           <ol className="mt-3 text-xs text-white/65 space-y-2 list-decimal pl-5">
             <li>
-              Create a Supabase project and run <span className="font-mono text-white/80">supabase/migrations/001…005</span> in the
+              Create a Supabase project and run <span className="font-mono text-white/80">supabase/migrations/001…009</span> in the
               SQL Editor, <span className="text-white/85 font-semibold">in numeric order</span>. Migration 003 creates the signup
               trigger — skip it and <span className="text-white/85">every login fails</span>.
             </li>

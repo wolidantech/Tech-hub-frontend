@@ -53,6 +53,10 @@ const resourcesJson = (resources) =>
     }))
   ));
 
+const launchSlugs = coursesData
+  .filter((course) => (course.curriculum || []).length)
+  .map((course) => course.slug);
+
 const lines = [];
 lines.push('-- ============================================================');
 lines.push('-- WOLI DAN TECH HUB — Seed: full curriculum (modules, lessons,');
@@ -60,7 +64,8 @@ lines.push('-- bodies, resources and lesson videos)');
 lines.push('-- GENERATED FILE — do not edit by hand.');
 lines.push('-- Regenerate: node supabase/seed/generate_curriculum.mjs');
 lines.push('--');
-lines.push('-- Run AFTER 001-006 and AFTER seed_12_courses.sql, as ONE query.');
+lines.push('-- Run AFTER migrations 001-009 and AFTER seed_12_courses.sql, as ONE query.');
+lines.push('-- Requires lesson resources (003) and expanded lesson types (007).');
 lines.push('-- IDEMPOTENT: modules/lessons matched by (course slug, module title,');
 lines.push('-- lesson title); content upserts; videos matched on (lesson_id, url).');
 lines.push('-- Re-running updates bodies/resources and never duplicates rows.');
@@ -75,6 +80,20 @@ lines.push('-- cards pick up the new totals automatically.');
 lines.push('-- ============================================================');
 lines.push('');
 lines.push('begin;');
+lines.push('');
+lines.push('-- Fail before writing anything if the catalog seed was skipped or drifted.');
+lines.push('do $seed_guard$');
+lines.push('declare missing_slugs text;');
+lines.push('begin');
+lines.push("  select string_agg(required.slug, ', ' order by required.slug)");
+lines.push('    into missing_slugs');
+lines.push(`    from unnest(array[${launchSlugs.map(q).join(', ')}]::text[]) as required(slug)`);
+lines.push('   where not exists (select 1 from public.courses c where c.slug = required.slug);');
+lines.push('  if missing_slugs is not null then');
+lines.push("    raise exception 'seed_curriculum: required course slugs are missing: %', missing_slugs;");
+lines.push('  end if;');
+lines.push('end');
+lines.push('$seed_guard$;');
 lines.push('');
 
 let modules = 0;

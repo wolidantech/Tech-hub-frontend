@@ -58,7 +58,7 @@ function StudyTools({ user, open, onClose }) {
   return (
     <div className="fixed inset-0 z-[70]">
       <button aria-label="Close study tools" onClick={onClose} className="absolute inset-0 bg-black/70" />
-      <div className="absolute right-0 top-0 h-full w-full max-w-[420px] bg-[#04102c] border-l border-white/10 flex flex-col">
+      <div className="mobile-safe-top safe-bottom absolute right-0 top-0 h-[100dvh] w-full max-w-[420px] bg-[#04102c] border-l border-white/10 flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="font-bold flex items-center gap-2"><BookOpen className="h-4 w-4 text-cyan-300" /> STUDY TOOLS</div>
           <button onClick={onClose} className="h-9 w-9 rounded-full glass flex items-center justify-center"><X className="h-4 w-4" /></button>
@@ -225,10 +225,10 @@ export default function AIPage() {
       <StudyTools user={user} open={studyOpen} onClose={() => setStudyOpen(false)} />
 
       {/* Header */}
-      <header className="shrink-0 border-b border-white/10 bg-[#020a1f]/80 backdrop-blur-xl">
+      <header className="mobile-safe-top shrink-0 border-b border-white/10 bg-[#020a1f]/80 backdrop-blur-xl">
         <div className="px-3 sm:px-6 h-14 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <Link to="/dashboard" aria-label="Back to dashboard" className="h-9 w-9 rounded-full glass flex items-center justify-center shrink-0"><ArrowLeft className="h-4 w-4" /></Link>
+            <Link to="/dashboard" aria-label="Back to dashboard" className="h-11 w-11 rounded-full glass flex items-center justify-center shrink-0"><ArrowLeft className="h-4 w-4" /></Link>
             <div className="min-w-0">
               <div className="font-display font-black text-sm sm:text-base truncate">DAN<span className="text-cyan-400">TECH</span> AI</div>
               <div className="text-[10px] text-white/40 font-bold truncate">Your study & career copilot</div>

@@ -147,7 +147,7 @@ export default function PaymentsManager() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="glass rounded-2xl p-4 border border-green-500/20 bg-green-500/5"><div className="text-[11px] text-white/40 font-bold">TOTAL REVENUE (Approved Only)</div><div className="font-black text-xl text-green-300 mt-1">{formatNaira(stats.totalRevenue)}</div></div>
         <div className="glass rounded-2xl p-4 border border-amber-500/20 bg-amber-500/5"><div className="text-[11px] text-white/40 font-bold">PENDING AMOUNT</div><div className="font-black text-xl text-amber-300 mt-1">{formatNaira(stats.pendingAmount)}</div></div>
         <div className="glass rounded-2xl p-4"><div className="text-[11px] text-white/40 font-bold">APPROVED</div><div className="font-black text-xl mt-1">{formatNaira(stats.approvedRevenue)} • {stats.approvedPayments} payments</div></div>
@@ -157,7 +157,7 @@ export default function PaymentsManager() {
       <div className="flex gap-4 items-center">
         <div className="relative flex-1 max-w-[360px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by student, email, course, reference..." className="h-10 w-full rounded-full glass pl-10 pr-4 text-sm focus:outline-none focus:border-cyan-400/40" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by student, email, course, reference..." className="h-11 w-full rounded-full glass pl-10 pr-4 text-sm focus:outline-none focus:border-cyan-400/40" />
         </div>
       </div>
 

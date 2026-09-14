@@ -4,7 +4,8 @@
 -- GENERATED FILE — do not edit by hand.
 -- Regenerate: node supabase/seed/generate_curriculum.mjs
 --
--- Run AFTER 001-006 and AFTER seed_12_courses.sql, as ONE query.
+-- Run AFTER migrations 001-009 and AFTER seed_12_courses.sql, as ONE query.
+-- Requires lesson resources (003) and expanded lesson types (007).
 -- IDEMPOTENT: modules/lessons matched by (course slug, module title,
 -- lesson title); content upserts; videos matched on (lesson_id, url).
 -- Re-running updates bodies/resources and never duplicates rows.
@@ -19,6 +20,20 @@
 -- ============================================================
 
 begin;
+
+-- Fail before writing anything if the catalog seed was skipped or drifted.
+do $seed_guard$
+declare missing_slugs text;
+begin
+  select string_agg(required.slug, ', ' order by required.slug)
+    into missing_slugs
+    from unnest(array['ai-video-content-creation', 'video-editing-capcut', 'graphic-design-canva', 'digital-marketing', 'mobile-app-development', 'portfolio-creation', 'frontend-web-development', 'web-design-wordpress', 'ui-ux-design-figma', 'microsoft-excel', 'microsoft-word', 'microsoft-powerpoint']::text[]) as required(slug)
+   where not exists (select 1 from public.courses c where c.slug = required.slug);
+  if missing_slugs is not null then
+    raise exception 'seed_curriculum: required course slugs are missing: %', missing_slugs;
+  end if;
+end
+$seed_guard$;
 
 -- ---------- ai-video-content-creation ----------
 with c as (select id from public.courses where slug = 'ai-video-content-creation')

@@ -62,7 +62,7 @@ export default function AssignmentReview() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button onClick={() => setTab('review')} className={`px-5 py-2.5 rounded-full text-xs font-bold ${tab === 'review' ? 'bg-white text-black' : 'glass text-white/60'}`}>REVIEWS ({submissions.filter((s) => s.status === 'submitted' || s.status === 'under_review').length} pending)</button>
           <button onClick={() => setTab('manage')} className={`px-5 py-2.5 rounded-full text-xs font-bold ${tab === 'manage' ? 'bg-white text-black' : 'glass text-white/60'}`}>ASSIGNMENTS ({assignments.length})</button>
         </div>
@@ -84,7 +84,7 @@ export default function AssignmentReview() {
               const asg = assignments.find((a) => a.id === s.assignmentId);
               return (
                 <div key={s.id} className="glass rounded-[20px] p-4 flex flex-wrap items-center gap-4">
-                  <div className="flex-1 min-w-[240px]">
+                  <div className="flex-1 min-w-0 sm:min-w-[240px]">
                     <div className="font-bold text-sm">{nameOf(s.userId)} <span className="text-white/40 font-normal">• {asg?.title || 'Assignment'} {asg?.isFinalProject ? '(FINAL PROJECT)' : ''}</span></div>
                     <div className="text-xs text-white/40 mt-1">{course?.title} • {(s.kind || 'file') === 'file' ? `📎 ${s.fileName} (${s.fileSize ? (s.fileSize / 1024).toFixed(0) : 0} KB)` : (s.kind === 'link' ? `🔗 ${String(s.linkUrl).slice(0, 40)}` : '📝 text answer')} • {new Date(s.submittedAt).toLocaleString()} {s.late && '• LATE'}</div>
                     {s.score != null && <div className="text-xs text-amber-300 font-bold mt-1">Score: {s.score}</div>}
@@ -136,7 +136,7 @@ export default function AssignmentReview() {
               return (
                 <div key={a.id} className="glass rounded-[20px] p-4 flex flex-wrap items-center gap-4">
                   <PenLine className="h-5 w-5 text-amber-300" />
-                  <div className="flex-1 min-w-[220px]">
+                  <div className="flex-1 min-w-0 sm:min-w-[220px]">
                     <div className="font-bold text-sm">{a.title} {a.isFinalProject && <span className="ml-1 px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px]">FINAL PROJECT</span>}</div>
                     <div className="text-xs text-white/40 mt-1">{course?.title} • {n} submissions • Max {a.maxScore}</div>
                   </div>

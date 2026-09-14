@@ -19,7 +19,7 @@ export default function StudentPortfolio() {
 
   if (data === undefined) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center">
+      <div className="mobile-safe-top safe-bottom min-h-[70vh] flex items-center justify-center">
         <div className="h-10 w-10 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />
       </div>
     );
@@ -27,7 +27,7 @@ export default function StudentPortfolio() {
   if (!data?.found) return <div className="p-20 text-center">Portfolio not found</div>;
   if (data.private) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center p-4">
+      <div className="mobile-safe-top safe-inline safe-bottom min-h-[70vh] flex items-center justify-center">
         <div className="glass rounded-[24px] p-12 text-center max-w-[480px]">
           <div className="text-5xl mb-4">🔒</div>
           <h1 className="font-bold text-xl">Private Portfolio</h1>
@@ -46,8 +46,8 @@ export default function StudentPortfolio() {
   const level = Math.floor(xp / 200) + 1;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#020a1f] via-[#061236] to-[#020a1f]">
-      <div className="mx-auto max-w-[960px] px-4 sm:px-6 lg:px-8 py-10">
+    <div className="mobile-safe-top min-h-screen bg-gradient-to-br from-[#020a1f] via-[#061236] to-[#020a1f]">
+      <div className="safe-inline safe-bottom mx-auto max-w-[960px] lg:px-8 py-10">
         <div className="flex justify-between items-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white"><ArrowLeft className="h-4 w-4" /> Home</Link>
           <button onClick={() => navigator.clipboard.writeText(window.location.href)} className="px-4 py-2 rounded-full glass text-xs font-bold flex items-center gap-2"><Share2 className="h-3.5 w-3.5" /> SHARE PORTFOLIO</button>

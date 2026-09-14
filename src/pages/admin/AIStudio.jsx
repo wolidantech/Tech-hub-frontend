@@ -216,7 +216,7 @@ export default function AIStudio() {
           {kind === 'course_outline' && (
             <div className="space-y-3">
               {F('courseName', 'Course Name (e.g. Video Editing with CapCut)')}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3">
                 <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="h-11 rounded-full glass px-4 text-sm">
                   <option className="bg-[#061236]" value="">Category</option>
                   {categories.map((c) => <option className="bg-[#061236]" key={c} value={c}>{c}</option>)}
@@ -225,7 +225,7 @@ export default function AIStudio() {
                   {['Beginner', 'Intermediate', 'Advanced', 'All Levels'].map((l) => <option className="bg-[#061236]" key={l} value={l}>{l}</option>)}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3">
                 {F('duration', 'Duration (e.g. 8 weeks)')}
                 <input type="number" min="2" max="12" value={form.numModules} onChange={(e) => setForm({ ...form, numModules: e.target.value })} placeholder="Modules" className="h-11 rounded-full glass px-4 text-sm" />
               </div>
@@ -237,7 +237,7 @@ export default function AIStudio() {
           {kind !== 'course_outline' && (
             <div className="space-y-3">
               {F('topic', kind === 'quiz' ? 'Quiz Topic' : 'Lesson Topic (e.g. Introduction to Canva)')}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3">
                 <select value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value })} className="h-11 rounded-full glass px-4 text-sm">
                   {['Beginner', 'Intermediate', 'Advanced'].map((l) => <option className="bg-[#061236]" key={l} value={l}>{l}</option>)}
                 </select>
@@ -249,7 +249,7 @@ export default function AIStudio() {
               {(kind === 'video_script' || kind === 'voiceover') && (
                 <div className="rounded-2xl border border-white/10 p-3 space-y-2">
                   <div className="text-xs font-bold text-white/40">AI INSTRUCTOR VOICE</div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2">
                     <select value={form.voiceGender} onChange={(e) => setForm({ ...form, voiceGender: e.target.value })} className="h-10 rounded-full glass px-3 text-xs">
                       <option className="bg-[#061236]" value="female">Female voice</option>
                       <option className="bg-[#061236]" value="male">Male voice</option>
@@ -259,7 +259,7 @@ export default function AIStudio() {
                       <option className="bg-[#061236]" value="en-NG" disabled>Nigerian English (soon)</option>
                     </select>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2">
                     <select value={form.voiceSpeed} onChange={(e) => setForm({ ...form, voiceSpeed: e.target.value })} className="h-10 rounded-full glass px-3 text-xs">
                       <option className="bg-[#061236]" value="0.9">0.9x speed</option>
                       <option className="bg-[#061236]" value="1">1.0x speed</option>
@@ -285,7 +285,7 @@ export default function AIStudio() {
           {aiContent.map((item) => (
             <div key={item.id} className="glass rounded-[20px] p-4">
               <div className="flex flex-wrap items-center gap-3">
-                <div className="flex-1 min-w-[200px]">
+                <div className="flex-1 min-w-0 sm:min-w-[200px]">
                   <div className="font-bold text-sm">{item.title}</div>
                   <div className="text-[11px] text-white/40 mt-0.5">{item.kind} • {item.provider} • {new Date(item.createdAt).toLocaleString()}</div>
                 </div>
@@ -306,7 +306,7 @@ export default function AIStudio() {
               {applyOpen === item.id && (
                 <div className="mt-3 rounded-xl bg-green-500/5 border border-green-500/20 p-3 flex flex-wrap gap-2 items-center">
                   {item.kind !== 'course_outline' && (
-                    <select value={applyTarget} onChange={(e) => setApplyTarget(e.target.value)} className="h-10 rounded-full glass px-3 text-xs flex-1 min-w-[200px]">
+                    <select value={applyTarget} onChange={(e) => setApplyTarget(e.target.value)} className="h-11 w-full rounded-full glass px-3 text-xs flex-1 min-w-0 sm:min-w-[200px]">
                       <option className="bg-[#061236]" value="">Select target course</option>
                       {courses.map((c) => <option className="bg-[#061236]" key={c.id} value={c.id}>{c.title.slice(0, 40)}</option>)}
                     </select>

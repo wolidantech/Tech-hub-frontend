@@ -20,6 +20,7 @@ export function useSignedUrl(bucket, path, expiresIn = 3600) {
     signedUrl(bucket, path, expiresIn).then((u) => {
       if (!alive) return;
       setUrl(u);
+      if (!u) setError('A private file link could not be created. Check your access and try again.');
       setLoading(false);
     }).catch(err => { if (alive) { setError(err.message || 'Could not load this file.'); setLoading(false); } });
     return () => { alive = false; };
@@ -46,7 +47,7 @@ export default function SignedFile({ bucket, path, fileName, fileType, kind = 'a
       </div>
     );
   }
-  if (!url) return <div role="alert" className="text-sm text-red-300">{error || 'Could not load this file. It may have been removed.'} <button onClick={retry} className="underline p-2">Retry file</button></div>;
+  if (!url) return <div role="alert" className="text-sm text-red-300">{error || 'Could not load this file. It may have been removed.'} <button onClick={retry} className="min-h-11 px-3 font-bold underline">Retry file</button></div>;
 
   const showImage = kind === 'image' || (kind === 'auto' && isImage(fileType, name));
   const showVideo = kind === 'video' || (kind === 'auto' && isVideo(fileType, name));
@@ -61,7 +62,7 @@ export default function SignedFile({ bucket, path, fileName, fileType, kind = 'a
         <div className="font-bold text-sm truncate">{name}</div>
         <div className="text-xs text-white/40 mt-0.5">{(fileType || '').split('/').pop()?.toUpperCase() || 'FILE'}</div>
       </div>
-      <a href={url} download={name} target="_blank" rel="noreferrer" className="inline-flex px-5 py-2 rounded-full bg-white text-black font-bold text-xs gap-2 shrink-0">
+      <a href={url} download={name} target="_blank" rel="noreferrer" className="min-h-11 inline-flex items-center px-5 rounded-full bg-white text-black font-bold text-xs gap-2 shrink-0">
         <Download className="h-4 w-4" /> OPEN / DOWNLOAD
       </a>
     </div>

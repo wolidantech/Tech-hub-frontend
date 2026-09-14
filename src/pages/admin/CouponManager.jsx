@@ -91,7 +91,7 @@ export default function CouponManager() {
 
       <div className="glass rounded-[20px] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[980px] text-sm">
             <thead className="bg-white/[0.03] text-[11px] tracking-widest text-white/40">
               <tr><th className="text-left p-4">Code</th><th className="text-left p-4">Course</th><th className="text-left p-4">Discount</th><th className="text-left p-4">Uses</th><th className="text-left p-4">Expires</th><th className="text-left p-4">Restricted</th><th className="text-left p-4">Status</th><th className="text-left p-4">Actions</th></tr>
             </thead>

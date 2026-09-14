@@ -40,7 +40,7 @@ export default function QuizTaker({ quiz, userId, onComplete }) {
   }, [result, started, quiz.id, fetchQuizReview]);
 
   if (loading) return <div className="text-sm text-white/40 py-6 text-center">Loading quiz…</div>;
-  if (loadError) return <div className="text-sm text-red-300 py-6 text-center">{loadError} <button onClick={() => setRetry(n => n + 1)}>Retry</button></div>;
+  if (loadError) return <div role="alert" className="text-sm text-red-300 py-6 text-center">{loadError} <button className="min-h-11 px-3 font-bold underline" onClick={() => setRetry(n => n + 1)}>Retry</button></div>;
   if (!questions || !questions.length) return <div className="text-sm text-white/40">No published questions are available for this quiz. Contact your instructor.</div>;
 
   const limitReached = quiz.attemptLimit && attempts.length >= quiz.attemptLimit;
@@ -208,7 +208,7 @@ export default function QuizTaker({ quiz, userId, onComplete }) {
                   <button
                     key={oi}
                     onClick={() => (q.type === 'multiple_answer' ? toggleMulti(q.id, oi) : setAnswers({ ...answers, [q.id]: oi }))}
-                    className={`w-full text-left px-4 py-3 rounded-xl border text-sm transition ${selected ? 'border-cyan-400 bg-cyan-500/15 font-bold' : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.07]'}`}
+                    className={`w-full min-h-11 text-left px-4 py-3 rounded-xl border text-sm transition ${selected ? 'border-cyan-400 bg-cyan-500/15 font-bold' : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.07]'}`}
                   >
                     <span className="inline-flex h-6 w-6 rounded-full glass items-center justify-center text-xs font-bold mr-2">{String.fromCharCode(65 + oi)}</span>
                     {opt}

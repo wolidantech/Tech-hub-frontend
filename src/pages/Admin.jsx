@@ -94,7 +94,7 @@ export default function Admin() {
 
         {tab === 'overview' && (
           <div className="space-y-8">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="glass rounded-[20px] p-5"><div className="flex items-center justify-between mb-2"><Users className="h-5 w-5 text-cyan-300" /><span className="text-[11px] tracking-widest text-white/40 font-bold">STUDENTS</span></div><div className="font-black text-2xl">{stats.totalStudents}</div><div className="text-xs text-white/40">{stats.totalEnrollments} enrollments</div></div>
               <div className="glass rounded-[20px] p-5"><div className="flex items-center justify-between mb-2"><BookOpen className="h-5 w-5 text-purple-400" /><span className="text-[11px] tracking-widest text-white/40 font-bold">COURSES</span></div><div className="font-black text-2xl">{stats.totalCourses}</div><div className="text-xs text-white/40">Active courses</div></div>
               <div className="glass rounded-[20px] p-5 border border-green-500/20 bg-green-500/5"><div className="flex items-center justify-between mb-2"><DollarSign className="h-5 w-5 text-green-400" /><span className="text-[11px] tracking-widest text-white/40 font-bold">REVENUE</span></div><div className="font-black text-2xl text-green-300">{formatNaira(stats.totalRevenue)}</div><div className="text-xs text-white/40">{stats.approvedPayments} approved payments</div></div>
@@ -167,7 +167,7 @@ export default function Admin() {
             <h2 className="font-bold text-xl">Certificates Issued: {allCertificates.length}</h2>
             <div className="glass rounded-[20px] overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full min-w-[640px] text-sm">
                   <thead className="bg-white/[0.03] text-[11px] tracking-widest text-white/40">
                     <tr><th className="text-left p-4">Certificate ID</th><th className="text-left p-4">Student</th><th className="text-left p-4">Course</th><th className="text-left p-4">Date</th></tr>
                   </thead>

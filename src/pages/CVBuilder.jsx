@@ -383,13 +383,13 @@ export default function CVBuilder() {
 
       {/* Full-screen preview modal */}
       {fullPreview && (
-        <div className="fixed inset-0 z-[80] bg-black/90 overflow-y-auto p-4">
-          <div className="max-w-[860px] mx-auto">
-            <div className="flex items-center justify-between mb-3">
+        <div role="dialog" aria-modal="true" aria-label="Full CV preview" className="mobile-scroll-x fixed inset-0 z-[80] h-[100dvh] bg-black/90 overflow-auto px-[max(0.75rem,env(safe-area-inset-left))] pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="w-max min-w-full max-w-[860px] mx-auto">
+            <div className="safe-viewport-width sticky left-0 flex max-w-[860px] items-center justify-between gap-3 mb-3">
               <div className="flex gap-2">
                 {[0.6, 0.8, 1].map((z) => <button key={z} onClick={() => setZoom(z)} className={`px-3 py-1.5 rounded-full text-xs font-bold ${zoom === z ? 'bg-cyan-400 text-black' : 'glass text-white/60'}`}>{Math.round(z * 100)}%</button>)}
               </div>
-              <button onClick={() => setFullPreview(false)} className="h-10 w-10 rounded-full glass flex items-center justify-center"><X className="h-5 w-5" /></button>
+              <button aria-label="Close full CV preview" onClick={() => setFullPreview(false)} className="h-11 w-11 shrink-0 rounded-full glass flex items-center justify-center"><X className="h-5 w-5" /></button>
             </div>
             <div style={{ width: 794 * zoom }} className="mx-auto"><div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}><CVPreview data={cv} template={template} /></div></div>
           </div>

@@ -111,17 +111,89 @@
 }
 
 /* Intrinsic sizing: long lesson text and media must not widen the classroom. */
-html { overflow-wrap: break-word; }
-img, video { max-width: 100%; }
+html {
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+  overflow-wrap: break-word;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body, #root {
+  width: 100%;
+  min-width: 320px;
+  min-height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+main, section, article, aside, form, fieldset { min-width: 0; }
+img, video, canvas, svg, iframe { max-width: 100%; }
+iframe { border: 0; }
+h1, h2, h3, h4, p, a { overflow-wrap: anywhere; }
+.overflow-x-auto, .mobile-scroll-x {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-inline: contain;
+}
+.app-main {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+.safe-inline {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+.safe-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+.safe-floating-bottom { bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+.mobile-safe-top { padding-top: env(safe-area-inset-top); }
+.safe-viewport-width {
+  width: calc(100vw - max(1.5rem, calc(env(safe-area-inset-left) + env(safe-area-inset-right))));
+}
+/* Centered overlays stay inside notches, home indicators and mobile browser chrome. */
+.fixed.inset-0.items-center {
+  padding-top: max(1rem, env(safe-area-inset-top));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding-left: max(1rem, env(safe-area-inset-left));
+}
+.fixed.inset-0.items-center > div {
+  max-height: 100%;
+  overflow-y: auto;
+}
 .lesson-body { min-width: 0; overflow-wrap: anywhere; }
 .lesson-body img, .lesson-body iframe { max-width: 100%; height: auto; }
 .lesson-body pre { max-width: 100%; overflow-x: auto; }
 .lesson-body table { display: block; max-width: 100%; overflow-x: auto; }
-button, a, input, textarea, select { touch-action: manipulation; }
+button, a, input, textarea, select, summary { touch-action: manipulation; }
 :focus-visible { outline: 2px solid #22d3ee; outline-offset: 3px; }
-@media (max-width: 480px) {
-  input, textarea, select { font-size: 16px; }
+@media (max-width: 767px), (pointer: coarse) {
+  button, [role="button"], summary,
+  input:not([type="checkbox"]):not([type="radio"]), select {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  a[class*="rounded"], a[class*="btn-"] {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+@media (max-width: 767px) {
+  /* iOS zooms focused form controls below 16px; utility classes must not win here. */
+  input, textarea, select { font-size: 16px !important; }
   .lesson-body { font-size: 15px; }
+  [role="dialog"]:not(.inset-0), [aria-modal="true"]:not(.inset-0) { max-width: calc(100vw - 1rem); }
+}
+@media (min-width: 640px) {
+  .safe-inline {
+    padding-left: max(1.5rem, env(safe-area-inset-left));
+    padding-right: max(1.5rem, env(safe-area-inset-right));
+  }
+}
+@media (min-width: 1024px) {
+  .safe-inline {
+    padding-left: max(2rem, env(safe-area-inset-left));
+    padding-right: max(2rem, env(safe-area-inset-right));
+  }
 }
 .lesson-body a { color: #67e8f9; text-decoration: underline; overflow-wrap: anywhere; }
 .lesson-body img { display: block; margin: 1rem auto; }
