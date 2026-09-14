@@ -208,6 +208,18 @@ async function runSelect(table, sp, { single } = {}) {
   return rows;
 }
 
+const pkCache = new Map();
+async function pkCols(table) {
+  if (pkCache.has(table)) return pkCache.get(table);
+  const { rows } = await db.query(`select a.attname from pg_index i
+    join pg_attribute a on a.attrelid = i.indrelid and a.attnum = any(i.indkey)
+    join pg_class c on c.oid = i.indrelid join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname='public' and c.relname=$1 and i.indisprimary`, [table]);
+  const r = rows.map((x) => x.attname);
+  pkCache.set(table, r);
+  return r;
+}
+
 const server = createServer(async (req, res) => {
   const u = new URL(req.url, 'http://x');
   const p = u.pathname;
@@ -314,20 +326,22 @@ const server = createServer(async (req, res) => {
           const where = buildWhere(u.searchParams, params);
           let out;
           if (req.method === 'POST' || req.method === 'PUT') {
-            const conflicts = u.searchParams.get('on_conflict') ? u.searchParams.get('on_conflict').split(',').map((c) => c.trim()) : null;
+            let conflicts = u.searchParams.get('on_conflict') ? u.searchParams.get('on_conflict').split(',').map((c) => c.trim()) : null;
+            if (!conflicts && prefer.includes('duplicates')) conflicts = (await pkCols(table));
             const merged = [];
             for (const r of rows0) {
               const cols = Object.keys(r).filter((c) => IDENT.test(c));
               const vals = cols.map((c) => `$${params.push(VAL(r[c]))}`).join(',');
               let sql = `insert into "${table}" (${cols.map((c) => `"${c}"`).join(',')}) values (${vals})`;
               if (prefer.includes('merge-duplicates')) {
-                const pk = conflicts || ['id'];
+                const pk = conflicts && conflicts.length ? conflicts : null;
+                if (!pk) throw { status: 400, code: 'PGRST400', message: 'no conflict target' };
                 const target = `(${pk.map((c) => `"${c}"`).join(',')})`;
                 const upds = cols.filter((c) => !pk.includes(c)).map((c) => `"${c}"=excluded."${c}"`).join(',');
                 sql += ` on conflict ${upds ? `${target} do update set ${upds}` : `${target} do nothing`}`;
               } else if (prefer.includes('ignore-duplicates')) {
-                const pk = conflicts || ['id'];
-                sql += ` on conflict (${pk.map((c) => `"${c}"`).join(',')}) do nothing`;
+                if (conflicts?.length) sql += ` on conflict (${conflicts.map((c) => `"${c}"`).join(',')}) do nothing`;
+                else sql += ' on conflict do nothing';
               }
               sql += ' returning *';
               const rr = await db.query(sql, params.slice());

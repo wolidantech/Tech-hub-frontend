@@ -11,7 +11,7 @@
 // not a substitute for live-project verification.
 // ============================================================
 const BASE = process.argv[2] || 'http://127.0.0.1:54321';
-const H = (token) => ({ 'apikey': 'mock', 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' });
+const H = (token, prefer = 'return=representation') => ({ 'apikey': 'mock', 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: prefer });
 let failures = 0;
 const ok = (name, cond, extra = '') => { if (cond) console.log(`PASS ${name}`); else { failures += 1; console.log(`FAIL ${name} ${extra}`); } };
 
@@ -22,7 +22,7 @@ const res = async (path, opts = {}) => {
   if (!r.ok) throw new Error(`${opts.method || 'GET'} ${path} → ${r.status} ${String(text).slice(0, 300)}`);
   return body;
 };
-const rest = (token, path, params = '', opts = {}) => res(`/rest/v1/${path}${params}`, { ...opts, headers: H(token) });
+const rest = (token, path, params = '', opts = {}) => res(`/rest/v1/${path}${params}`, { ...opts, headers: H(token, opts.method === 'POST' ? 'return=representation,resolution=merge-duplicates' : 'return=representation') });
 
 // 1 — login (demo student exists from mock bootstrap)
 const login = await res('/auth/v1/token?grant_type=password', { method: 'POST', headers: { 'apikey': 'mock' }, body: JSON.stringify({ email: 'ada@example.com', password: 'demo1234' }) });
@@ -74,9 +74,9 @@ ok('curriculum: per-lesson curated resources present', jsonbRes.length >= 15, `g
 // 5 — enrollment + progress
 const en = await rest(T, 'enrollments', `?user_id=eq.${uid}&course_id=eq.${cid}`);
 ok('enroll: active enrollment for demo student', en[0]?.status === 'active', JSON.stringify(en).slice(0, 120));
-const mark = await rest(T, 'lesson_progress', '', { method: 'POST', body: JSON.stringify({ user_id: uid, course_id: cid, lesson_id: firstLesson.id }) });
+const mark = await res('/rest/v1/lesson_progress?on_conflict=user_id%2Clesson_id', { method: 'POST', headers: { ...H(T, 'return=representation,resolution=merge-duplicates') }, body: JSON.stringify({ user_id: uid, course_id: cid, lesson_id: firstLesson.id }) });
 ok('progress: mark lesson complete upsert', Array.isArray(mark) ? mark.length === 1 : true, JSON.stringify(mark).slice(0, 200));
-const started = await rest(T, 'lesson_activity', '', { method: 'POST', body: JSON.stringify({ user_id: uid, course_id: cid, lesson_id: firstLesson.id }) });
+const started = await res('/rest/v1/lesson_activity?on_conflict=user_id%2Clesson_id', { method: 'POST', headers: { ...H(T, 'return=representation,resolution=merge-duplicates') }, body: JSON.stringify({ user_id: uid, course_id: cid, lesson_id: firstLesson.id }) });
 ok('progress: lesson started tracked', Boolean(started));
 
 // 6 — quizzes: taker payload must NOT leak answers; server grades
