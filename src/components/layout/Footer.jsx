@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { MessageCircle, Mail, Phone, MapPin, ArrowUpRight } from 'lucide-react';
 import { isConfigured } from '../../lib/backendHealth';
+import { BrandMark } from '../common/BrandLogo';
 
 export default function Footer() {
   return (
@@ -21,7 +22,7 @@ export default function Footer() {
         <div className="py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           <div className="space-y-5">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-black">W</div>
+              <BrandMark size={44} />
               <div>
                 <div className="font-display font-bold leading-none">WOLI DAN</div>
                 <div className="font-display font-bold text-gradient text-sm tracking-widest leading-none">TECH HUB</div>

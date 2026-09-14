@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 export default function AssignmentReview() {
   const { user, students: roster } = useAuth();
   const { courses, sendNotificationToUser } = useCourses();
-  const { assignments, submissions, createAssignment, updateAssignment, deleteAssignment, reviewSubmission, audit } = useLMS();
+  const { assignments, submissions, createAssignment, updateAssignment, deleteAssignment, reviewSubmission, audit, practicalSubs, reviewPractical } = useLMS();
   const [tab, setTab] = useState('review');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showAdd, setShowAdd] = useState(false);
@@ -17,6 +17,8 @@ export default function AssignmentReview() {
   const [reviewing, setReviewing] = useState(null);
   const [review, setReview] = useState({ status: 'approved', score: '', feedback: '' });
   const [viewing, setViewing] = useState(null);
+  const [pReviewing, setPReviewing] = useState(null);
+  const [pReview, setPReview] = useState({ status: 'approved', score: '', feedback: '' });
 
   const nameOf = (id) => roster.find((u) => u.id === id)?.fullName || String(id || '').slice(0, 8);
 
@@ -65,6 +67,7 @@ export default function AssignmentReview() {
         <div className="flex gap-2">
           <button onClick={() => setTab('review')} className={`px-5 py-2.5 rounded-full text-xs font-bold ${tab === 'review' ? 'bg-white text-black' : 'glass text-white/60'}`}>REVIEWS ({submissions.filter((s) => s.status === 'submitted' || s.status === 'under_review').length} pending)</button>
           <button onClick={() => setTab('manage')} className={`px-5 py-2.5 rounded-full text-xs font-bold ${tab === 'manage' ? 'bg-white text-black' : 'glass text-white/60'}`}>ASSIGNMENTS ({assignments.length})</button>
+          <button onClick={() => setTab('practicals')} className={`px-5 py-2.5 rounded-full text-xs font-bold ${tab === 'practicals' ? 'bg-white text-black' : 'glass text-white/60'}`}>🧪 PRACTICALS ({practicalSubs.filter((p) => p.status === 'submitted' || p.status === 'under_review' || p.status === 'needs_revision').length} pending)</button>
         </div>
         {tab === 'manage' && <button onClick={() => setShowAdd(true)} className="btn-primary !py-2.5 !px-5 text-xs gap-2"><Plus className="h-4 w-4" /> CREATE ASSIGNMENT</button>}
       </div>
@@ -99,6 +102,63 @@ export default function AssignmentReview() {
             })}
             {filteredSubs.length === 0 && <div className="glass rounded-2xl p-10 text-center text-white/40 text-sm">No submissions found.</div>}
           </div>
+        </>
+      )}
+
+      {tab === 'practicals' && (
+        <>
+          <div className="grid gap-3">
+            {practicalSubs.map((ps) => {
+              const course = courses.find((c) => c.id === ps.courseId);
+              return (
+                <div key={ps.id} className="glass rounded-[20px] p-4 flex flex-wrap items-center gap-4">
+                  <div className="flex-1 min-w-[240px]">
+                    <div className="font-bold text-sm">{nameOf(ps.userId)} <span className="text-white/40 font-normal">• practical submission</span></div>
+                    <div className="text-xs text-white/40 mt-1">{course?.title || 'Course'} • {ps.fileName ? `📎 ${ps.fileName} (${ps.fileSize ? (ps.fileSize / 1024).toFixed(0) : 0} KB)` : '📝 text only'} • {new Date(ps.submittedAt).toLocaleString()}</div>
+                    {ps.observation && <div className="mt-2 text-xs text-white/60 bg-white/[0.03] border border-white/10 rounded-xl p-2.5 max-h-28 overflow-auto whitespace-pre-line">{ps.observation}</div>}
+                    {ps.score != null && <div className="text-xs text-amber-300 font-bold mt-1">Score: {ps.score}/100</div>}
+                  </div>
+                  <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${ps.status === 'approved' ? 'bg-green-500/20 text-green-300' : ps.status === 'needs_revision' ? 'bg-red-500/20 text-red-300' : 'bg-amber-500/20 text-amber-300'}`}>{ps.status.replace('_', ' ').toUpperCase()}</span>
+                  {ps.storagePath && <SignedFile bucket="submissions" path={ps.storagePath} fileName={ps.fileName} fileType={ps.fileType} className="w-full" />}
+                  <div className="flex gap-1.5">
+                    <button onClick={() => { setPReviewing(ps); setPReview({ status: ps.status === 'submitted' ? 'under_review' : ps.status, score: ps.score ?? '', feedback: ps.feedback || '' }); }} className="h-9 px-4 rounded-full bg-white text-black text-xs font-bold">REVIEW</button>
+                  </div>
+                </div>
+              );
+            })}
+            {practicalSubs.length === 0 && <div className="glass rounded-2xl p-10 text-center text-white/40 text-sm">No practical submissions yet — they appear here when students submit lesson practicals.</div>}
+          </div>
+          {pReviewing && (
+            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-xl p-0 sm:p-6">
+              <div className="w-full max-w-[560px] max-h-[92dvh] overflow-auto glass-strong rounded-t-[24px] sm:rounded-[24px] p-6 space-y-4">
+                <div className="flex justify-between"><h3 className="font-bold">Review practical — {nameOf(pReviewing.userId)}</h3><button onClick={() => setPReviewing(null)}><X className="h-5 w-5" /></button></div>
+                {pReviewing.observation && <div className="rounded-xl bg-white/[0.04] border border-white/10 p-3 text-sm whitespace-pre-line max-h-56 overflow-auto">{pReviewing.observation}</div>}
+                <select value={pReview.status} onChange={(e) => setPReview({ ...pReview, status: e.target.value })} className="w-full h-11 rounded-full glass px-4 text-sm">
+                  <option className="bg-[#061236]" value="under_review">Under Review</option>
+                  <option className="bg-[#061236]" value="approved">Approved ✓</option>
+                  <option className="bg-[#061236]" value="needs_revision">Revision Required</option>
+                </select>
+                <input type="number" min="0" max="100" value={pReview.score} onChange={(e) => setPReview({ ...pReview, score: e.target.value })} placeholder="Score / 100 (optional)" className="w-full h-11 rounded-full glass px-4 text-sm" />
+                <textarea value={pReview.feedback} onChange={(e) => setPReview({ ...pReview, feedback: e.target.value })} placeholder="Feedback for the student" className="w-full rounded-2xl glass p-4 text-sm h-24" />
+                <button
+                  onClick={async () => {
+                    if (!pReview.feedback.trim() && pReview.status === 'needs_revision') { toast.error('Feedback is required when requesting revision'); return; }
+                    try {
+                      await reviewPractical({ submissionId: pReviewing.id, status: pReview.status, score: pReview.score === '' ? null : Number(pReview.score), feedback: pReview.feedback, actor: user });
+                      await sendNotificationToUser(pReviewing.userId, {
+                        title: pReview.status === 'approved' ? 'Practical Approved! 🧪✅' : pReview.status === 'needs_revision' ? 'Practical Needs Revision 🧪' : 'Practical Under Review 👀',
+                        message: `${pReview.status === 'approved' ? `Great lab work! Your practical was approved${pReview.score !== '' ? ` with a score of ${pReview.score}/100` : ''}.` : pReview.status === 'needs_revision' ? `Your practical needs another pass. Feedback: ${pReview.feedback}` : 'Your practical is being reviewed.'}`,
+                        type: 'assignment_reviewed', courseId: pReviewing.courseId,
+                      });
+                      setPReviewing(null);
+                      toast.success('Practical review saved — student notified');
+                    } catch (err) { toast.error(err.message); }
+                  }}
+                  className="w-full btn-primary !py-3"
+                >SAVE REVIEW</button>
+              </div>
+            </div>
+          )}
         </>
       )}
 

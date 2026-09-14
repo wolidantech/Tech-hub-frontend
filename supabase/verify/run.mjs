@@ -1,4 +1,4 @@
-// PGlite behavioral verification for migrations 001-008.
+// PGlite behavioral verification for migrations 001-009.
 // NOTE: PGlite runs as superuser so RLS *enforcement* cannot be tested
 // here — RLS is verified at the policy-definition level (pg_policies) plus
 // SECURITY DEFINER auth checks, which DO execute. Full enforcement is
@@ -15,10 +15,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 const MIG = join(here, '../migrations');
 const db = new PGlite();
 await db.exec(readFileSync(join(here, 'stubs.sql'), 'utf8'));
-for (const f of ['001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql', '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql', '007_classroom_upgrade.sql', '008_cv_builder_and_study_tools.sql']) {
+for (const f of ['001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql', '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql', '007_classroom_upgrade.sql', '008_cv_builder_and_study_tools.sql', '009_classroom_curriculum.sql']) {
   await db.exec(readFileSync(`${MIG}/${f}`, 'utf8'));
 }
-console.log('migrations 001-008 applied clean');
+console.log('migrations 001-009 applied clean');
 
 const ADMIN = '11111111-1111-1111-1111-111111111111';
 const STU = '22222222-2222-2222-2222-222222222222';
@@ -529,6 +529,116 @@ await t('H25 CV documents + study tools: tables exist, own-rows policies scoped'
   await one(`delete from study_notes where id='${note.id}'`);
   await one(`delete from cv_documents where id='${cv.id}'`);
   await anon();
+});
+
+
+// ---------- L: Classroom curriculum layer (migration 009) ----------
+const TOPIC = 'f0000000-0000-0000-0000-000000000001';
+const PRACTICAL = 'f1000000-0000-0000-0000-000000000001';
+const RESOURCE = 'f2000000-0000-0000-0000-000000000001';
+const Q_NUM = 'c0000000-0000-0000-0000-000000000006';
+
+await t('L1 topic layer exists + lesson re-parents to a topic', async () => {
+  const n = await one(`select count(*)::int c from information_schema.tables where table_name in ('course_topics','lesson_practicals','course_resources','practical_submissions')`);
+  assert(Number(n.c) === 4, '009 curriculum tables missing');
+  const less = await one(`select id, module_id from course_lessons where course_id='${COURSE}' order by position limit 1`);
+  await q(`insert into course_topics (id, course_id, module_id, title, position) values ('${TOPIC}','${COURSE}','${less.module_id}','Cells & Organisms',0)`);
+  await q(`update course_lessons set topic_id='${TOPIC}', estimated_minutes=14 where id='${less.id}'`);
+  const l2 = await one(`select topic_id, estimated_minutes from course_lessons where id='${less.id}'`);
+  assert(l2.topic_id === TOPIC && Number(l2.estimated_minutes) === 14, 'topic_id / estimated_minutes not stored');
+  // deleting a topic must NOT delete lessons (SET NULL)
+  await one(`delete from course_topics where id='${TOPIC}'`);
+  const l3 = await one(`select id from course_lessons where id='${less.id}'`);
+  assert(l3.id === less.id, 'deleting topic cascaded to lessons — must SET NULL');
+});
+
+await t('L2 practical + resource rows save and map (009 tables)', async () => {
+  const less = await one(`select id, module_id from course_lessons where course_id='${COURSE}' order by position limit 1`);
+  await q(`insert into lesson_practicals (id, lesson_id, course_id, module_id, title, objective, instructions, materials, observation, questions, safety, status)
+    values ('${PRACTICAL}','${less.id}','${COURSE}','${less.module_id}','Microscope basics','Focus a slide','1. Place slide
+2. Focus low to high','["Microscope","Slide"]','Record what you see','["Why oil immersion?"]','Handle lenses with care','PUBLISHED')`);
+  const p = await one(`select objective, materials, questions from lesson_practicals where id='${PRACTICAL}'`);
+  assert(Array.isArray(p.materials) && p.materials.length === 2, 'materials jsonb not stored');
+  assert(p.objective === 'Focus a slide', 'objective mismatch');
+  await q(`insert into course_resources (id, course_id, lesson_id, title, resource_type, is_external, url, is_approved)
+    values ('${RESOURCE}','${COURSE}','${less.id}','Cell diagram PDF','PDF',true,'https://example.com/cells.pdf',true)`);
+  const r = await one(`select title, resource_type from course_resources where id='${RESOURCE}'`);
+  assert(r.title === 'Cell diagram PDF', 'resource insert failed');
+});
+
+await t('L3 practical submission flow (submit → under review → approved)', async () => {
+  await as(STU);
+  const less = await one(`select id from course_lessons where course_id='${COURSE}' order by position limit 1`);
+  const sub = await one(`insert into practical_submissions (practical_id, course_id, lesson_id, user_id, student_name, observation)
+    values ('${PRACTICAL}','${COURSE}','${less.id}','${STU}','Ada','Saw cells') returning id`);
+  await anon();
+  await as(ADMIN);
+  const rev = await one(`update practical_submissions set status='approved', score=95, feedback='Excellent' where id='${sub.id}' returning status, score`);
+  assert(rev.status === 'approved' && Number(rev.score) === 95, 'admin review of practical failed');
+  await anon();
+});
+
+await t('L4 numeric quiz question grades with tolerance (server-side)', async () => {
+  await q(`insert into quiz_questions (id, quiz_id, type, question, options, answer_number, answer_tolerance, answer_unit, explanation)
+    values ('${Q_NUM}','${QUIZ}','numeric','Calculate the magnification','[]',42,0.5,'x','total = eyepiece x objective')`);
+  await q(`update quizzes set attempt_limit = null, allow_retake = true where id = '${QUIZ}'`);
+  await as(STU);
+  const ok = await one(`select submit_quiz_attempt('${QUIZ}','{"${Q_NUM}":"41.8"}'::jsonb) r`);
+  // other questions stay unanswered → still at least the numeric one must be earned
+  assert(ok.r.details?.some((d) => d.questionId === Q_NUM && d.correct === true), 'numeric within tolerance graded wrong');
+  const no = await one(`select submit_quiz_attempt('${QUIZ}','{"${Q_NUM}":"50"}'::jsonb) r`);
+  assert(!no.r.details.some((d) => d.questionId === Q_NUM && d.correct === true), 'numeric outside tolerance graded correct');
+  const fmt = await one(`select submit_quiz_attempt('${QUIZ}','{"${Q_NUM}":"42 x"}'::jsonb) r`);
+  assert(fmt.r.details.some((d) => d.questionId === Q_NUM && d.correct === true), 'numeric with unit suffix should parse to 42');
+  const grp = await one(`select submit_quiz_attempt('${QUIZ}','{"${Q_NUM}":"1,200"}'::jsonb) r`);
+  assert(grp.r.details.some((d) => d.questionId === Q_NUM && d.correct === false), 'thousands comma must not become 1.2');
+  await anon();
+});
+
+await t('L5 quiz taker payload hides the answer but exposes the unit', async () => {
+  await as(STU);
+  const qs = await one(`select get_quiz_questions('${QUIZ}') r`);
+  const nq = (qs.r || []).find((x) => x.id === Q_NUM);
+  assert(nq && nq.unit === 'x', 'numeric question missing unit in taker view');
+  assert(nq.answer_number === undefined && nq.answerNumber === undefined, 'taker view LEAKS the answer');
+  await anon();
+});
+
+await t('L6 courses meta: skills + estimated_hours; lessons_count trigger still exact', async () => {
+  await one(`update courses set skills='["Lab technique","Data recording"]'::jsonb, estimated_hours=8.5 where id='${COURSE}'`);
+  const c = await one(`select skills, estimated_hours, lessons_count from courses where id='${COURSE}'`);
+  assert(Array.isArray(c.skills) && c.skills.length === 2, 'skills jsonb failed');
+  assert(Number(c.estimated_hours) === 8.5, 'estimated_hours failed');
+  const real = await one(`select count(*)::int n from course_lessons where course_id='${COURSE}'`);
+  assert(Number(c.lessons_count) === Number(real.n), 'lessons_count trigger drifted from real rows');
+});
+
+await t('L7 RLS policy definitions for the 009 tables (enrolled + admin gates)', async () => {
+  const want = {
+    course_topics: ['topics readable', 'admin write topics'],
+    lesson_practicals: ['practicals enrolled read', 'admin write practicals'],
+    course_resources: ['resources enrolled read', 'admin write resources'],
+    practical_submissions: ['own practical submissions', 'students submit practicals', 'admin review practical submissions'],
+  };
+  for (const [tbl, names] of Object.entries(want)) {
+    for (const name of names) {
+      const p = await one(`select count(*)::int c from pg_policies where schemaname='public' and tablename='${tbl}' and policyname='${name}'`);
+      assert(Number(p.c) === 1, `policy ${name} on ${tbl} missing`);
+    }
+    const rls = await one(`select relrowsecurity from pg_class where relname='${tbl}'`);
+    assert(rls.relrowsecurity === true, `${tbl} missing RLS`);
+  }
+  // the enrollment gate is present on student-facing reads
+  const gate = await one(`select count(*)::int c from pg_policies where policyname in ('practicals enrolled read','resources enrolled read','students submit practicals') and (qual::text like '%enrollments%' or qual::text like '%auth.uid()%')`);
+  assert(Number(gate.c) >= 2, 'enrollment gates missing on 009 policies');
+});
+
+await t('L8 cleanup of 009 fixtures', async () => {
+  await one(`delete from practical_submissions where practical_id='${PRACTICAL}'`);
+  await one(`delete from course_resources where id='${RESOURCE}'`);
+  await one(`delete from lesson_practicals where id='${PRACTICAL}'`);
+  await one(`delete from quiz_questions where id='${Q_NUM}'`);
+  await one(`delete from quiz_attempts where quiz_id='${QUIZ}'`);
 });
 
 console.log(`\n==== RESULT: ${pass} passed, ${fail} failed ====`);

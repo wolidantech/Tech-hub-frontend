@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, X, Edit, Trash2, Eye, EyeOff, Save, Image as ImageIcon, ChevronDown, ChevronUp, ListChecks, FolderPlus } from 'lucide-react';
+import { Plus, X, Edit, Trash2, Eye, EyeOff, Save, Image as ImageIcon, ChevronDown, ChevronUp, ListChecks, FolderPlus, Wrench, Layers, Video, Upload } from 'lucide-react';
 import { useCourses } from '../../context/CourseContext';
 import { useLMS } from '../../context/LMSContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatNaira } from '../../lib/utils';
-import { uploadThumbnail } from '../../lib/store';
+import { uploadThumbnail, adminSaveTopic, adminDeleteTopic } from '../../lib/store';
+import { uploadFile } from '../../lib/supabase';
+import LessonExtrasModal from './LessonExtrasModal';
 import { DEFAULT_COMPLETION_RULES } from '../../lib/lms';
 import CourseArt from '../../components/course/CourseArt';
 import { BundleManager, PathManager } from './BundlePathManager';
@@ -13,7 +15,7 @@ import { toast } from 'sonner';
 
 export default function CourseManager() {
   const { user } = useAuth();
-  const { courses, addCourse, updateCourse, deleteCourse, setCoursePublished, addModule, updateModule, deleteModule, addLesson, updateLesson, deleteLesson, ensureCourseDetail } = useCourses();
+  const { courses, addCourse, updateCourse, deleteCourse, setCoursePublished, addModule, updateModule, deleteModule, addLesson, updateLesson, deleteLesson, ensureCourseDetail, retryCourseDetail } = useCourses();
   const { categories, addCategory, deleteCategory, completionRules, setCourseRules, audit, getCourseQuizzes, getCourseAssignments } = useLMS();
 
   const [showAdd, setShowAdd] = useState(false);
@@ -25,6 +27,9 @@ export default function CourseManager() {
   const [newModuleTitle, setNewModuleTitle] = useState('');
   const [lessonForm, setLessonForm] = useState(null); // { moduleId, lesson? }
   const [lessonData, setLessonData] = useState({ title: '', type: 'video', duration: '10:00', videoUrl: '', textContent: '' });
+  const [extrasFor, setExtrasFor] = useState(null); // { moduleId, lesson }
+  const [topicForms, setTopicForms] = useState({}); // moduleId -> new topic title
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [rulesForm, setRulesForm] = useState(null);
   const [newCat, setNewCat] = useState('');
   const [search, setSearch] = useState('');
@@ -84,7 +89,26 @@ export default function CourseManager() {
 
   const openLessonForm = (moduleId, lesson = null) => {
     setLessonForm({ moduleId, lessonId: lesson?.id || null });
-    setLessonData(lesson ? { title: lesson.title, type: lesson.type, duration: lesson.duration, videoUrl: lesson.videoUrl || '', textContent: lesson.textContent || lesson.content || '', subLessons: (lesson.subLessons || []).map((s) => s.title).join('\n') } : { title: '', type: 'video', duration: '10:00', videoUrl: '', textContent: '', subLessons: '' });
+    setLessonData(lesson ? {
+      title: lesson.title, type: lesson.type, duration: lesson.duration, description: lesson.description || '',
+      estimatedMinutes: lesson.estimatedMinutes || '', topicId: lesson.topicId || '',
+      videoUrl: lesson.videoUrl || '', videoStoragePath: lesson.videoStoragePath || '',
+      textContent: lesson.textContent || lesson.content || '',
+      subLessons: (lesson.subLessons || []).map((s) => s.title).join('\n'),
+    } : { title: '', type: 'video', duration: '10:00', description: '', estimatedMinutes: '', topicId: '', videoUrl: '', videoStoragePath: '', textContent: '', subLessons: '' });
+  };
+
+  const pickLessonVideo = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!/^video\/(mp4|webm)$/.test(file.type) && !/\.(mp4|webm)$/i.test(file.name)) return toast.error('Lesson video uploads must be MP4 or WebM');
+    setUploadingVideo(true);
+    try {
+      const path = await uploadFile('lesson-videos', course.id, file, (p) => { if (p % 20 === 0) console.log('video upload', p + '%'); });
+      setLessonData((d) => ({ ...d, videoStoragePath: path, videoUrl: '' }));
+      toast.success('Video uploaded to private storage');
+    } catch (err) { toast.error(err.message); }
+    finally { setUploadingVideo(false); e.target.value = ''; }
   };
   const saveLesson = async (courseId) => {
     if (!lessonData.title.trim()) { toast.error('Lesson title required'); return; }
@@ -188,15 +212,49 @@ export default function CourseManager() {
               </div>
               {openMod === mod.id && (
                 <div className="p-4 space-y-2">
+                  {/* Topics (module → topic → lesson) */}
+                  {(mod.topics || []).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pb-1">
+                      {mod.topics.map((t) => (
+                        <span key={t.id} className="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-200 text-[11px] font-bold">
+                          <Layers className="h-3 w-3" /> {t.title} <span className="text-white/40">({(t.lessons || []).length})</span>
+                          <button title="Rename topic" onClick={async () => { const nt = prompt('Topic name:', t.title); if (nt && nt !== t.title) { try { await adminSaveTopic({ id: t.id, courseId: course.id, moduleId: mod.id, title: nt, description: t.description, position: t.position }); } catch (err) { toast.error(err.message); } } }} className="h-5 w-5 rounded-full hover:bg-white/15 flex items-center justify-center"><Edit className="h-2.5 w-2.5" /></button>
+                          <button title="Delete topic" onClick={async () => { if (confirm(`Delete topic "${t.title}"? Its lessons move back to the module.`)) { try { await adminDeleteTopic(t.id); } catch (err) { toast.error(err.message); } } }} className="h-5 w-5 rounded-full hover:bg-red-500/25 flex items-center justify-center text-red-300"><X className="h-2.5 w-2.5" /></button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2 pb-2">
+                    <input
+                      value={topicForms[mod.id] || ''} onChange={(e) => setTopicForms((m) => ({ ...m, [mod.id]: e.target.value }))}
+                      placeholder="New topic (e.g. 'Cell structure')" className="h-9 flex-1 rounded-full glass px-3.5 text-xs"
+                    />
+                    <button
+                      onClick={async () => {
+                        const t = (topicForms[mod.id] || '').trim();
+                        if (!t) return toast.error('Enter a topic title');
+                        try { await adminSaveTopic({ courseId: course.id, moduleId: mod.id, title: t, position: (mod.topics || []).length }); setTopicForms((m) => ({ ...m, [mod.id]: '' })); toast.success('Topic added'); }
+                        catch (err) { toast.error(err.message.includes('42P01') || err.message.includes('does not exist') ? 'Run migration 009 first — the topics table is not provisioned yet.' : err.message); }
+                      }}
+                      className="h-9 px-3.5 rounded-full bg-cyan-400 text-black font-bold text-[11px] shrink-0">+ TOPIC</button>
+                  </div>
                   {(mod.lessons || []).map((l, li) => (
-                    <div key={l.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] text-sm">
-                      <span className="text-white/30 font-mono text-xs w-6">{li + 1}.</span>
+                    <div key={l.id} className="flex items-center gap-2.5 p-3 rounded-xl bg-white/[0.03] text-sm">
+                      <span className="text-white/30 font-mono text-xs w-6 shrink-0">{li + 1}.</span>
                       <div className="flex-1 min-w-0">
                         <div className="font-bold truncate">{l.title}</div>
-                        <div className="text-[11px] text-white/40">{l.type} • {l.duration} {l.videoUrl ? '• 🎬' : ''} {(l.textContent || l.content) ? '• 📖' : ''}</div>
+                        <div className="text-[11px] text-white/40 flex flex-wrap items-center gap-1">
+                          <span>{l.type} • {l.duration}</span>
+                          {l.videoUrl || l.videoStoragePath ? <span title="Has video"><Video className="h-3 w-3 inline text-amber-300" /></span> : null}
+                          {(l.textContent || l.content) ? <span title="Has written content">📖</span> : null}
+                          {l.practical ? <span className="inline-flex items-center gap-0.5 text-orange-300" title="Has practical"><Wrench className="h-3 w-3" /> practical</span> : null}
+                          {(l.resources || []).length > 0 && <span className="text-cyan-300">📚 {l.resources.length}</span>}
+                          {l.topicId && (mod.topics || []).find((t) => t.id === l.topicId) ? <span className="text-cyan-300/80">· {(mod.topics || []).find((t) => t.id === l.topicId).title}</span> : null}
+                        </div>
                       </div>
-                      <button onClick={() => openLessonForm(mod.id, l)} className="h-8 px-3 rounded-full glass text-xs font-bold">EDIT</button>
-                      <button onClick={async () => { if (confirm('Delete lesson?')) { try { await deleteLesson(course.id, mod.id, l.id); toast.success('Lesson deleted'); } catch (err) { toast.error(err.message); } } }} className="h-8 w-8 rounded-full glass flex items-center justify-center text-red-300"><Trash2 className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => setExtrasFor({ module: mod, lesson: l })} className="h-8 px-3 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-200 text-[10px] font-black shrink-0">EXTRAS</button>
+                      <button onClick={() => openLessonForm(mod.id, l)} className="h-8 px-3 rounded-full glass text-xs font-bold shrink-0">EDIT</button>
+                      <button onClick={async () => { if (confirm('Delete lesson?')) { try { await deleteLesson(course.id, mod.id, l.id); toast.success('Lesson deleted'); } catch (err) { toast.error(err.message); } } }} className="h-8 w-8 rounded-full glass flex items-center justify-center text-red-300 shrink-0"><Trash2 className="h-3.5 w-3.5" /></button>
                     </div>
                   ))}
                   <button onClick={() => openLessonForm(mod.id)} className="w-full h-10 rounded-xl border border-dashed border-white/20 text-xs font-bold text-white/50 hover:text-white hover:border-cyan-400/50">+ ADD LESSON</button>
@@ -215,14 +273,27 @@ export default function CourseManager() {
               <input value={lessonData.title} onChange={(e) => setLessonData({ ...lessonData, title: e.target.value })} placeholder="Lesson title" className="w-full h-11 rounded-full glass px-4 text-sm" />
               <div className="grid sm:grid-cols-2 gap-3">
                 <select value={lessonData.type} onChange={(e) => setLessonData({ ...lessonData, type: e.target.value })} className="h-11 rounded-full glass px-4 text-sm">
-                  <option className="bg-[#061236]" value="video">Video lesson</option>
-                  <option className="bg-[#061236]" value="text">Text lesson</option>
+                  {[['video','Video lesson'],['text','Text/reading lesson'],['practical','Practical lesson'],['quiz','Quiz lesson'],['assignment','Assignment lesson'],['project','Final project'],['resource','Resources only']].map(([v,lab]) => <option key={v} className="bg-[#061236]" value={v}>{lab}</option>)}
                 </select>
-                <input value={lessonData.duration} onChange={(e) => setLessonData({ ...lessonData, duration: e.target.value })} placeholder="Duration (e.g. 12:30)" className="h-11 rounded-full glass px-4 text-sm" />
+                <select value={lessonData.topicId || ''} onChange={(e) => setLessonData({ ...lessonData, topicId: e.target.value })} className="h-11 rounded-full glass px-4 text-sm">
+                  <option className="bg-[#061236]" value="">Topic: — none (module level) —</option>
+                  {((course.curriculum || []).find((m) => m.id === lessonForm.moduleId)?.topics || []).map((t) => <option key={t.id} className="bg-[#061236]" value={t.id}>{t.title}</option>)}
+                </select>
+                <input value={lessonData.duration} onChange={(e) => setLessonData({ ...lessonData, duration: e.target.value })} placeholder="Duration (e.g. 14 min)" className="h-11 rounded-full glass px-4 text-sm" />
+                <input type="number" min="1" value={lessonData.estimatedMinutes || ''} onChange={(e) => setLessonData({ ...lessonData, estimatedMinutes: e.target.value })} placeholder="Estimated minutes (for progress/time math)" className="h-11 rounded-full glass px-4 text-sm" />
               </div>
+              <textarea value={lessonData.description || ''} onChange={(e) => setLessonData({ ...lessonData, description: e.target.value })} placeholder="Short description shown above the lesson" className="w-full rounded-2xl glass p-3.5 text-sm h-16 focus:outline-none focus:border-cyan-400/50" />
               <div>
-                <label className="text-xs font-bold text-white/40">VIDEO URL (YouTube embed link)</label>
-                <input value={lessonData.videoUrl} onChange={(e) => setLessonData({ ...lessonData, videoUrl: e.target.value })} placeholder="https://www.youtube.com/embed/..." className="mt-1 w-full h-11 rounded-full glass px-4 text-sm font-mono" />
+                <label className="text-xs font-bold text-white/40">VIDEO URL (YouTube link)</label>
+                <input value={lessonData.videoUrl} onChange={(e) => setLessonData({ ...lessonData, videoUrl: e.target.value, videoStoragePath: '' })} placeholder="https://www.youtube.com/watch?v=..." className="mt-1 w-full h-11 rounded-full glass px-4 text-sm font-mono" />
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full glass text-[11px] font-bold cursor-pointer hover:bg-white/10">
+                    <Upload className="h-3.5 w-3.5" /> {uploadingVideo ? 'UPLOADING…' : lessonData.videoStoragePath ? 'REPLACE UPLOADED VIDEO' : 'OR UPLOAD VIDEO (MP4 ≤ 50MB)'}
+                    <input type="file" accept="video/mp4,video/webm" className="hidden" disabled={uploadingVideo} onChange={pickLessonVideo} />
+                  </label>
+                  {lessonData.videoStoragePath && <span className="text-[10px] font-mono text-green-300 break-all max-w-[240px]">✓ {lessonData.videoStoragePath}</span>}
+                  {lessonData.videoStoragePath && <button type="button" onClick={() => setLessonData((d) => ({ ...d, videoStoragePath: '' }))} className="text-[10px] font-bold text-red-300">REMOVE</button>}
+                </div>
               </div>
               <div>
                 <label className="text-xs font-bold text-white/40">READ LESSON CONTENT (markdown supported: headings, tables, code, tips)</label>
@@ -235,6 +306,16 @@ export default function CourseManager() {
               <button onClick={() => saveLesson(course.id)} className="w-full btn-primary !py-3">SAVE LESSON</button>
             </div>
           </div>
+        )}
+
+        {extrasFor && (
+          <LessonExtrasModal
+            courseId={course.id}
+            module={(course.curriculum || []).find((m) => m.id === extrasFor.module.id) || extrasFor.module}
+            lesson={extrasFor.lesson}
+            onClose={() => setExtrasFor(null)}
+            onSaved={() => ensureCourseDetail(course.id).then(() => retryCourseDetail?.(course.id)).catch(() => {})}
+          />
         )}
       </div>
     );

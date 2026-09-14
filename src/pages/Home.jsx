@@ -5,6 +5,7 @@ import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import CourseCard from '../components/course/CourseCard';
 import CatalogEmpty from '../components/common/CatalogEmpty';
+import { BrandMark } from '../components/common/BrandLogo';
 import { useNavigate } from 'react-router-dom';
 
 export default function Home() {
@@ -34,6 +35,10 @@ export default function Home() {
               </div>
 
               <div className="space-y-3">
+                <div className="flex items-center gap-3.5">
+                  <BrandMark size={54} className="shrink-0 drop-shadow-[0_0_22px_rgba(34,211,238,0.4)]" />
+                  <span className="text-[10px] sm:text-[11px] font-black tracking-[0.3em] text-white/55 leading-relaxed">WOLI DAN<br/>TECH HUB</span>
+                </div>
                 <h1 className="font-display font-black text-[42px] md:text-[64px] leading-[0.9] tracking-tight">
                   <span className="block">WOLI DAN</span>
                   <span className="block text-gradient">TECH HUB</span>

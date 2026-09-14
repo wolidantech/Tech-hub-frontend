@@ -79,8 +79,64 @@ catalog) with the fix for each. It also has a **Copy report** button.
 ```bash
 cd supabase/verify
 npm install
-npm run verify        # migrations 001-005 behaviorally (41 assertions)
+npm run verify        # migrations 001-009 behaviorally (53 assertions)
 npm run verify:seed   # the seed chain -> non-empty storefront + first admin
 ```
 
 Both run in throwaway Postgres (PGlite), so they need no Supabase project.
+
+## Classroom curriculum runbook (empty-classroom fix)
+
+Live classrooms read their content ONLY from Supabase. If the course page shows
+a preview but the classroom is empty, the fix is data + migration order, on the
+SQL Editor, exactly this sequence:
+
+1. `supabase/migrations/001…009` in order (009 = topics, practicals,
+   downloadable resources, practical submissions, numeric quizzes).
+2. `supabase/seed/setup_full_catalog.sql` — one paste, idempotent: courses,
+   4 modules × 4 lessons per course with full lesson bodies, real YouTube
+   videos, curated resources, per-module topic rows when the data declares
+   them, final quizzes, final projects and certificate completion rules.
+3. `supabase/seed/publish_courses.sql` — publish any course whose curriculum
+   just landed (RLS hides drafts from students by design).
+
+Verify with (anon key, in the SQL editor or REST):
+
+```sql
+select c.slug, count(distinct m.id) as modules,
+       count(l.id) as lessons,
+       count(cc.id) as bodies,
+       count(cv.id) as videos,
+       count(r.id) as resources,
+       count(p.id) as practicals
+from courses c
+left join course_modules m on m.course_id = c.id
+left join course_lessons l on l.course_id = c.id
+left join course_content cc on cc.lesson_id = l.id
+left join course_videos cv on cv.lesson_id = l.id
+left join course_resources r on r.course_id = c.id
+left join lesson_practicals p on p.course_id = c.id
+where c.published and not c.archived
+group by c.slug order by c.slug;
+```
+
+Any row with `modules = 0` means the backend host has not published that
+course's curriculum yet — the UI renders an honest “no curriculum yet” state
+instead of fake content. The frontend probes which curriculum tables exist
+(`src/lib/schema.js`) so it works on both the frontend lineage
+(`course_lessons`/`course_content`/`course_videos`) and projects that also ran
+the backend repo's content pipeline (`lessons`/`lesson_content`/`lesson_videos`,
+`course_resources`, `lesson_practicals`).
+
+### Local full-stack preview without a Supabase project (dev only)
+
+```bash
+node tools/mock-supabase.mjs          # real SQL: 001-009 + production seed on PGlite
+echo 'VITE_SUPABASE_URL=http://127.0.0.1:54321' > .env.local
+echo 'VITE_SUPABASE_ANON_KEY=eyJhbGciOiJub25lIn0.mock.dev-key' >> .env.local
+npm run dev                            # log in as ada@example.com / demo1234
+node tools/e2e-smoke.mjs               # 31-point end-to-end data-path check
+```
+
+Never deploy `tools/mock-supabase.mjs` or `.env.local`; the mock exists so the
+classroom pipeline can be exercised where no live project is reachable.

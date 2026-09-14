@@ -180,6 +180,35 @@ export async function signedUrl(bucket, path, expiresIn = 3600) {
   }
 }
 
+/**
+ * The two schema lineages use different private buckets for the same kinds of
+ * files (this repo: resources / lesson-videos; backend repo: course-resources
+ * / course-videos). Try each candidate and return the first signed URL that
+ * exists — so a file uploaded by EITHER pipeline always opens, and a missing
+ * file yields null instead of a fake or broken URL.
+ */
+export async function signedUrlAny(buckets, path, expiresIn = 3600) {
+  if (!path) return null;
+  for (const bucket of (Array.isArray(buckets) ? buckets : [buckets])) {
+    const url = await signedUrl(bucket, path, expiresIn);
+    if (url) return url;
+  }
+  return null;
+}
+
+/** Bucket aliases for uploads: primary first, fallback used only if missing. */
+export async function ensureBucket(bucket) {
+  try {
+    const sb = requireSb();
+    const { data } = await sb.storage.getBucket(bucket);
+    if (data) return bucket;
+    await sb.storage.createBucket(bucket, { public: false });
+    return bucket;
+  } catch {
+    return bucket; // the upload itself will produce a friendly error if not
+  }
+}
+
 export function publicUrl(bucket, path) {
   if (!path) return null;
   try {

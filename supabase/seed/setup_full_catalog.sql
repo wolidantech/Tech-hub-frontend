@@ -10,7 +10,7 @@
 --   3. publish_courses.sql       — flips published = true on courses with lessons
 --   4. seed_learning_paths.sql   — 4 guided learning paths over the live catalog
 --
--- Run AFTER migrations 001-008. Idempotent: safe to re-run; never duplicates
+-- Run AFTER migrations 001-009. Idempotent: safe to re-run; never duplicates
 -- rows and never unpublishes a course you deliberately hid.
 --
 -- Expected end state: 12 published courses with real lesson counts and

@@ -33,10 +33,11 @@ export default function MyCourses() {
                     <div className="h-20 w-20 rounded-2xl overflow-hidden shrink-0"><CourseArt course={course} className="h-20" /></div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold leading-tight">{course.title}</h3>
-                      <div className="text-xs text-white/50 mt-1 flex gap-3"><span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {course.duration}</span><span>{progress.completedLessons.length}/{total} lessons</span></div>
+                      <div className="text-xs text-white/50 mt-1 flex gap-3"><span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {course.duration}</span><span>{progress.completedLessons.length}/{total} lessons</span>{course.curriculum ? <span>{course.curriculum.length} modules</span> : null}</div>
                       <div className="mt-3 h-2 rounded-full bg-white/10 overflow-hidden"><div className="h-full bg-gradient-to-r from-cyan-400 to-blue-600" style={{ width: `${progress.progress}%` }} /></div>
                       <div className="mt-3 flex gap-2">
-                        <Link to={`/learn/${course.slug}`} className="px-4 py-2 rounded-full bg-white text-black font-bold text-xs flex items-center gap-1"><Play className="h-3 w-3" /> {progress.progress===100?'REVIEW':'CONTINUE'}</Link>
+                        {!total && <span className="px-3 py-2 rounded-full text-[10px] font-bold text-white/45" title="Modules and lessons are published by the academy in Supabase — this enrollment stays valid">CURRICULUM COMING</span>}
+                        <Link to={`/learn/${course.slug}`} className="px-4 py-2 rounded-full bg-white text-black font-bold text-xs flex items-center gap-1"><Play className="h-3 w-3" /> {progress.progress===100?'REVIEW':progress.progress===0?'START COURSE':'CONTINUE LEARNING'}</Link>
                         {progress.progress===100 && <Link to="/certificates" className="px-4 py-2 rounded-full bg-green-500/20 text-green-300 font-bold text-xs flex items-center gap-1"><Award className="h-3 w-3" /> CERTIFICATE</Link>}
                       </div>
                     </div>

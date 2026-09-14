@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 150" role="img" aria-label="WOLI DAN TECH HUB — Learn Build Grow">
+  <defs>
+    <linearGradient id="wdth-g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="0.55" stop-color="#0ea5e9"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="wdth-t" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#67e8f9"/>
+      <stop offset="1" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(10,15)">
+    <rect x="1" y="1" width="118" height="118" rx="28" fill="#020a1f"/>
+    <rect x="4" y="4" width="112" height="112" rx="25" fill="url(#wdth-g)"/>
+    <path d="M25 37 L43 86 L59 51 L75 86 L93 37" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="25" cy="37" r="6" fill="#020a1f"/><circle cx="93" cy="37" r="6" fill="#020a1f"/>
+    <circle cx="25" cy="37" r="2.6" fill="#fff"/><circle cx="93" cy="37" r="2.6" fill="#fff"/>
+    <circle cx="101" cy="20" r="7.2" fill="#67e8f9" stroke="#020a1f" stroke-width="2.6"/>
+  </g>
+  <text x="150" y="62" font-family="'Space Grotesk','Plus Jakarta Sans',system-ui,sans-serif" font-weight="700" font-size="42" fill="#ffffff" letter-spacing="1">WOLI DAN</text>
+  <text x="150" y="106" font-family="'Space Grotesk','Plus Jakarta Sans',system-ui,sans-serif" font-weight="700" font-size="42" fill="url(#wdth-t)" letter-spacing="6">TECH HUB</text>
+  <text x="152" y="134" font-family="'Plus Jakarta Sans',system-ui,sans-serif" font-weight="600" font-size="15" fill="#94a3b8" letter-spacing="4">LEARN • BUILD • GROW</text>
+</svg>

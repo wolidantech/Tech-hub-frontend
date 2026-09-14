@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Shield, Eye, EyeOff, ArrowRight, AlertTriangle } from 'lucide-react';
+import { BrandMark } from '../components/common/BrandLogo';
 import { useAuth } from '../context/AuthContext';
 import { toast, Toaster } from 'sonner';
 
@@ -45,7 +46,9 @@ export default function AdminLogin() {
               <Shield className="h-8 w-8 text-white" />
             </div>
             <div>
+              <BrandMark size={48} />
               <h1 className="font-display font-black text-[28px] leading-none">Admin Login</h1>
+              <div className="text-[9px] font-black tracking-[0.34em] text-cyan-300/70">WOLI DAN TECH HUB • LEARN • BUILD • GROW</div>
               <p className="mt-2 text-sm text-white/60">Secure access to WOLI DAN TECH HUB admin dashboard</p>
             </div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[11px] font-bold tracking-widest text-amber-300">

@@ -34,13 +34,14 @@ export default function SetupGate({ children }) {
           </div>
           <ol className="mt-3 text-xs text-white/65 space-y-2 list-decimal pl-5">
             <li>
-              Create a Supabase project and run <span className="font-mono text-white/80">supabase/migrations/001…005</span> in the
+              Create a Supabase project and run <span className="font-mono text-white/80">supabase/migrations/001…009</span> in the
               SQL Editor, <span className="text-white/85 font-semibold">in numeric order</span>. Migration 003 creates the signup
-              trigger — skip it and <span className="text-white/85">every login fails</span>.
+              trigger — skip it and <span className="text-white/85">every login fails</span>; migration 009 creates the
+              classroom layer (topics, practicals, downloadable resources).
             </li>
             <li>
-              Run <span className="font-mono text-white/80">seed/seed_12_courses.sql</span>, then{' '}
-              <span className="font-mono text-white/80">seed/seed_curriculum.sql</span>.
+              Run the one-step catalog: <span className="font-mono text-white/80">seed/setup_full_catalog.sql</span>
+              (courses + full curriculum + publish).
             </li>
             <li>
               Run <span className="font-mono text-white/80">seed/publish_courses.sql</span>.{' '}

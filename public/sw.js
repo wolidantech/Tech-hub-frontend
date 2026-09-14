@@ -1,6 +1,6 @@
 /* WOLI DAN TECH HUB service worker — cache-first shell, network-first pages */
-const CACHE = 'wdth-v1';
-const SHELL = ['/', '/favicon.svg', '/manifest.webmanifest'];
+const CACHE = 'wdth-v2';
+const SHELL = ['/', '/favicon.svg', '/manifest.webmanifest', '/icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

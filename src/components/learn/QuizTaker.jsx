@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle2, XCircle, Award, RotateCcw, HelpCircle, History } from 'lucide-react';
 import { useLMS } from '../../context/LMSContext';
+import { gradeNumericAnswer } from '../../lib/lms';
 import { toast } from 'sonner';
 
 // Secure quiz flow: questions load WITHOUT answer keys (taker RPC); grading
@@ -106,6 +107,8 @@ export default function QuizTaker({ quiz, userId, onComplete }) {
       correct = g !== '' && g === k;
     } else if (q.type === 'short_answer') {
       correct = (key.acceptedAnswers || []).some((a) => String(a).trim().toLowerCase() === String(given || '').trim().toLowerCase());
+    } else if (q.type === 'numeric') {
+      correct = key.answerNumber != null && gradeNumericAnswer(given, key.answerNumber, key.answerTolerance ?? 0.0001);
     } else {
       correct = Number(given) === key.correctAnswer;
     }
@@ -115,6 +118,10 @@ export default function QuizTaker({ quiz, userId, onComplete }) {
   // Result view
   if (result && !started) {
     const reviewQuestions = (reviewQs && reviewQs.length ? reviewQs : questions);
+    const key2correct = (q) => {
+      const k = (reviewQs || []).find((r) => r.id === q.id);
+      return k?.answerNumber != null ? k.answerNumber : null;
+    };
     return (
       <div className="space-y-4">
         <div className={`rounded-2xl p-5 border ${result.passed ? 'bg-green-500/10 border-green-500/30' : 'bg-amber-500/10 border-amber-500/30'}`}>
@@ -142,6 +149,11 @@ export default function QuizTaker({ quiz, userId, onComplete }) {
                       <div className="text-white/60">Your answer: <span className={detail?.correct ? 'text-green-300 font-bold' : 'text-red-300'}>{String(detail?.given ?? '(blank)')}</span></div>
                       {!detail?.correct && detail.acceptedAnswers.length > 0 && <div className="text-green-300">Accepted: {detail.acceptedAnswers.join(' / ')}</div>}
                     </>
+                  ) : q.type === 'numeric' ? (
+                    <div className="text-white/60">
+                      Your answer: <span className={detail?.correct ? 'text-green-300 font-bold' : 'text-red-300'}>{String(detail?.given ?? '(blank)')}</span>
+                      {!detail?.correct && key2correct(q) != null && <div className="text-green-300">Correct: {key2correct(q)}{q.answerUnit ? ` ${q.answerUnit}` : ''}</div>}
+                    </div>
                   ) : (q.options || []).map((opt, oi) => {
                     const isCorrect = q.type === 'multiple_answer' ? detail.correctAnswers?.includes(oi) : detail.correctAnswer === oi;
                     const wasGiven = q.type === 'multiple_answer' ? (detail?.given || []).includes(oi) : Number(detail?.given) === oi;
@@ -191,7 +203,7 @@ export default function QuizTaker({ quiz, userId, onComplete }) {
       {questions.map((q, i) => (
         <div key={q.id} className="glass rounded-2xl p-5">
           <div className="font-bold text-sm">Q{i + 1}. {q.question}</div>
-          <div className="text-[11px] text-white/40 mt-1 uppercase tracking-wider">{q.type.replace(/_/g, ' ')} {q.type === 'multiple_answer' && '• select all that apply'}</div>
+          <div className="text-[11px] text-white/40 mt-1 uppercase tracking-wider">{q.type.replace(/_/g, ' ')} {q.type === 'multiple_answer' && '• select all that apply'}{q.type === 'numeric' && '• enter a number'}</div>
           {q.type === 'short_answer' ? (
             <input
               value={answers[q.id] || ''}
@@ -199,6 +211,17 @@ export default function QuizTaker({ quiz, userId, onComplete }) {
               placeholder="Type your answer..."
               className="mt-3 w-full h-12 rounded-xl glass px-4 text-sm focus:outline-none focus:border-cyan-400/50"
             />
+          ) : q.type === 'numeric' ? (
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                type="text" inputMode="decimal"
+                value={answers[q.id] ?? ''}
+                onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
+                placeholder="0.00"
+                className="w-full h-12 rounded-xl glass px-4 text-sm font-bold text-cyan-200 focus:outline-none focus:border-cyan-400/50"
+              />
+              {q.unit || q.answerUnit ? <span className="text-sm font-bold text-white/60 shrink-0">{q.unit || q.answerUnit}</span> : null}
+            </div>
           ) : (
             <div className="mt-3 space-y-2">
               {(q.options || []).map((opt, oi) => {
