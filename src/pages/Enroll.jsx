@@ -14,7 +14,7 @@ const RECEIPT_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'
 
 export default function Enroll() {
   const { slug } = useParams();
-  const { getCourseBySlug, submitManualPayment, getManualPaymentByCourse, isEnrolled } = useCourses();
+  const { coursesLoading, dataLoading, getCourseBySlug, submitManualPayment, getManualPaymentByCourse, isEnrolled } = useCourses();
   const { validateCouponForUser, recordRedemption, siteSettings } = useLMS();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -58,6 +58,7 @@ export default function Enroll() {
     setAmountError('');
   }, [amountDue]);
 
+  if (coursesLoading || dataLoading) return <div role="status" className="p-8">Loading course and enrollment…</div>;
   if (!course) return <div className="p-20 text-center">Course not found</div>;
   if (!user) {
     navigate('/login');

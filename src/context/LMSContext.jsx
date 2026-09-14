@@ -66,6 +66,12 @@ export const LMSProvider = ({ children }) => {
   const [siteSettings, setSiteSettingsState] = useState(null);
   const [lmsLoading, setLmsLoading] = useState(true);
 
+  const refreshCourseAssessments = useCallback(async (courseId) => {
+    const [qz, asg] = await Promise.all([fetchQuizzes(courseId), fetchAssignments(courseId)]);
+    setQuizzes(prev => [...prev.filter(q => q.courseId !== courseId), ...qz]);
+    setAssignments(prev => [...prev.filter(a => a.courseId !== courseId), ...asg]);
+  }, []);
+
   // ---------- Public bootstrap ----------
   useEffect(() => {
     let alive = true;
@@ -267,7 +273,7 @@ export const LMSProvider = ({ children }) => {
   const getCourseAssignments = useCallback((courseId) =>
     assignments.filter((a) => a.courseId === courseId && a.status === 'published'), [assignments]);
 
-  const submitAssignment = async ({ assignmentId, userId, studentName, kind = 'file', file = null, textContent = '', linkUrl = '', note = '' }) => {
+  const submitAssignment = async ({ assignmentId, userId, studentName, kind = 'file', file = null, textContent = '', linkUrl = '', note = '', onUploadProgress = null }) => {
     const asg = assignments.find((a) => a.id === assignmentId);
     if (!asg) throw new Error('Assignment not found');
     if (kind === 'text' && !String(textContent).trim()) throw new Error('Please write your answer before submitting');
@@ -278,7 +284,7 @@ export const LMSProvider = ({ children }) => {
     let fileType = '';
     let fileSize = 0;
     if (kind === 'file' && file) {
-      storagePath = await uploadSubmissionFile(userId, file);
+      storagePath = await uploadSubmissionFile(userId, file, onUploadProgress);
       fileName = file.name; fileType = file.type; fileSize = file.size;
     }
     const late = asg.deadline ? new Date() > new Date(asg.deadline) : false;
@@ -611,6 +617,7 @@ export const LMSProvider = ({ children }) => {
 
   return (
     <LMSContext.Provider value={{
+      refreshCourseAssessments,
       lmsLoading,
       categories, addCategory, renameCategory, deleteCategory,
       quizzes, quizQuestions, quizAttempts,

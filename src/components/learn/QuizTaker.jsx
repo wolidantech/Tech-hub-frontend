@@ -12,6 +12,7 @@ export default function QuizTaker({ quiz, userId, onComplete }) {
   const [reviewQs, setReviewQs] = useState(null); // with keys (after attempt)
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [retry, setRetry] = useState(0);
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(() => attempts[0] || null);
   const [started, setStarted] = useState(false);
@@ -26,7 +27,7 @@ export default function QuizTaker({ quiz, userId, onComplete }) {
       .catch((err) => { if (alive) setLoadError(err.message); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [quiz.id, fetchQuizForTaker]);
+  }, [quiz.id, fetchQuizForTaker, retry]);
 
   // Load answer keys when a result is shown (server allows only after attempting).
   useEffect(() => {
@@ -39,8 +40,8 @@ export default function QuizTaker({ quiz, userId, onComplete }) {
   }, [result, started, quiz.id, fetchQuizReview]);
 
   if (loading) return <div className="text-sm text-white/40 py-6 text-center">Loading quiz…</div>;
-  if (loadError) return <div className="text-sm text-red-300 py-6 text-center">{loadError}</div>;
-  if (!questions || !questions.length) return <div className="text-sm text-white/40">Quiz questions coming soon.</div>;
+  if (loadError) return <div className="text-sm text-red-300 py-6 text-center">{loadError} <button onClick={() => setRetry(n => n + 1)}>Retry</button></div>;
+  if (!questions || !questions.length) return <div className="text-sm text-white/40">No published questions are available for this quiz. Contact your instructor.</div>;
 
   const limitReached = quiz.attemptLimit && attempts.length >= quiz.attemptLimit;
   const canAttempt = !limitReached && (attempts.length === 0 || quiz.allowRetake);

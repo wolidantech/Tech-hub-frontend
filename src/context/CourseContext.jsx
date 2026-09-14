@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { subscribeChanges } from '../lib/supabase';
 import {
@@ -30,7 +30,6 @@ export const CourseProvider = ({ children }) => {
   // Last catalog failure, kept so the UI can say WHY it is empty instead of
   // showing a bare "No courses found" (which reads like a search miss).
   const [coursesError, setCoursesError] = useState(null);
-  const [detailIds, setDetailIds] = useState(() => new Set());
   const [enrollments, setEnrollments] = useState([]);
   const [manualPayments, setManualPayments] = useState([]);
   const [progressRows, setProgressRows] = useState([]);
@@ -39,6 +38,11 @@ export const CourseProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [bundleNames, setBundleNames] = useState({});
   const [dataLoading, setDataLoading] = useState(false);
+  const [loadedUserId, setLoadedUserId] = useState(null);
+  const [dataError, setDataError] = useState('');
+  const accessKey = `${user?.id || 'public'}:${user?.role || ''}:${enrollments.map(e => `${e.courseId}:${e.status}`).sort().join(',')}`;
+  const accessRef = useRef(accessKey);
+  accessRef.current = accessKey;
   const [adminStats, setAdminStats] = useState(null);
 
   // ---------- Catalog (public) ----------
@@ -70,17 +74,17 @@ export const CourseProvider = ({ children }) => {
   // for lessons (RLS withholds bodies/videos until enrolled).
   const ensureCourseDetail = useCallback(async (courseId) => {
     if (!courseId) return null;
-    let found = null;
-    setCourses((prev) => {
-      found = prev.find((c) => c.id === courseId && c.curriculum);
-      return prev;
-    });
-    if (found) return found;
+    const requestedAccess = accessRef.current;
     const detail = await fetchCourseDetail(courseId);
+    // Never install a response fetched under a previous identity/enrollment.
+    if (accessRef.current !== requestedAccess) return null;
     setCourses((prev) => prev.map((c) => (c.id === courseId ? detail : c)));
-    setDetailIds((prev) => new Set(prev).add(courseId));
     return detail;
   }, []);
+
+  useEffect(() => {
+    setCourses(prev => prev.map(({ curriculum, ...course }) => course));
+  }, [accessKey]);
 
   // ---------- Per-user / admin data ----------
   const refreshMine = useCallback(async () => {
@@ -90,6 +94,7 @@ export const CourseProvider = ({ children }) => {
       return;
     }
     setDataLoading(true);
+    setDataError('');
     try {
       if (user.role === 'admin') {
         const [en, pay, prog, certs] = await Promise.all([
@@ -107,20 +112,15 @@ export const CourseProvider = ({ children }) => {
         setCertificates(certs); setNotifications(notifs); setLessonActivity(activity);
       }
     } catch (err) {
+      setDataError(err.message);
       console.error('[courses] failed to load user data:', err.message);
     } finally {
+      setLoadedUserId(user.id);
       setDataLoading(false);
     }
   }, [user]);
 
   useEffect(() => { refreshMine(); }, [refreshMine]);
-
-  // Preload curriculum details for enrolled courses (Learn, DanTECH, progress %).
-  useEffect(() => {
-    if (!user || user.role === 'admin' || !enrollments.length) return;
-    const ids = [...new Set(enrollments.filter((e) => e.status !== 'removed').map((e) => e.courseId))];
-    ids.forEach((id) => { ensureCourseDetail(id).catch(() => {}); });
-  }, [user, enrollments, ensureCourseDetail]);
 
   // ---------- Realtime ----------
   useEffect(() => {
@@ -177,7 +177,7 @@ export const CourseProvider = ({ children }) => {
   const getCourseBySlug = useCallback((slug) => courses.find((c) => c.slug === slug), [courses]);
   const getCourseById = useCallback((id) => courses.find((c) => c.id === id), [courses]);
   const isEnrolled = useCallback((userId, courseId) =>
-    enrollments.some((e) => e.userId === userId && e.courseId === courseId && e.status !== 'removed'),
+    enrollments.some((e) => e.userId === userId && e.courseId === courseId && e.status === 'active'),
   [enrollments]);
 
   // ===== MANUAL BANK TRANSFER SYSTEM =====
@@ -484,7 +484,9 @@ export const CourseProvider = ({ children }) => {
       courses,
       coursesLoading,
       coursesError,
-      dataLoading,
+      dataLoading: dataLoading || (!!user && loadedUserId !== user.id),
+      dataError,
+      accessKey,
       ensureCourseDetail,
       refreshCourses,
       refreshMine,

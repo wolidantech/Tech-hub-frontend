@@ -9,8 +9,11 @@ const PUBLIC_BUCKETS = new Set(['avatars', 'thumbnails']);
 export function useSignedUrl(bucket, path, expiresIn = 3600) {
   const [url, setUrl] = useState(() => (PUBLIC_BUCKETS.has(bucket) && path ? publicUrl(bucket, path) : null));
   const [loading, setLoading] = useState(Boolean(path) && !PUBLIC_BUCKETS.has(bucket));
+  const [error, setError] = useState('');
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let alive = true;
+    setUrl(null); setError('');
     if (!path) { setUrl(null); setLoading(false); return; }
     if (PUBLIC_BUCKETS.has(bucket)) { setUrl(publicUrl(bucket, path)); setLoading(false); return; }
     setLoading(true);
@@ -18,10 +21,10 @@ export function useSignedUrl(bucket, path, expiresIn = 3600) {
       if (!alive) return;
       setUrl(u);
       setLoading(false);
-    });
+    }).catch(err => { if (alive) { setError(err.message || 'Could not load this file.'); setLoading(false); } });
     return () => { alive = false; };
-  }, [bucket, path, expiresIn]);
-  return { url, loading };
+  }, [bucket, path, expiresIn, attempt]);
+  return { url, loading, error, retry: () => setAttempt(n => n + 1) };
 }
 
 const isImage = (t, n) => (t || '').startsWith('image/') || /\.(jpe?g|png|webp|gif)$/i.test(n || '');
@@ -32,7 +35,7 @@ const isVideo = (t, n) => (t || '').startsWith('video/') || /\.(mp4|webm|mov)$/i
  * kind: 'auto' | 'image' | 'video' | 'download'
  */
 export default function SignedFile({ bucket, path, fileName, fileType, kind = 'auto', className = '', imgClassName = 'w-full h-auto max-h-[500px] object-contain' }) {
-  const { url, loading } = useSignedUrl(bucket, path);
+  const { url, loading, error, retry } = useSignedUrl(bucket, path);
   const name = fileName || String(path || '').split('/').pop() || 'file';
 
   if (!path) return <div className="text-sm text-white/40">No file attached.</div>;
@@ -43,16 +46,16 @@ export default function SignedFile({ bucket, path, fileName, fileType, kind = 'a
       </div>
     );
   }
-  if (!url) return <div className="text-sm text-red-300">Could not load this file. It may have been removed.</div>;
+  if (!url) return <div role="alert" className="text-sm text-red-300">{error || 'Could not load this file. It may have been removed.'} <button onClick={retry} className="underline p-2">Retry file</button></div>;
 
   const showImage = kind === 'image' || (kind === 'auto' && isImage(fileType, name));
   const showVideo = kind === 'video' || (kind === 'auto' && isVideo(fileType, name));
 
   if (showImage) return <img src={url} alt={name} loading="lazy" className={imgClassName} />;
-  if (showVideo) return <video src={url} controls className={`w-full max-h-[500px] rounded-xl ${className}`} />;
+  if (showVideo) return <video src={url} playsInline preload="metadata" controls className={`w-full max-h-[500px] rounded-xl ${className}`} />;
 
   return (
-    <div className={`p-4 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center gap-3 ${className}`}>
+    <div className={`p-4 rounded-2xl bg-white/[0.04] border border-white/10 flex flex-wrap items-center gap-3 ${className}`}>
       <FileText className="h-8 w-8 text-cyan-300 shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="font-bold text-sm truncate">{name}</div>

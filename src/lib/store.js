@@ -738,7 +738,7 @@ export const submitSubmissionRow = async (row) =>
     late: !!row.late, status: 'submitted',
   }).select().single()));
 
-export const uploadSubmissionFile = async (userId, file) => uploadFile('submissions', userId, file);
+export const uploadSubmissionFile = async (userId, file, onProgress = null) => uploadFile('submissions', userId, file, onProgress);
 
 export const reviewSubmissionRow = async (id, { status, score = null, feedback = '', reviewedBy = '' }) => {
   if (!['under_review', 'approved', 'needs_revision'].includes(status)) throw new Error('Invalid status');

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, LogOut, LayoutDashboard, User, Shield, CreditCard, BookOpen, Search, FileText, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -11,6 +11,13 @@ export default function Navbar() {
   const { getPendingManualPayments } = useCourses();
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => { setOpen(false); }, [location.pathname]);
+  useEffect(() => {
+    const close = e => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('keydown', close);
+    return () => window.removeEventListener('keydown', close);
+  }, []);
 
   const navLinks = [
     { to: '/', label: 'Home' },
@@ -34,20 +41,13 @@ export default function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#020a1f]/80 backdrop-blur-2xl">
-      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
         <div className="flex h-[72px] items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
-            <div className="relative h-10 w-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-black text-white shadow-[0_0_20px_rgba(34,211,238,0.5)]">
-              W
-              <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-cyan-300 animate-pulse" />
-            </div>
-            <div className="leading-none">
-              <div className="font-display font-bold text-[16px] tracking-tight">WOLI DAN</div>
-              <div className="font-display font-bold text-[13px] text-gradient tracking-widest -mt-0.5">TECH HUB</div>
-            </div>
+            <img src="/logo.svg" alt="WOLI DAN TECH HUB — Learn • Build • Grow" className="w-[190px] h-12" />
           </Link>
 
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden min-[1600px]:flex items-center gap-1">
             {navLinks.map(l => (
               <Link key={l.to} to={l.to} className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${isActive(l.to) ? 'bg-white/[0.08] text-white' : 'text-white/60 hover:text-white hover:bg-white/[0.05]'}`}>
                 {l.label}
@@ -59,7 +59,7 @@ export default function Navbar() {
             </form>
           </div>
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden min-[1600px]:flex items-center gap-3">
             {user ? (
               <>
                 <Link to={isAdmin ? "/admin/dashboard" : "/dashboard"} className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-sm font-semibold hover:bg-white/[0.1] transition relative">
@@ -95,14 +95,14 @@ export default function Navbar() {
             )}
           </div>
 
-          <button onClick={() => setOpen(!open)} className="md:hidden p-2 rounded-full glass">
+          <button aria-label={open ? "Close navigation" : "Open navigation"} aria-expanded={open} aria-controls="mobile-navigation" onClick={() => setOpen(!open)} className="min-[1600px]:hidden p-2 rounded-full glass">
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
 
       {open && (
-        <div className="md:hidden border-t border-white/10 bg-[#061236]/95 backdrop-blur-2xl">
+        <div id="mobile-navigation" className="max-h-[calc(100dvh-72px)] overflow-y-auto min-[1600px]:hidden border-t border-white/10 bg-[#061236]/95 backdrop-blur-2xl">
           <div className="px-4 py-6 space-y-4">
             <form onSubmit={doSearch} className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
