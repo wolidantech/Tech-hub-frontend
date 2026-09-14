@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Eye, EyeOff, Sparkles, Shield, Stethoscope } from 'lucide-react';
+import { BrandMark } from '../components/common/BrandLogo';
 import { useAuth } from '../context/AuthContext';
 import { toast, Toaster } from 'sonner';
 
@@ -45,7 +46,8 @@ export default function Login() {
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
         <div className="w-full max-w-[420px] space-y-8">
           <div className="text-center space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass text-[11px] font-bold tracking-widest"><Sparkles className="h-3 w-3 text-cyan-300" /> WELCOME BACK</div>
+            <BrandMark size={52} className="mx-auto" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass text-[11px] font-bold tracking-widest"><Sparkles className="h-3 w-3 text-cyan-300" /> WELCOME BACK — WOLI DAN TECH HUB</div>
             <h1 className="font-display font-black text-[32px] leading-none">Login to your account</h1>
             <p className="text-sm text-white/60">Continue your learning journey</p>
           </div>

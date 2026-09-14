@@ -30,6 +30,19 @@ export default function DanTechAI() {
   const bottomRef = useRef(null);
   const boxRef = useRef(null);
   const ctrlRef = useRef(null);
+  const inputRef = useRef(null);
+  // Keyboard-aware viewport: on mobile the panel must shrink above the on-screen
+  // keyboard (visualViewport) instead of being covered by it.
+  const [kbH, setKbH] = useState(0);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return undefined;
+    const onResize = () => setKbH(Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)));
+    onResize();
+    vv.addEventListener('resize', onResize);
+    vv.addEventListener('scroll', onResize);
+    return () => { vv.removeEventListener('resize', onResize); vv.removeEventListener('scroll', onResize); };
+  }, []);
 
   const enabled = siteSettings?.dantechEnabled !== false;
   const isStudent = user && user.role !== 'admin';
@@ -58,7 +71,7 @@ export default function DanTechAI() {
   const index = useMemo(() => buildCourseIndex(courses), [courses]);
   const convos = user ? getUserConvos(user.id) : [];
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, thinking, open]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, thinking, open, kbH]);
 
   // The Learn classroom dispatches 'wdth_open_dantech' with an optional
   // prefilled prompt ("Ask DanTECH AI" button) — open the tutor and prefill.
@@ -68,6 +81,7 @@ export default function DanTechAI() {
       setShowHistory(false);
       const prompt = e?.detail?.prompt;
       if (prompt) setInput(String(prompt));
+      setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 260);
     };
     window.addEventListener('wdth_open_dantech', onOpen);
     return () => window.removeEventListener('wdth_open_dantech', onOpen);
@@ -171,7 +185,10 @@ export default function DanTechAI() {
 
       {/* Chat panel */}
       {open && (
-        <div className="fixed z-50 inset-x-3 bottom-3 sm:inset-x-auto sm:right-5 sm:bottom-5 sm:w-[420px] h-[78vh] sm:h-[600px] max-h-[700px] rounded-[24px] overflow-hidden glass-strong shadow-2xl flex flex-col border border-purple-500/30">
+        <div
+          className="fixed z-50 inset-x-3 bottom-3 sm:inset-x-auto sm:right-5 sm:bottom-5 sm:w-[420px] h-[78dvh] sm:h-[600px] max-h-[700px] rounded-[24px] overflow-hidden glass-strong shadow-2xl flex flex-col border border-purple-500/30"
+          style={kbH > 60 ? { height: `calc(100dvh - ${kbH + 12}px)`, maxHeight: `calc(100dvh - ${kbH + 12}px)` } : undefined}
+        >
           {/* Header */}
           <div className="bg-gradient-to-r from-violet-600 to-indigo-600 p-4 flex items-center gap-3">
             <div className="h-11 w-11 rounded-2xl bg-white/20 flex items-center justify-center text-2xl shrink-0">🤖</div>
@@ -272,8 +289,10 @@ export default function DanTechAI() {
               </div>
 
               {/* Input */}
-              <form onSubmit={(e) => { e.preventDefault(); send(); }} className="p-3 border-t border-white/10 flex gap-2">
+              <form onSubmit={(e) => { e.preventDefault(); send(); }} className="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-white/10 flex gap-2">
                 <input
+                  ref={inputRef}
+                  onFocus={() => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 250)}
                   value={input} onChange={(e) => setInput(e.target.value)}
                   placeholder={lesson ? `Ask about "${lesson.title.slice(0, 30)}..."` : `Ask ${DANTECH_NAME} anything...`}
                   className="flex-1 h-11 rounded-full glass px-4 text-sm focus:outline-none focus:border-purple-400/50"

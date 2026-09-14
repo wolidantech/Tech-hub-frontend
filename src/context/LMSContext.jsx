@@ -12,6 +12,7 @@ import {
   adminAddQuestion, adminUpdateQuestion, adminDeleteQuestion,
   fetchAssignments, fetchMySubmissions, fetchAllSubmissions, submitSubmissionRow,
   uploadSubmissionFile, reviewSubmissionRow,
+  submitPracticalRow, fetchMyPracticalSubmissions, fetchAllPracticalSubmissions, reviewPracticalSubmission,
   adminCreateAssignment, adminUpdateAssignment, adminDeleteAssignment,
   validateCouponRpc, redeemCouponRpc, fetchCoupons, adminCreateCoupon, adminUpdateCoupon,
   adminDeleteCoupon, fetchRedemptions,
@@ -37,6 +38,18 @@ export const useLMS = () => {
   return ctx;
 };
 
+export const mapPracticalSubmission = (s) => (s ? {
+  id: s.id, practicalId: s.practical_id ?? s.practicalId, courseId: s.course_id ?? s.courseId,
+  lessonId: s.lesson_id ?? s.lessonId, userId: s.user_id ?? s.userId,
+  studentName: s.student_name ?? s.studentName ?? '', storagePath: s.storage_path ?? s.storagePath,
+  fileName: s.file_name ?? s.fileName ?? '', fileType: s.file_type ?? s.fileType ?? '',
+  fileSize: Number(s.file_size ?? s.fileSize ?? 0), textContent: s.text_content ?? s.textContent ?? '',
+  observation: s.observation ?? '', note: s.note ?? '', status: s.status || 'submitted',
+  score: s.score != null ? Number(s.score) : null, feedback: s.feedback ?? '',
+  reviewedBy: s.reviewed_by ?? s.reviewedBy, reviewedAt: s.reviewed_at ?? s.reviewedAt,
+  submittedAt: s.submitted_at ?? s.submittedAt,
+} : s);
+
 export const LMSProvider = ({ children }) => {
   const { user } = useAuth();
   const { getCourseBySlug, getCourseById } = useCourses();
@@ -48,6 +61,7 @@ export const LMSProvider = ({ children }) => {
   const [quizAttempts, setQuizAttempts] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [submissions, setSubmissions] = useState([]);
+  const [practicalSubs, setPracticalSubs] = useState([]);
   const [coupons, setCoupons] = useState([]);
   const [redemptions, setRedemptions] = useState([]);
   const [aiJobs, setAIJobs] = useState([]);
@@ -110,24 +124,27 @@ export const LMSProvider = ({ children }) => {
         if (!alive) return;
         setQuizzes(qz); setAssignments(asg);
         if (user.role === 'admin') {
-          const [att, sub, ev, coup, red, jobs, content, logs, revs] = await Promise.all([
+          const [att, sub, ev, coup, red, jobs, content, logs, revs, prsub] = await Promise.all([
             fetchAllAttempts().catch(() => []), fetchAllSubmissions().catch(() => []),
             fetchAllEvents().catch(() => []), fetchCoupons().catch(() => []),
             fetchRedemptions().catch(() => []), fetchAIJobs().catch(() => []),
             fetchAIContent().catch(() => []), fetchAuditLogs().catch(() => []),
-            fetchAllReviews().catch(() => []),
+            fetchAllReviews().catch(() => []), fetchAllPracticalSubmissions().catch(() => []),
           ]);
           if (!alive) return;
           setQuizAttempts(att); setSubmissions(sub); setLearningEvents(ev);
           setCoupons(coup); setRedemptions(red); setAIJobs(jobs); setAIContent(content);
           setAuditLogs(logs); setReviews(revs);
+          setPracticalSubs((prsub || []).map(mapPracticalSubmission));
         } else {
-          const [att, sub, ev, convos] = await Promise.all([
+          const [att, sub, ev, convos, prsub] = await Promise.all([
             fetchMyAttempts(user.id).catch(() => []), fetchMySubmissions(user.id).catch(() => []),
             fetchMyEvents(user.id).catch(() => []), fetchMyConvos(user.id).catch(() => []),
+            fetchMyPracticalSubmissions(user.id).catch(() => []),
           ]);
           if (!alive) return;
           setQuizAttempts(att); setSubmissions(sub); setLearningEvents(ev); setAIConvos(convos);
+          setPracticalSubs((prsub || []).map(mapPracticalSubmission));
         }
       } catch (err) {
         console.error('[lms] failed to load:', err.message);
@@ -267,7 +284,7 @@ export const LMSProvider = ({ children }) => {
   const getCourseAssignments = useCallback((courseId) =>
     assignments.filter((a) => a.courseId === courseId && a.status === 'published'), [assignments]);
 
-  const submitAssignment = async ({ assignmentId, userId, studentName, kind = 'file', file = null, textContent = '', linkUrl = '', note = '' }) => {
+  const submitAssignment = async ({ assignmentId, userId, studentName, kind = 'file', file = null, textContent = '', linkUrl = '', note = '', onProgress = null }) => {
     const asg = assignments.find((a) => a.id === assignmentId);
     if (!asg) throw new Error('Assignment not found');
     if (kind === 'text' && !String(textContent).trim()) throw new Error('Please write your answer before submitting');
@@ -278,7 +295,7 @@ export const LMSProvider = ({ children }) => {
     let fileType = '';
     let fileSize = 0;
     if (kind === 'file' && file) {
-      storagePath = await uploadSubmissionFile(userId, file);
+      storagePath = await uploadSubmissionFile(userId, file, onProgress);
       fileName = file.name; fileType = file.type; fileSize = file.size;
     }
     const late = asg.deadline ? new Date() > new Date(asg.deadline) : false;
@@ -289,6 +306,38 @@ export const LMSProvider = ({ children }) => {
     logEvent({ userId, courseId: asg.courseId, kind: 'assignment_submit', refId: sub.id });
     setSubmissions((p) => [sub, ...p]);
     return sub;
+  };
+
+  // ---------- Practical submissions (lesson_practicals → practical_submissions) ----------
+  const submitPractical = async ({ practical, userId, courseId, lessonId, studentName, file = null, observation = '', textContent = '', note = '', onProgress = null }) => {
+    if (!practical) throw new Error('Practical not found');
+    if (!file && !String(observation).trim() && !String(textContent).trim()) {
+      throw new Error('Add your observation (or upload a file) before submitting');
+    }
+    let storagePath = null; let fileName = ''; let fileType = ''; let fileSize = 0;
+    if (file) {
+      storagePath = await uploadSubmissionFile(userId, file, onProgress);
+      fileName = file.name; fileType = file.type; fileSize = file.size;
+    }
+    const sub = await submitPracticalRow({
+      practicalId: practical.id, courseId, lessonId, userId, studentName,
+      storagePath, fileName, fileType, fileSize, observation, textContent, note,
+    });
+    logEvent({ userId, courseId, kind: 'practical_submit', refId: sub.id || sub?.id });
+    setPracticalSubs((p) => [mapPracticalSubmission(sub), ...p]);
+    return sub;
+  };
+
+  const getMyPracticalSubmissions = useCallback((userId, practicalId = null) =>
+    practicalSubs.filter((s) => s.userId === userId && (!practicalId || s.practicalId === practicalId)),
+  [practicalSubs]);
+
+
+  const reviewPractical = async ({ submissionId, status, score = null, feedback = '', actor }) => {
+    const updated = await reviewPracticalSubmission(submissionId, { status, score, feedback, reviewedBy: actor?.email || '' });
+    setPracticalSubs((p) => p.map((x) => (x.id === submissionId ? mapPracticalSubmission(updated) : x)));
+    if (actor) audit(actor, `practical_submission.${status}`, 'practical_submission', submissionId, { score });
+    return updated;
   };
 
   const reviewSubmission = async ({ submissionId, status, score = null, feedback = '', actor }) => {
@@ -620,6 +669,7 @@ export const LMSProvider = ({ children }) => {
       assignments, submissions,
       createAssignment, updateAssignment, deleteAssignment, getCourseAssignments,
       submitAssignment, reviewSubmission, getUserSubmissions, countApprovedAssignments, isFinalProjectApproved,
+      submitPractical, getMyPracticalSubmissions, reviewPractical, practicalSubs,
       coupons, redemptions, createCoupon, updateCoupon, deleteCoupon, getCouponByCode,
       validateCouponForUser, recordRedemption, couponStats,
       aiJobs, aiContent, runAIGeneration, updateAIContent, setAIStatus, deleteAIContent,

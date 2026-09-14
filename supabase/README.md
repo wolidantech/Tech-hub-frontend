@@ -187,7 +187,7 @@ prints the key.
 ```bash
 cd supabase/verify
 npm install
-npm run verify        # migrations 001-005 behaviorally
+npm run verify        # migrations 001-009 behaviorally
 npm run verify:seed   # seed chain → non-empty storefront + working admin bootstrap
 ```
 

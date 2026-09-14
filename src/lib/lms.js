@@ -59,8 +59,25 @@ export function validateCoupon(coupon, { courseId, coursePrice, user, redemption
 }
 
 // ---------- Quizzes ----------
+/**
+ * Numeric grading — mirrors the server-side `submit_quiz_attempt()` branch in
+ * migration 009: strips units/separators and compares with tolerance, so
+ * "₦1,200.50", "1200,50 naira" and "1200.5" all grade consistently.
+ */
+export function gradeNumericAnswer(given, expected, tolerance = 0.0001) {
+  if (expected == null || given == null || String(given).trim() === '') return false;
+  // Mirror of the server rule (009): remove thousands separators + whitespace,
+  // then take the first decimal number. "1,200.5 naira" → 1200.5
+  const cleaned = String(given).replace(/\s+/g, '').replace(/,/g, '');
+  const m = cleaned.match(/-?\d+(?:\.\d+)?/);
+  if (!m) return false;
+  const n = Number(m[0]);
+  if (!Number.isFinite(n)) return false;
+  return Math.abs(n - Number(expected)) <= Math.abs(Number(tolerance) || 0.0001);
+}
+
 export function scoreQuizAttempt(questions, answers) {
-  // answers: { [questionId]: selectedIndex | selectedIndex[] | boolean-as-index }
+  // answers: { [questionId]: selectedIndex | selectedIndex[] | numeric | text }
   let earned = 0, total = 0;
   const details = questions.map((q) => {
     total += 1;
@@ -74,6 +91,8 @@ export function scoreQuizAttempt(questions, answers) {
       const norm = String(given || '').trim().toLowerCase();
       const accepted = (q.acceptedAnswers || []).map((s) => String(s).trim().toLowerCase()).filter(Boolean);
       correct = norm !== '' && accepted.some((a) => norm === a || norm.includes(a));
+    } else if (q.type === 'numeric') {
+      correct = gradeNumericAnswer(given, q.answerNumber ?? q.correctAnswer, q.answerTolerance ?? 0.0001);
     } else {
       correct = Number(given) === Number(q.correctAnswer);
     }
@@ -82,6 +101,55 @@ export function scoreQuizAttempt(questions, answers) {
   });
   const pct = total ? Math.round((earned / total) * 100) : 0;
   return { earned, total, score: pct, details };
+}
+
+/** Parse "14 min" / "2 hours" / 22 (minutes) into minutes; 0 when unknown. */
+export function parseDurationMinutes(v) {
+  if (v == null) return 0;
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  const s = String(v).toLowerCase();
+  const h = s.match(/(\d+(?:\.\d+)?)\s*(hour|hr|h)\b/);
+  const m = s.match(/(\d+(?:\.\d+)?)\s*(min|minute|m)\b/);
+  if (!h && !m) {
+    const bare = Number(s);
+    return Number.isFinite(bare) && bare > 0 && bare < 100000 ? bare : 0;
+  }
+  return (h ? Number(h[1]) * 60 : 0) + (m ? Number(m[1]) : 0);
+}
+
+/** Estimated total study time for a curriculum (course-level override wins). */
+export function estimateStudyHours(course) {
+  if (!course) return null;
+  if (course.estimatedHours) return Number(course.estimatedHours);
+  const mins = (course.curriculum || []).reduce((sum, m) => sum + (m.lessons || []).reduce((s2, l) => (
+    s2 + (l.estimatedMinutes || parseDurationMinutes(l.duration) || (l.subLessons || []).length * 8)
+  ), 0), 0);
+  if (!mins) return null;
+  return Math.round((mins / 60) * 10) / 10;
+}
+
+/** Human "6h 40m" from minutes. */
+export function formatMinutes(mins) {
+  const m = Number(mins) || 0;
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  return rem ? `${h}h ${rem}m` : `${h}h`;
+}
+
+/** Submission status labels shared by assignments + practicals. */
+export const REVIEW_STATUS_LABELS = {
+  submitted: { label: 'SUBMITTED', tone: 'blue' },
+  under_review: { label: 'UNDER REVIEW', tone: 'amber' },
+  approved: { label: 'APPROVED', tone: 'green' },
+  needs_revision: { label: 'REVISION REQUIRED', tone: 'red' },
+  graded: { label: 'GRADED', tone: 'green' },
+  pending: { label: 'PENDING', tone: 'white' },
+};
+export function submissionStatus(sub) {
+  if (!sub) return { key: 'pending', ...REVIEW_STATUS_LABELS.pending };
+  const key = sub.score != null && sub.status === 'approved' ? 'graded' : (sub.status || 'submitted');
+  return { key, ...(REVIEW_STATUS_LABELS[key] || REVIEW_STATUS_LABELS.submitted) };
 }
 
 // ---------- Completion rules ----------
@@ -163,6 +231,13 @@ export function renderLessonMarkdown(src = '') {
     });
     return `<table class="lesson-table">${cells.join('')}</table>`;
   });
+  // images (safe http/https only — never fabricated/JS URLs) then links
+  html = html.replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)(?:\s+"([^"]*)")?\)/g,
+    (_, alt, src, title) => `<img src="${src}" alt="${alt}" title="${title || alt}" loading="lazy" class="lesson-image" />`);
+  html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener noreferrer" class="lesson-link">$1</a>');
+  // display formulas: $$ ... $$ (kept as readable math text, no eval)
+  html = html.replace(/^\s*\$\$([\s\S]+?)\$\$\s*$/gm, (_, f) => `<div class="lesson-formula">${f.trim()}</div>`);
   // headings
   html = html.replace(/^#### (.*)$/gm, '<h4>$1</h4>').replace(/^### (.*)$/gm, '<h3>$1</h3>').replace(/^## (.*)$/gm, '<h2>$1</h2>').replace(/^# (.*)$/gm, '<h1>$1</h1>');
   // tips / notes / warnings

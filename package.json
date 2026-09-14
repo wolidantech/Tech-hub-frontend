@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0 --port 5173",
     "verify": "node supabase/verify/run.mjs",
-    "verify:seed": "node supabase/verify/verify-seed.mjs"
+    "verify:seed": "node supabase/verify/verify-seed.mjs",
+    "icons": "node scripts/make_icons.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

@@ -1,9 +1,11 @@
 // Central Supabase data-access layer. The database is the ONLY source of
 // truth — every function below reads/writes Postgres (via RLS) or Storage.
 // Rows are mapped to the app's camelCase shapes at the boundary.
-import { requireSb, friendlyError, uploadFile } from './supabase';
+import { requireSb, friendlyError, uploadFile, signedUrl, signedUrlAny } from './supabase';
+import { resolveSchemaShape, isMissingRelationErr } from './schema';
 
 const sb = () => requireSb();
+const sbClient = () => requireSb();
 const num = (v, fb = 0) => { const n = Number(v); return Number.isFinite(n) ? n : fb; };
 
 async function one(query) {
@@ -26,33 +28,98 @@ export const mapCourseLight = (c) => c && {
   id: c.id, slug: c.slug, title: c.title,
   shortDescription: c.short_description || '', description: c.description || '',
   longDescription: c.long_description || '', category: c.category,
-  instructor: c.instructor, instructorRole: c.instructor_role, duration: c.duration,
-  lessonsCount: num(c.lessons_count), level: c.level, price: num(c.price),
-  originalPrice: num(c.original_price), rating: num(c.rating, 5), students: num(c.students_count),
+  instructor: c.instructor || c.instructor_name || 'Woli Dan', instructorRole: c.instructor_role || '',
+  duration: c.duration, lessonsCount: num(c.lessons_count), level: c.difficulty_level ? String(c.difficulty_level).toLowerCase().replace(/^\w/, (m) => m.toUpperCase()) : (c.level || 'Beginner'),
+  price: num(c.price), originalPrice: num(c.original_price),
+  rating: num(c.rating, 5), students: num(c.students_count ?? c.students),
   thumbnail: c.thumbnail_key || 'default', thumbnailUrl: c.thumbnail_url,
-  artTheme: c.art_theme, color: c.color, whatYouWillLearn: c.what_you_will_learn || [],
+  artTheme: c.art_theme, color: c.color,
+  whatYouWillLearn: c.what_you_will_learn || [], skillsGained: c.skills || [],
   requirements: c.requirements || [], audience: c.audience || [],
-  published: !!c.published, featured: !!c.featured, archived: !!c.archived,
+  estimatedHours: c.estimated_hours != null ? num(c.estimated_hours) : null,
+  published: !!(c.published ?? c.is_published), featured: !!(c.featured ?? false),
+  archived: !!c.archived,
   createdAt: c.created_at, updatedAt: c.updated_at,
 };
 
-export const mapLesson = (l, contentById = {}, videosById = {}) => {
+// Practical row → student-view shape. Accepts both schema lineages' field
+// names (frontend 009 columns + backend repo's originals) and jsonb arrays.
+export const mapPractical = (p) => p && {
+  id: p.id, lessonId: p.lesson_id, moduleId: p.module_id || null, courseId: p.course_id,
+  title: p.title,
+  objective: p.objective || '',
+  scenario: p.scenario || '',
+  materials: Array.isArray(p.materials) ? p.materials : (p.requirements ? [p.requirements] : []),
+  procedure: p.instructions || p.procedure || '',
+  observation: p.observation || '',
+  expected: p.expected_output || p.expected_result || '',
+  questions: Array.isArray(p.questions) ? p.questions : [],
+  safety: p.safety || '',
+  difficulty: String(p.difficulty || 'BEGINNER').toLowerCase(),
+  estimatedMinutes: num(p.estimated_time),
+  submissionType: p.submission_type || 'any',
+  status: String(p.status || 'PUBLISHED').toLowerCase(),
+  position: num(p.position),
+};
+
+export const mapResource = (r) => r && {
+  id: r.id, courseId: r.course_id || null, moduleId: r.module_id || null, lessonId: r.lesson_id || null,
+  title: r.title, description: r.description || '',
+  url: r.url || '', storagePath: r.storage_path || null,
+  type: (r.resource_type || (r.url ? 'link' : 'file')).toString().toLowerCase(),
+  external: !!(r.is_external ?? (r.url && !r.storage_path)),
+  source: r.source || '', license: r.license || '', attribution: r.attribution || '',
+  size: r.file_size != null ? num(r.file_size) : null, mimeType: r.mime_type || '',
+  position: num(r.position),
+};
+
+export const mapTopic = (t) => t && {
+  id: t.id, courseId: t.course_id, moduleId: t.module_id,
+  title: t.title, description: t.description || '', position: num(t.position),
+};
+
+/**
+ * Build the student lesson object from EITHER lineage's row shapes.
+ * contentById: lesson_id → markdown; videosById: lesson_id → [video rows];
+ * resourcesByLesson / practicalsByLesson: mapped table rows (may be []).
+ */
+export const mapLesson = (l, contentById = {}, videosById = {}, extras = {}) => {
   const videos = videosById[l.id] || [];
   const primary = videos[0] || null;
   let videoUrl = '';
   let videoStoragePath = null;
   if (primary) {
-    if (primary.provider === 'upload' || (primary.provider === 'ai_generated' && primary.storage_path)) {
-      videoStoragePath = primary.storage_path;
-    } else {
-      videoUrl = primary.url || '';
-    }
+    const uploaded = (primary.provider && primary.provider !== 'youtube' && primary.provider !== 'external')
+      || (!primary.provider && primary.storage_path);
+    if (uploaded && primary.storage_path) videoStoragePath = primary.storage_path;
+    else videoUrl = primary.url || primary.video_url || '';
   }
-  const text = contentById[l.id] || '';
+  // Legacy backend lineages store the video directly on the lesson row.
+  if (!videoUrl && !videoStoragePath && l.video_url) videoUrl = l.video_url;
+  const text = contentById[l.id] ?? l.content ?? '';
+  const jsonbResources = (l.resources || []).filter(Boolean).map((r, i) => ({
+    id: `jsonb_${l.id}_${i}`,
+    title: r.title || r.name || '', url: r.url || '', description: r.description || '',
+    type: (r.type || (r.url ? 'link' : 'file')).toLowerCase(),
+    storagePath: r.storage_path || r.storagePath || null, external: !!r.url,
+    source: '', license: '', size: null, mimeType: '', position: i,
+  })).filter((r) => r.url || r.storagePath); // never render fake/empty URLs
+  const tableResources = extras.resourcesByLesson?.[l.id] || [];
+  // Duration: frontend stores text ("14 min"), backend stores integer minutes.
+  const estMin = l.estimated_minutes ?? (typeof l.duration === 'number' ? l.duration : null);
+  const durationText = typeof l.duration === 'number' ? (l.duration ? `${l.duration} min` : '') : (l.duration || (estMin ? `${estMin} min` : ''));
   return {
-    id: l.id, moduleId: l.module_id, title: l.title, type: l.type || 'video',
-    duration: l.duration || '', videoUrl, videoStoragePath,
-    textContent: text, content: text, resources: l.resources || [], subLessons: l.sub_lessons || [],
+    id: l.id, moduleId: l.module_id, topicId: l.topic_id || null,
+    title: l.title, type: l.type || (l.lesson_type ? String(l.lesson_type).toLowerCase() : 'video'),
+    duration: durationText,
+    estimatedMinutes: num(estMin),
+    description: l.description || '',
+    videoUrl, videoStoragePath,
+    textContent: text, content: text,
+    resources: [...jsonbResources, ...tableResources],
+    subLessons: l.sub_lessons || [],
+    practical: extras.practicalsByLesson?.[l.id] || null,
+    isPublished: l.published ?? l.is_published ?? true,
   };
 };
 
@@ -99,16 +166,21 @@ export const mapNotification = (n) => n && {
 };
 
 export const mapQuiz = (qz) => qz && {
-  id: qz.id, courseId: qz.course_id, moduleId: qz.module_id, lessonId: qz.lesson_id,
+  id: qz.id, courseId: qz.course_id, moduleId: qz.module_id || null, lessonId: qz.lesson_id || null,
   title: qz.title, description: qz.description || '', passingScore: num(qz.passing_score, 70),
   allowRetake: qz.allow_retake !== false, attemptLimit: qz.attempt_limit,
-  isFinal: !!qz.is_final, status: qz.status, createdAt: qz.created_at,
+  isFinal: qz.is_final != null ? !!qz.is_final : /final/i.test(qz.title || ''),
+  status: String(qz.status || 'published').toLowerCase(), createdAt: qz.created_at,
 };
 
 export const mapQuestionFull = (q) => q && {
-  id: q.id, quizId: q.quiz_id, type: q.type, question: q.question, options: q.options || [],
+  id: q.id, quizId: q.quiz_id, type: (q.type || q.question_type || 'multiple_choice').toLowerCase(),
+  question: q.question, options: q.options || [],
   correctAnswer: q.correct_answer, correctAnswers: q.correct_answers || [],
-  acceptedAnswers: q.accepted_answers || [], explanation: q.explanation || '', createdAt: q.created_at,
+  acceptedAnswers: q.accepted_answers || [], explanation: q.explanation || '',
+  answerNumber: q.answer_number != null ? num(q.answer_number) : null,
+  answerTolerance: q.answer_tolerance, answerUnit: q.answer_unit || '',
+  createdAt: q.created_at,
 };
 
 export const mapAttempt = (a) => a && {
@@ -322,31 +394,199 @@ export const uploadThumbnail = async (courseId, file) => uploadFile('thumbnails'
 export const fetchCourses = async ({ onlyPublished = false } = {}) => {
   let q = sb().from('courses').select('*').order('featured', { ascending: false }).order('created_at', { ascending: true });
   if (onlyPublished) q = q.eq('published', true);
-  return (await one(q)).map(mapCourseLight);
+  const rows = await one(q);
+  // Archived courses must never surface, even if published=true slipped in.
+  return rows.filter((c) => !c.archived).map(mapCourseLight);
 };
 
+/** Split ids into URL-safe batches (PostgREST caps query-string length). */
+const chunk = (arr, size = 90) => {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+};
+
+/**
+ * Full curriculum for one course — the classroom's backbone.
+ *
+ * Schema-tolerant by design: it reads whichever curriculum tables exist
+ * (course_lessons/lessons, course_content/lesson_content,
+ * course_videos/lesson_videos) and merges the topic layer, lesson
+ * resources and practicals from course_topics / course_resources /
+ * lesson_practicals when provisioned (migration 009). Missing optional
+ * tables degrade to "feature absent" instead of an empty/broken classroom.
+ *
+ * Returns: { ...course, curriculum: [{ id, title, topics[], lessons[] }],
+ *            counts: { modules, topics, lessons, resources, practicals } }
+ */
 export const fetchCourseDetail = async (courseId) => {
-  const course = mapCourseLight(await one(sb().from('courses').select('*').eq('id', courseId).single()));
-  const modules = await one(sb().from('course_modules').select('*').eq('course_id', courseId).order('position'));
-  const lessons = await one(sb().from('course_lessons').select('*').eq('course_id', courseId).order('position'));
-  const ids = lessons.map((l) => l.id);
-  let contents = [];
-  let videos = [];
-  if (ids.length) {
-    // course_content/course_videos are enrolled-only; RLS returns [] for outsiders (no error).
-    contents = await one(sb().from('course_content').select('*').in('lesson_id', ids));
-    videos = await one(sb().from('course_videos').select('*').in('lesson_id', ids));
+  const shape = await resolveSchemaShape();
+  const sb = sbClient();
+  const course = mapCourseLight(await one(sb.from('courses').select('*').eq('id', courseId).single()));
+
+  const modules = await one(
+    sb.from('course_modules').select('*').eq('course_id', courseId).order(shape.modulesOrderedBy, { ascending: true }),
+  );
+
+  // ---- lessons for this course ----
+  let lessonRows = [];
+  if (shape.lessonsTable) {
+    const moduleIds = modules.map((m) => m.id);
+    let lq = sb.from(shape.lessonsTable).select('*');
+    lq = shape.lessonsHasCourseId ? lq.eq('course_id', courseId)
+      : (moduleIds.length ? lq.in('module_id', moduleIds) : lq.eq('id', '00000000-0000-0000-0000-000000000000'));
+    const lerr = await lq;
+    if (lerr.error) throw new Error(friendlyError(lerr.error));
+    lessonRows = (lerr.data || []).filter((l) => l.published !== false && l.is_published !== false);
+    const orderCol = shape.lessonsOrderCol in (lessonRows[0] || {}) ? shape.lessonsOrderCol : 'id';
+    lessonRows.sort((a, b) => num(a[orderCol]) - num(b[orderCol]));
   }
-  const contentById = Object.fromEntries(contents.map((c) => [c.lesson_id, c.body_markdown || '']));
+  const lessonIds = lessonRows.map((l) => l.id);
+
+  // ---- lesson bodies (chunked: large science catalogs must not 414) ----
+  const contentById = {};
+  if (shape.contentTable && lessonIds.length) {
+    const cols = shape.contentChunked
+      ? 'lesson_id, content, chunk_index, metadata'
+      : 'lesson_id, body_markdown';
+    for (const part of chunk(lessonIds)) {
+      const { data, error } = await sb.from(shape.contentTable).select(cols).in('lesson_id', part);
+      if (error && !isMissingRelationErr(error)) throw new Error(friendlyError(error));
+      (data || []).forEach((row) => {
+        const body = row[shape.contentBodyCol] || '';
+        if (shape.contentChunked) {
+          const idx = Number(row.chunk_index) || 0;
+          const list = (contentById[`_${row.lesson_id}`] ||= []);
+          list[idx] = body;
+        } else {
+          contentById[row.lesson_id] = (contentById[row.lesson_id] ? contentById[row.lesson_id] + '\n\n' : '') + body;
+        }
+      });
+    }
+    Object.entries(contentById).forEach(([k, v]) => {
+      if (k.startsWith('_')) {
+        const id = k.slice(1);
+        contentById[id] = (Array.isArray(v) ? v.filter(Boolean).join('\n\n') : v) || contentById[id] || '';
+        delete contentById[k];
+      }
+    });
+  }
+
+  // ---- lesson videos ----
   const videosById = {};
-  videos.forEach((v) => { (videosById[v.lesson_id] ||= []).push(v); });
+  if (shape.videosTable && lessonIds.length) {
+    for (const part of chunk(lessonIds)) {
+      const { data, error } = await sb.from(shape.videosTable).select('*').in('lesson_id', part);
+      if (error && !isMissingRelationErr(error)) throw new Error(friendlyError(error));
+      (data || []).forEach((v) => {
+        const statusOk = String(v.status || '').toLowerCase() === 'published'
+          || String(v.status || '') === shape.videosApprovedStatus;
+        if (!statusOk) return;
+        (videosById[v.lesson_id] ||= []).push(v);
+      });
+    }
+  }
+
+  // ---- topics (module → topic → lesson) ----
+  let topicRows = [];
+  if (shape.hasTopics) {
+    const { data, error } = await sb.from('course_topics').select('*').eq('course_id', courseId).order('position');
+    if (error && !isMissingRelationErr(error)) throw new Error(friendlyError(error));
+    topicRows = data || [];
+  }
+
+  // ---- downloadable + external resources ----
+  const resourcesByLesson = {};
+  let resourceCount = 0;
+  if (shape.hasResources) {
+    const { data, error } = await sb.from('course_resources').select('*').eq('course_id', courseId).order('position');
+    if (error && !isMissingRelationErr(error)) throw new Error(friendlyError(error));
+    (data || []).forEach((r) => {
+      resourceCount += 1;
+      if (r.lesson_id) (resourcesByLesson[r.lesson_id] ||= []).push(mapResource(r));
+    });
+  }
+
+  // ---- practical activities ----
+  const practicalsByLesson = {};
+  let practicalCount = 0;
+  if (shape.hasPracticals) {
+    const { data, error } = await sb.from('lesson_practicals').select('*').eq('course_id', courseId).order('position');
+    if (error && !isMissingRelationErr(error)) throw new Error(friendlyError(error));
+    (data || []).forEach((p) => {
+      practicalCount += 1;
+      if (p.lesson_id && !practicalsByLesson[p.lesson_id]) practicalsByLesson[p.lesson_id] = mapPractical(p);
+    });
+  }
+
   const byModule = {};
-  lessons.forEach((l) => { (byModule[l.module_id] ||= []).push(mapLesson(l, contentById, videosById)); });
+  lessonRows.forEach((l) => {
+    const lesson = mapLesson(l, contentById, videosById, { resourcesByLesson, practicalsByLesson });
+    (byModule[l.module_id] ||= []).push(lesson);
+  });
+
+  const curriculum = modules.map((m) => {
+    const modLessons = byModule[m.id] || [];
+    const modTopics = topicRows.filter((t) => t.module_id === m.id).map(mapTopic);
+    const topics = modTopics.map((t) => ({ ...t, lessons: modLessons.filter((l) => l.topicId === t.id) }));
+    return {
+      id: m.id, title: m.title, description: m.description || '',
+      position: num(m[shape.modulesOrderedBy] ?? m.position),
+      lessons: modLessons,
+      topics,
+      topicsWithLessons: topics.filter((t) => t.lessons.length > 0),
+    };
+  });
+
+  const estimatedMinutes = lessonRows.reduce((sum, l) => {
+    const raw = l.estimated_minutes ?? l.duration;
+    if (raw != null && typeof raw === 'number') return sum + raw;
+    const m = String(raw || '').match(/(\d+(?:\.\d+)?)\s*(min|m\b)/i);
+    const h = String(raw || '').match(/(\d+(?:\.\d+)?)\s*(hour|h\b)/i);
+    return sum + (h ? Number(h[1]) * 60 : 0) + (m ? Number(m[1]) : 0);
+  }, 0);
+
   return {
     ...course,
-    curriculum: modules.map((m) => ({ id: m.id, title: m.title, lessons: byModule[m.id] || [] })),
+    curriculum,
+    estimatedMinutes: estimatedMinutes || null,
+    counts: {
+      modules: modules.length,
+      topics: topicRows.length,
+      lessons: lessonRows.length,
+      resources: resourceCount,
+      practicals: practicalCount,
+    },
   };
 };
+
+// Deployments may not have run migration 009 yet; drop its columns from
+// writes when Postgres reports an unknown column (42703) so admin saves
+// never hard-fail on a partially migrated project.
+const LESSON_009_COLS = new Set(['topic_id', 'estimated_minutes']);
+
+async function insertTolerant(table, row, optionalCols) {
+  const { data, error } = await sb().from(table).insert(row).select().single();
+  if (error && String(error.code) === '42703') {
+    const safe = Object.fromEntries(Object.entries(row).filter(([k]) => !optionalCols.has(k)));
+    const retry = await sb().from(table).insert(safe).select().single();
+    if (retry.error) throw new Error(friendlyError(retry.error));
+    return retry.data;
+  }
+  if (error) throw new Error(friendlyError(error));
+  return data;
+}
+async function updateTolerant(table, cols, id, optionalCols) {
+  const { data, error } = await sb().from(table).update(cols).eq('id', id).select().single();
+  if (error && String(error.code) === '42703') {
+    const safe = Object.fromEntries(Object.entries(cols).filter(([k]) => !optionalCols.has(k)));
+    const retry = await sb().from(table).update(safe).eq('id', id).select().single();
+    if (retry.error) throw new Error(friendlyError(retry.error));
+    return retry.data;
+  }
+  if (error) throw new Error(friendlyError(error));
+  return data;
+}
 
 export const adminCreateCourse = async (input) => {
   const row = {
@@ -358,11 +598,12 @@ export const adminCreateCourse = async (input) => {
     price: num(input.price), original_price: num(input.originalPrice),
     thumbnail_key: input.thumbnail || 'default', thumbnail_url: input.thumbnailUrl || null,
     art_theme: input.artTheme || null, color: input.color || null,
-    what_you_will_learn: input.whatYouWillLearn || [],
+    what_you_will_learn: input.whatYouWillLearn || [], skills: input.skillsGained || [],
+    estimated_hours: input.estimatedHours != null && input.estimatedHours !== '' ? num(input.estimatedHours) : null,
     requirements: input.requirements || [], audience: input.audience || [],
     published: !!input.published, featured: !!input.featured,
   };
-  return mapCourseLight(await one(sb().from('courses').insert(row).select().single()));
+  return mapCourseLight(await insertTolerant('courses', row, new Set(['skills', 'estimated_hours'])));
 };
 
 const COURSE_COLS = {
@@ -378,7 +619,7 @@ const COURSE_COLS = {
 export const adminUpdateCourse = async (id, patch) => {
   const cols = {};
   Object.entries(patch || {}).forEach(([k, v]) => { if (COURSE_COLS[k]) cols[COURSE_COLS[k]] = v; });
-  return mapCourseLight(await one(sb().from('courses').update(cols).eq('id', id).select().single()));
+  return mapCourseLight(await updateTolerant('courses', cols, id, new Set(['skills', 'estimated_hours'])));
 };
 
 export const adminDeleteCourse = async (id) => {
@@ -406,11 +647,14 @@ export const adminDeleteModule = async (moduleId) => {
 export const adminCreateLesson = async (courseId, moduleId, lesson) => {
   const existing = await one(sb().from('course_lessons').select('position').eq('module_id', moduleId).order('position', { ascending: false }).limit(1));
   const position = lesson.position ?? (existing.length ? num(existing[0].position) + 1 : 0);
-  const l = await one(sb().from('course_lessons').insert({
+  const l = await insertTolerant('course_lessons', {
     course_id: courseId, module_id: moduleId, title: lesson.title || 'New lesson',
-    type: lesson.type === 'text' ? 'text' : 'video', duration: lesson.duration || '',
+    type: ['video', 'text', 'practical', 'quiz', 'assignment', 'project', 'resource'].includes(lesson.type) ? lesson.type : 'video',
+    description: lesson.description || '', duration: lesson.duration || '',
+    estimated_minutes: lesson.estimatedMinutes != null && lesson.estimatedMinutes !== '' ? num(lesson.estimatedMinutes) : null,
+    topic_id: lesson.topicId || null,
     position, resources: lesson.resources || [], sub_lessons: lesson.subLessons || [],
-  }).select().single());
+  }, LESSON_009_COLS);
   if (lesson.textContent || lesson.content) {
     await one(sb().from('course_content').insert({ lesson_id: l.id, body_markdown: lesson.textContent || lesson.content || '' }));
   }
@@ -424,11 +668,14 @@ export const adminUpdateLesson = async (lessonId, patch) => {
   const cols = {};
   if (patch.title !== undefined) cols.title = patch.title;
   if (patch.type !== undefined) cols.type = patch.type;
+  if (patch.description !== undefined) cols.description = patch.description;
   if (patch.duration !== undefined) cols.duration = patch.duration;
+  if (patch.estimatedMinutes !== undefined) cols.estimated_minutes = patch.estimatedMinutes === '' || patch.estimatedMinutes == null ? null : num(patch.estimatedMinutes);
+  if (patch.topicId !== undefined) cols.topic_id = patch.topicId || null;
   if (patch.position !== undefined) cols.position = patch.position;
   if (patch.resources !== undefined) cols.resources = patch.resources;
   if (patch.subLessons !== undefined) cols.sub_lessons = patch.subLessons;
-  if (Object.keys(cols).length) await one(sb().from('course_lessons').update(cols).eq('id', lessonId));
+  if (Object.keys(cols).length) await updateTolerant('course_lessons', cols, lessonId, LESSON_009_COLS);
   if (patch.textContent !== undefined || patch.content !== undefined) {
     const body = patch.textContent ?? patch.content ?? '';
     await one(sb().from('course_content').upsert({ lesson_id: lessonId, body_markdown: body }, { onConflict: 'lesson_id' }));
@@ -439,7 +686,127 @@ export const adminUpdateLesson = async (lessonId, patch) => {
       await one(sb().from('course_videos').insert({ lesson_id: lessonId, provider: 'youtube', url: patch.videoUrl, status: 'published' }));
     }
   }
+  if (patch.videoStoragePath !== undefined) {
+    await one(sb().from('course_videos').delete().eq('lesson_id', lessonId));
+    if (patch.videoStoragePath) {
+      await one(sb().from('course_videos').insert({
+        lesson_id: lessonId, provider: 'upload', storage_path: patch.videoStoragePath, status: 'published',
+      }));
+    }
+  }
 };
+
+// ============================================================ TOPICS (009)
+export const adminSaveTopic = async ({ id = null, courseId, moduleId, title, description = '', position = 0 }) =>
+  mapTopic(await one(
+    (id
+      ? sb().from('course_topics').update({ title, description, position, module_id: moduleId }).eq('id', id)
+      : sb().from('course_topics').insert({ course_id: courseId, module_id: moduleId, title, description, position })
+    ).select().single(),
+  ));
+
+export const adminDeleteTopic = async (topicId) => {
+  await one(sb().from('course_topics').delete().eq('id', topicId));
+};
+
+// ============================================================ PRACTICALS (009)
+export const adminSavePractical = async ({ id = null, courseId, moduleId = null, lessonId, input }) => {
+  const row = {
+    course_id: courseId, module_id: moduleId, lesson_id: lessonId,
+    title: input.title || 'Practical activity',
+    objective: input.objective || '', scenario: input.scenario || '',
+    instructions: input.procedure || input.instructions || '',
+    expected_output: input.expected || input.expected_output || '',
+    materials: input.materials || [], observation: input.observation || '',
+    questions: input.questions || [], safety: input.safety || '',
+    difficulty: String(input.difficulty || 'BEGINNER').toUpperCase(),
+    estimated_time: input.estimatedMinutes ? num(input.estimatedMinutes) : null,
+    submission_type: input.submissionType || 'any',
+    status: (input.status || 'published').toUpperCase(),
+  };
+  const q = id
+    ? sb().from('lesson_practicals').update(row).eq('id', id).select().single()
+    : sb().from('lesson_practicals').insert(row).select().single();
+  return mapPractical(await one(q));
+};
+
+export const adminDeletePractical = async (id) => {
+  await one(sb().from('lesson_practicals').delete().eq('id', id));
+};
+
+// Students may resubmit their own practicals while not yet approved.
+export const fetchMyPracticalSubmissions = async (userId) => {
+  const { data, error } = await sb().from('practical_submissions').select('*')
+    .eq('user_id', userId).order('submitted_at', { ascending: false }).limit(2000);
+  if (error && isMissingRelationErr(error)) return [];
+  if (error) throw new Error(friendlyError(error));
+  return (data || []).map((s) => ({
+    id: s.id, practicalId: s.practical_id, courseId: s.course_id, lessonId: s.lesson_id,
+    userId: s.user_id, studentName: s.student_name || '', storagePath: s.storage_path,
+    fileName: s.file_name || '', fileType: s.file_type || '', fileSize: num(s.file_size),
+    textContent: s.text_content || '', observation: s.observation || '', note: s.note || '',
+    status: s.status, score: s.score, feedback: s.feedback || '',
+    reviewedBy: s.reviewed_by, reviewedAt: s.reviewed_at, submittedAt: s.submitted_at,
+  }));
+};
+
+export const fetchAllPracticalSubmissions = async () => {
+  const { data, error } = await sb().from('practical_submissions').select('*')
+    .order('submitted_at', { ascending: false }).limit(5000);
+  if (error && isMissingRelationErr(error)) return [];
+  if (error) throw new Error(friendlyError(error));
+  return data || [];
+};
+
+export const submitPracticalRow = async (row) => one(
+  sb().from('practical_submissions').insert({
+    practical_id: row.practicalId, course_id: row.courseId, lesson_id: row.lessonId,
+    user_id: row.userId, student_name: row.studentName || '',
+    storage_path: row.storagePath || null, file_name: row.fileName || '',
+    file_type: row.fileType || '', file_size: row.fileSize || 0,
+    text_content: row.textContent || '', observation: row.observation || '', note: row.note || '',
+    status: 'submitted',
+  }).select().single(),
+);
+
+export const reviewPracticalSubmission = async (id, { status, score = null, feedback = '', reviewedBy = '' }) => {
+  if (!['under_review', 'approved', 'needs_revision'].includes(status)) throw new Error('Invalid status');
+  return one(sb().from('practical_submissions').update({
+    status, score, feedback, reviewed_by: reviewedBy, reviewed_at: new Date().toISOString(),
+  }).eq('id', id).select().single());
+};
+
+// ============================================================ RESOURCES (009)
+export const adminSaveResource = async ({ id = null, courseId, moduleId = null, lessonId = null, input }) => {
+  const row = {
+    course_id: courseId, module_id: moduleId, lesson_id: lessonId,
+    title: input.title || 'Resource', description: input.description || '',
+    url: input.url || null, storage_path: input.storagePath || null,
+    resource_type: (input.type || (input.url && !input.storagePath ? 'website' : 'pdf')).toUpperCase(),
+    is_external: !!input.url && !input.storagePath,
+    source: input.source || '', license: input.license || '', attribution: input.attribution || '',
+    mime_type: input.mimeType || null, file_size: input.size != null ? num(input.size) : null,
+    position: num(input.position), is_approved: input.approved !== false,
+  };
+  const q = id
+    ? sb().from('course_resources').update(row).eq('id', id).select().single()
+    : sb().from('course_resources').insert(row).select().single();
+  return mapResource(await one(q));
+};
+
+export const adminDeleteResource = async (id) => {
+  await one(sb().from('course_resources').delete().eq('id', id));
+};
+
+/** Upload a course file into the private resources bucket (folder = courseId). */
+export const uploadCourseResource = async (courseId, file, onProgress = null) =>
+  uploadFile('resources', courseId, file, onProgress);
+
+/** Resolve a resource's storage URL, trying both bucket lineages. */
+export const resourceSignedUrl = async (storagePath) =>
+  signedUrlAny(['resources', 'course-resources'], storagePath, 3600);
+
+export { signedUrl, signedUrlAny };
 
 export const adminDeleteLesson = async (lessonId) => {
   await one(sb().from('course_lessons').delete().eq('id', lessonId));
@@ -698,11 +1065,15 @@ export const adminAddQuestion = async (quizId, q) =>
     options: q.options || [], correct_answer: q.correctAnswer ?? null,
     correct_answers: q.correctAnswers || [], accepted_answers: q.acceptedAnswers || [],
     explanation: q.explanation || '',
+    answer_number: q.answerNumber != null && q.answerNumber !== '' ? num(q.answerNumber) : null,
+    answer_tolerance: q.answerTolerance != null && q.answerTolerance !== '' ? num(q.answerTolerance) : null,
+    answer_unit: q.answerUnit || null,
   }).select().single()));
 
 const QUESTION_COLS = {
   type: 'type', question: 'question', options: 'options', correctAnswer: 'correct_answer',
   correctAnswers: 'correct_answers', acceptedAnswers: 'accepted_answers', explanation: 'explanation',
+  answerNumber: 'answer_number', answerTolerance: 'answer_tolerance', answerUnit: 'answer_unit',
 };
 
 export const adminUpdateQuestion = async (id, patch) => {
@@ -738,7 +1109,7 @@ export const submitSubmissionRow = async (row) =>
     late: !!row.late, status: 'submitted',
   }).select().single()));
 
-export const uploadSubmissionFile = async (userId, file) => uploadFile('submissions', userId, file);
+export const uploadSubmissionFile = async (userId, file, onProgress = null) => uploadFile('submissions', userId, file, onProgress);
 
 export const reviewSubmissionRow = async (id, { status, score = null, feedback = '', reviewedBy = '' }) => {
   if (!['under_review', 'approved', 'needs_revision'].includes(status)) throw new Error('Invalid status');

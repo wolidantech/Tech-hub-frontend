@@ -14,7 +14,7 @@ import CourseArt from '../components/course/CourseArt';
 export default function Dashboard() {
   const { user } = useAuth();
   const { courses, enrollments: allEnrollments, progressMap, getUserEnrollments, getCourseById, getProgress, getUserCertificates, getUserManualPayments, getUserPaymentSummary, getUserNotifications, isEnrolled, lessonActivity } = useCourses();
-  const { getUserQuizAverage, getUserAttempts, getUserSubmissions, courseViews, learningEvents, announcements, quizAttempts, submissions, getUpcomingClasses, quizzes } = useLMS();
+  const { getUserQuizAverage, getUserAttempts, getUserSubmissions, courseViews, learningEvents, announcements, quizAttempts, submissions, getUpcomingClasses, quizzes, assignments, getMyPracticalSubmissions } = useLMS();
 
   const uid = user?.id || '';
   const enrollments = useMemo(() => (uid ? getUserEnrollments(uid) : []), [uid, getUserEnrollments]);
@@ -112,6 +112,64 @@ export default function Dashboard() {
       .map((a) => ({ ...a, quizTitle: byQuiz[a.quizId]?.title || 'Quiz' }));
   }, [uid, myAttempts, quizzes]);
 
+  // ---- Upcoming tasks: assignments to submit, quizzes to pass, practicals ----
+  const upcomingTasks = useMemo(() => {
+    if (!uid) return [];
+    const enrolledIds = new Set(enrollments.filter((e) => e.status === 'active').map((e) => e.courseId));
+    const tasks = [];
+    const mySub = getUserSubmissions(uid);
+    assignments.filter((a) => enrolledIds.has(a.courseId) && a.status === 'published').forEach((a) => {
+      const subs = mySub.filter((x) => x.assignmentId === a.id);
+      const done = subs.some((x) => x.status === 'approved');
+      const needsFix = subs.some((x) => x.status === 'needs_revision');
+      if (done) return;
+      const overdue = a.deadline && new Date() > new Date(a.deadline);
+      tasks.push({
+        id: `asg-${a.id}`, icon: '📝',
+        title: needsFix ? `Revise & resubmit: ${a.title}` : `Assignment to submit: ${a.title}`,
+        meta: overdue ? `⚠️ overdue (was due ${new Date(a.deadline).toLocaleDateString()})` : a.deadline ? `Due ${new Date(a.deadline).toLocaleDateString()}` : 'No deadline — do it while learning',
+        to: `/learn/${(getCourseById(a.courseId) || {}).slug || ''}`, tone: overdue ? 'red' : 'amber',
+      });
+    });
+    quizzes.filter((z) => enrolledIds.has(z.courseId) && z.status === 'published').forEach((z) => {
+      const attempts = getUserAttempts(uid, z.id);
+      if (attempts.some((a) => a.passed)) return;
+      tasks.push({
+        id: `quiz-${z.id}`, icon: '❓',
+        title: attempts.length ? `Retake to pass: ${z.title}` : `Quiz to take: ${z.title}`,
+        meta: `Pass mark ${z.passingScore}%`, to: `/learn/${(getCourseById(z.courseId) || {}).slug || ''}`, tone: 'purple',
+      });
+    });
+    // practicals from the loaded curriculum (enrolled preload)
+    courses.filter((c) => enrolledIds.has(c.id) && c.curriculum).forEach((c) => {
+      (c.curriculum || []).forEach((m) => (m.lessons || []).forEach((l) => {
+        if (!l.practical) return;
+        const ps = getMyPracticalSubmissions(uid, l.practical.id);
+        if (ps.some((x) => x.status === 'approved')) return;
+        tasks.push({
+          id: `prac-${l.practical.id}`, icon: '🧪',
+          title: ps.some((x) => x.status === 'needs_revision') ? `Resubmit practical: ${l.practical.title}` : `Practical to complete: ${l.practical.title}`,
+          meta: c.title, to: `/learn/${c.slug}`, tone: 'orange',
+        });
+      }));
+    });
+    return tasks.slice(0, 6);
+  }, [uid, enrollments, assignments, quizzes, courses, getUserSubmissions, getUserAttempts, getCourseById, getMyPracticalSubmissions]);
+
+  // ---- Recently completed: finished lessons (learning_events), graded work, certs ----
+  const recentlyCompleted = useMemo(() => {
+    if (!uid) return [];
+    const items = [];
+    mySubs.filter((x) => x.status === 'approved' || x.score != null).slice(0, 3).forEach((x) => items.push({
+      id: `sub-${x.id}`, icon: '✅',
+      title: `Assignment ${x.status === 'approved' ? 'approved' : 'graded'}${x.score != null ? ` — ${x.score}/100` : ''}`,
+      meta: x.fileName || x.note ? (x.fileName || 'submission') : 'reviewed work',
+    }));
+    myAttempts.filter((a) => a.passed).slice(0, 2).forEach((a) => items.push({ id: `att-${a.id}`, icon: '🎯', title: `Quiz passed — ${a.score}%`, meta: '' }));
+    certificates.slice(0, 1).forEach((c) => items.push({ id: `cert-${c.id}`, icon: '🎓', title: 'Certificate issued 🏆', meta: c.courseTitle || '' }));
+    return items.slice(0, 4);
+  }, [uid, mySubs, myAttempts, certificates]);
+
   if (!user) return null;
 
   return (
@@ -157,6 +215,49 @@ export default function Dashboard() {
             <Link to={`/learn/${resume.course.slug}`} className="px-6 py-3 rounded-full bg-cyan-400 text-black font-black text-xs flex items-center gap-2 hover:bg-cyan-300 transition shrink-0">
               <Play className="h-4 w-4" /> RESUME LESSON
             </Link>
+          </div>
+        )}
+
+        {/* Upcoming tasks + recently completed */}
+        {(upcomingTasks.length > 0 || recentlyCompleted.length > 0) && (
+          <div className="grid lg:grid-cols-2 gap-4 mb-8">
+            <div className="glass rounded-[24px] p-5 md:p-6">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-bold flex items-center gap-2"><Clock className="h-4 w-4 text-amber-300" /> Upcoming Tasks</h2>
+                {upcomingTasks.length > 0 && <span className="text-[10px] font-black px-2 py-1 rounded-full bg-amber-500/20 text-amber-300">{upcomingTasks.length} OPEN</span>}
+              </div>
+              {upcomingTasks.length ? (
+                <div className="space-y-2">
+                  {upcomingTasks.map((t) => (
+                    <Link key={t.id} to={t.to} className={`flex items-center gap-3 p-3 rounded-xl border bg-white/[0.03] hover:bg-white/[0.07] transition ${t.tone === 'red' ? 'border-red-500/30' : t.tone === 'orange' ? 'border-orange-500/25' : 'border-white/10'}`}>
+                      <span className="text-lg shrink-0">{t.icon}</span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-sm font-bold truncate">{t.title}</span>
+                        <span className={`block text-[11px] truncate ${t.tone === 'red' ? 'text-red-300' : 'text-white/45'}`}>{t.meta}</span>
+                      </span>
+                      <span className="text-[10px] font-black text-cyan-300 shrink-0">OPEN →</span>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-green-300 flex items-center gap-2 py-3"><CheckCircle2 className="h-4 w-4" /> All caught up — nothing due. Great discipline!</div>
+              )}
+            </div>
+            <div className="glass rounded-[24px] p-5 md:p-6">
+              <h2 className="font-bold flex items-center gap-2 mb-3"><TrendingUp className="h-4 w-4 text-green-300" /> Recently Completed</h2>
+              {recentlyCompleted.length ? (
+                <div className="space-y-2">
+                  {recentlyCompleted.map((t) => (
+                    <div key={t.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-green-500/15">
+                      <span className="text-lg shrink-0">{t.icon}</span>
+                      <span className="min-w-0"><span className="block text-sm font-bold truncate">{t.title}</span>{t.meta ? <span className="block text-[11px] text-white/45 truncate">{t.meta}</span> : null}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-white/45 py-3">Finish lessons, pass quizzes and get work approved — your wins land here automatically.</div>
+              )}
+            </div>
           </div>
         )}
 

@@ -68,11 +68,11 @@ export const CourseProvider = ({ children }) => {
 
   // Full curriculum + content for one course (cached). Visitors get titles only
   // for lessons (RLS withholds bodies/videos until enrolled).
-  const ensureCourseDetail = useCallback(async (courseId) => {
+  const loadDetail = useCallback(async (courseId, { force = false } = {}) => {
     if (!courseId) return null;
     let found = null;
     setCourses((prev) => {
-      found = prev.find((c) => c.id === courseId && c.curriculum);
+      found = prev.find((c) => c.id === courseId && c.curriculum && !force);
       return prev;
     });
     if (found) return found;
@@ -81,6 +81,11 @@ export const CourseProvider = ({ children }) => {
     setDetailIds((prev) => new Set(prev).add(courseId));
     return detail;
   }, []);
+
+  const ensureCourseDetail = useCallback((courseId) => loadDetail(courseId), [loadDetail]);
+  // Retry after a failure (empty-curriculum error state) — bypasses the cache
+  // so a just-provisioned 009/seed run is picked up without a hard reload.
+  const retryCourseDetail = useCallback((courseId) => loadDetail(courseId, { force: true }), [loadDetail]);
 
   // ---------- Per-user / admin data ----------
   const refreshMine = useCallback(async () => {
@@ -486,6 +491,7 @@ export const CourseProvider = ({ children }) => {
       coursesError,
       dataLoading,
       ensureCourseDetail,
+      retryCourseDetail,
       refreshCourses,
       refreshMine,
       enrollments,

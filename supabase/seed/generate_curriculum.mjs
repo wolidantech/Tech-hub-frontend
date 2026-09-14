@@ -79,6 +79,8 @@ lines.push('');
 
 let modules = 0;
 let lessons = 0;
+let topics = 0;
+let practicals = 0;
 let bodies = 0;
 let videos = 0;
 let resources = 0;
@@ -108,6 +110,33 @@ for (const course of coursesData) {
         ');',
       ].join('\n')
     );
+
+    // Optional TOPIC layer (migration 009): mod.topics = [{ title, lessons: [titles] }]
+    (mod.topics || []).forEach((topic, ti) => {
+      topics += 1;
+      lines.push(
+        [
+          'with c as (select id from public.courses where slug = ' + q(course.slug) + ')',
+          'insert into public.course_topics (course_id, module_id, title, position)',
+          `select c.id, mo.id, ${q(topic.title)}, ${ti}`,
+          'from c join public.course_modules mo on mo.course_id = c.id and mo.title = ' + q(mod.title),
+          'where not exists (',
+          `  select 1 from public.course_topics t where t.module_id = mo.id and t.title = ${q(topic.title)}`,
+          ');',
+          // re-parent this topic's lessons (match by title within the module)
+          'update public.course_lessons le',
+          '   set topic_id = (select t.id from public.course_topics t',
+          `                   join public.course_modules mo2 on mo2.id = t.module_id`,
+          `                   join public.courses c2 on c2.id = mo2.course_id`,
+          `                  where mo2.id = le.module_id and c2.slug = ${q(course.slug)} and t.title = ${q(topic.title)})`,
+          '  from public.course_modules mo3',
+          ' where le.module_id = mo3.id',
+          `   and mo3.title = ${q(mod.title)}`,
+          `   and le.title in (${(topic.lessons || []).map(q).join(', ') || "''"});`,
+        ].join('\n')
+      );
+    (topic.lessons || []).forEach((t) => { lessonToTopic[t] = topic.title; });
+    });
 
     (mod.lessons || []).forEach((lesson, li) => {
       lessons += 1;
@@ -170,6 +199,36 @@ for (const course of coursesData) {
             'update public.course_lessons le',
             `   set resources = ${resourcesJson(res)}::jsonb`,
             '  from l where le.id = l.id;',
+          ].join('\n')
+        );
+      }
+
+      // Optional PRACTICAL (migration 009): lesson.practical = {...}
+      if (lesson.practical) {
+        practicals += 1;
+        const pr = lesson.practical;
+        const ljoin = [
+          '  select le.id, le.course_id, le.module_id from public.course_lessons le',
+          '  join public.course_modules mo on mo.id = le.module_id',
+          '  join public.courses c on c.id = mo.course_id',
+          `  where c.slug = ${q(course.slug)} and mo.title = ${q(mod.title)} and le.title = ${q(lesson.title)}`,
+        ].join('\n');
+        const jarr = (v) => JSON.stringify(JSON.stringify(Array.isArray(v) ? v : (v ? [v] : [])));
+        lines.push(
+          [
+            'with l as (', ljoin, ')',
+            'insert into public.lesson_practicals',
+            '  (lesson_id, course_id, module_id, title, objective, scenario, instructions, expected_output,',
+            '   materials, observation, questions, safety, estimated_time, status)',
+            `select l.id, l.course_id, l.module_id, ${q(pr.title || (lesson.title + ' — practical'))},`,
+            `  ${q(pr.objective || '')}, ${q(pr.scenario || '')}, ${q(pr.procedure || pr.instructions || '')}, ${q(pr.expected || pr.expected_output || '')},`,
+            `  ${jarr(pr.materials)}::jsonb, ${q(pr.observation || '')}, ${jarr(pr.questions)}::jsonb, ${q(pr.safety || '')},`,
+            `  ${pr.estimatedMinutes ? Number(pr.estimatedMinutes) : 'null'}, 'PUBLISHED'`,
+            'from l',
+            'where not exists (',
+            `  select 1 from public.lesson_practicals p where p.lesson_id = l.id and p.title = ${q(pr.title || (lesson.title + ' — practical'))}`,
+            ')',
+            'on conflict do nothing;',
           ].join('\n')
         );
       }
@@ -300,5 +359,6 @@ lines.push('');
 writeFileSync(out, lines.join('\n'), 'utf8');
 console.log(`wrote ${out}`);
 console.log(`  courses with curriculum: ${coursesData.filter((c) => (c.curriculum || []).length).length}`);
-console.log(`  modules: ${modules}, lessons: ${lessons}, bodies: ${bodies}, resources: ${resources}, videos: ${videos}`);
+console.log(`  modules: ${modules}, topics: ${topics}, lessons: ${lessons}, bodies: ${bodies}, resources: ${resources}, videos: ${videos}`);
+console.log(`  practicals: ${practicals}`);
 console.log(`  final quizzes: ${quizzes}, questions: ${questions}, final projects: ${projects}, completion rules: ${rules}`);

@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, LogOut, LayoutDashboard, User, Shield, CreditCard, BookOpen, Search, FileText, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCourses } from '../../context/CourseContext';
+import { BrandMark } from '../common/BrandLogo';
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -36,15 +37,13 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#020a1f]/80 backdrop-blur-2xl">
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
         <div className="flex h-[72px] items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="relative h-10 w-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-black text-white shadow-[0_0_20px_rgba(34,211,238,0.5)]">
-              W
-              <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-cyan-300 animate-pulse" />
-            </div>
-            <div className="leading-none">
-              <div className="font-display font-bold text-[16px] tracking-tight">WOLI DAN</div>
-              <div className="font-display font-bold text-[13px] text-gradient tracking-widest -mt-0.5">TECH HUB</div>
-            </div>
+          <Link to="/" className="flex items-center gap-2.5 min-w-0" aria-label="WOLI DAN TECH HUB — home">
+            <BrandMark size={38} className="shrink-0 drop-shadow-[0_0_14px_rgba(34,211,238,0.35)]" />
+            <span className="leading-none min-w-0">
+              <span className="block font-display font-bold text-[15px] sm:text-[16px] tracking-tight whitespace-nowrap">WOLI DAN</span>
+              <span className="block font-display font-bold text-[12px] sm:text-[13px] text-gradient tracking-[0.18em] -mt-0.5 whitespace-nowrap">TECH HUB</span>
+              <span className="hidden md:block text-[8px] font-bold tracking-[0.3em] text-white/40 mt-1 whitespace-nowrap">LEARN • BUILD • GROW</span>
+            </span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
@@ -103,7 +102,14 @@ export default function Navbar() {
 
       {open && (
         <div className="md:hidden border-t border-white/10 bg-[#061236]/95 backdrop-blur-2xl">
-          <div className="px-4 py-6 space-y-4">
+          <div className="px-4 py-5 space-y-4 max-h-[calc(100dvh-76px)] overflow-y-auto safe-bottom">
+            <div className="flex items-center gap-3 px-1 pb-1">
+              <BrandMark size={40} />
+              <div className="leading-none">
+                <div className="font-display font-bold text-[16px] tracking-tight">WOLI DAN TECH HUB</div>
+                <div className="text-[9px] font-black tracking-[0.32em] text-cyan-300/70 mt-1">LEARN • BUILD • GROW</div>
+              </div>
+            </div>
             <form onSubmit={doSearch} className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
               <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search courses, lessons, paths..." className="h-11 w-full rounded-full glass pl-11 pr-4 text-sm focus:outline-none" />

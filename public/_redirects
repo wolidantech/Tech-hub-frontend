@@ -1,0 +1,5 @@
+# SPA fallback — every path must boot the React router (this is what fixes
+# 404s on deep links like /course/biology-ss2 or /learn/<slug> when a student
+# reloads or shares the URL). Must stay FIRST so asset misses fall through.
+/assets/*  /assets/:splat  200
+/*         /index.html     200

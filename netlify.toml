@@ -1,0 +1,32 @@
+# WOLI DAN TECH HUB — Netlify deployment
+# The frontend talks to Supabase directly; these env vars are the ONLY secrets
+# it needs, and they are frontend-safe (anon key + RLS). NEVER add service-role
+# keys, OpenAI keys or other private credentials here or in the host dashboard.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA deep links (/courses, /course/:slug, /learn/:slug, /admin/dashboard…)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Immutable hashed assets
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# HTML / service worker must always revalidate
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"

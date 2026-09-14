@@ -1,1 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#020a1f"/><rect x="10" y="10" width="80" height="80" rx="16" fill="url(#g)"/><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#22d3ee"/><stop offset="1" stop-color="#0ea5e9"/></linearGradient></defs><text x="50" y="68" font-family="Space Grotesk, sans-serif" font-weight="900" font-size="48" text-anchor="middle" fill="white">W</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="WOLI DAN TECH HUB">
+  <defs>
+    <linearGradient id="wdth-g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="0.55" stop-color="#0ea5e9"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" fill="#020a1f"/>
+  <rect x="3" y="3" width="94" height="94" rx="22.5" fill="url(#wdth-g)"/>
+  <path d="M20 29 L35 71 L50 42 L65 71 L80 29" fill="none" stroke="#ffffff" stroke-width="10.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="20" cy="29" r="5.4" fill="#020a1f"/><circle cx="80" cy="29" r="5.4" fill="#020a1f"/>
+  <circle cx="20" cy="29" r="2.3" fill="#ffffff"/><circle cx="80" cy="29" r="2.3" fill="#ffffff"/>
+  <circle cx="85.5" cy="16.5" r="8.3" fill="#020a1f"/>
+  <circle cx="85.5" cy="16.5" r="5.7" fill="#67e8f9"/>
+</svg>

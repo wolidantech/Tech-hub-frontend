@@ -97,6 +97,20 @@ STYLE GUARDRAILS
 Now: <DESCRIBE HERE WHAT TO GENERATE — e.g. "Add a new course
 'cyber-security-basics'" or "Extend microsoft-excel with an advanced
 Power Query module" or "Regenerate all videos for course X">
+
+CLASSROOM FIELDS (supported since frontend migration 009)
+- Optional topic grouping per module — add to each module object:
+    { title: 'Module 1: …', lessons: [...], topics: [
+        { title: 'Cell structure', lessons: ['Lesson A','Lesson B'] } ] }
+  (topics[].lessons reference lesson TITLES; the generator re-parents them.)
+- Optional dedicated practical per lesson — add to a lesson object:
+    practical: { title, objective, scenario, procedure, materials: [..],
+      observation, expected, questions: [..], safety, estimatedMinutes }
+  This lands in lesson_practicals and renders the full practical card
+  (objective → materials → procedure → observation → expected → questions →
+  safety) plus student submission + review in the classroom.
+- Quizzes may use type 'numeric' with { answerNumber, answerTolerance,
+  answerUnit } — graded server-side with tolerance, unit shown to students.
 ```
 
 ---

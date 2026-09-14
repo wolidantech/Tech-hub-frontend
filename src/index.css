@@ -40,6 +40,30 @@
 ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
 ::-webkit-scrollbar-thumb { background: linear-gradient(to bottom, #22d3ee, #0ea5e9); border-radius: 10px; }
 
+/* ---------- Mobile-first hardening (320px → 1920px) ---------- */
+html { -webkit-text-size-adjust: 100%; }
+img, video, iframe, canvas, svg { max-width: 100%; }
+button, a, label, [role="button"] { touch-action: manipulation; }
+/* iOS Safari zooms when focused inputs are <16px: keep form controls readable */
+@media (max-width: 767px) {
+  input[type="text"], input[type="email"], input[type="password"], input[type="number"],
+  input[type="tel"], input[type="url"], input[type="search"], input:not([type]), select, textarea {
+    font-size: 16px !important;
+  }
+}
+/* dynamic-viewport helpers (mobile browser URL bar doesn't clip content) */
+.min-h-dvh { min-height: 100vh; min-height: 100dvh; }
+.h-dvh { height: 100vh; height: 100dvh; }
+.safe-bottom { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+.safe-top { padding-top: env(safe-area-inset-top); }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+/* tables scroll inside their card on narrow phones instead of pushing page width */
+.lesson-body .lesson-table { display: block; overflow-x: auto; max-width: 100%; }
+.lesson-image { max-width: 100%; height: auto; border-radius: 1rem; margin: 0.75rem 0; }
+.lesson-link { @apply text-cyan-300 underline decoration-cyan-400/40 underline-offset-2 break-all; }
+.lesson-formula { @apply my-3 p-3 rounded-xl bg-white/[0.05] border border-white/10 font-mono text-[14px] text-cyan-100 overflow-x-auto whitespace-pre; }
+
 @keyframes float {
   0%,100% { transform: translateY(0); }
   50% { transform: translateY(-12px); }

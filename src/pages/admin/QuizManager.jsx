@@ -13,7 +13,7 @@ export default function QuizManager() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ courseId: '', title: '', description: '', passingScore: 70, allowRetake: true, isFinal: false, attemptLimit: '' });
   const [managing, setManaging] = useState(null);
-  const [qForm, setQForm] = useState({ type: 'multiple_choice', question: '', options: ['', '', '', ''], correctAnswer: 0, correctAnswers: [], acceptedAnswers: '', explanation: '' });
+  const [qForm, setQForm] = useState({ type: 'multiple_choice', question: '', options: ['', '', '', ''], correctAnswer: 0, correctAnswers: [], acceptedAnswers: '', answerNumber: '', answerTolerance: '', answerUnit: '', explanation: '' });
   const [editingQ, setEditingQ] = useState(null);
 
   const filtered = quizzes.filter((q) => !courseFilter || q.courseId === courseFilter);
@@ -36,14 +36,15 @@ export default function QuizManager() {
     }
   };
 
-  const resetQForm = () => { setQForm({ type: 'multiple_choice', question: '', options: ['', '', '', ''], correctAnswer: 0, correctAnswers: [], acceptedAnswers: '', explanation: '' }); setEditingQ(null); };
+  const resetQForm = () => { setQForm({ type: 'multiple_choice', question: '', options: ['', '', '', ''], correctAnswer: 0, correctAnswers: [], acceptedAnswers: '', answerNumber: '', answerTolerance: '', answerUnit: '', explanation: '' }); setEditingQ(null); };
 
   const saveQuestion = async () => {
     if (!qForm.question.trim()) { toast.error('Question text required'); return; }
-    const opts = qForm.type === 'true_false' ? ['True', 'False'] : qForm.type === 'short_answer' ? [] : qForm.options.filter((o) => o.trim());
-    if (qForm.type !== 'short_answer' && opts.length < 2) { toast.error('At least 2 options required'); return; }
+    const opts = qForm.type === 'true_false' ? ['True', 'False'] : (qForm.type === 'short_answer' || qForm.type === 'numeric') ? [] : qForm.options.filter((o) => o.trim());
+    if (!['short_answer', 'numeric'].includes(qForm.type) && opts.length < 2) { toast.error('At least 2 options required'); return; }
     if (qForm.type === 'short_answer' && !qForm.acceptedAnswers.trim()) { toast.error('Add at least one accepted answer'); return; }
-    const payload = { type: qForm.type, question: qForm.question, options: opts, correctAnswer: qForm.correctAnswer, correctAnswers: qForm.correctAnswers, acceptedAnswers: qForm.acceptedAnswers.split('|').map((s) => s.trim()).filter(Boolean), explanation: qForm.explanation };
+    if (qForm.type === 'numeric' && String(qForm.answerNumber).trim() === '') { toast.error('Enter the correct numeric answer'); return; }
+    const payload = { type: qForm.type, question: qForm.question, options: opts, correctAnswer: qForm.correctAnswer, correctAnswers: qForm.correctAnswers, acceptedAnswers: qForm.acceptedAnswers.split('|').map((s) => s.trim()).filter(Boolean), answerNumber: qForm.answerNumber, answerTolerance: qForm.answerTolerance === '' ? null : qForm.answerTolerance, answerUnit: qForm.answerUnit, explanation: qForm.explanation };
     try {
       if (editingQ) { await updateQuestion(editingQ, payload); toast.success('Question updated'); }
       else { await addQuestion(managing, payload); toast.success('Question added'); }
@@ -55,7 +56,7 @@ export default function QuizManager() {
 
   const startEditQ = (q) => {
     setEditingQ(q.id);
-    setQForm({ type: q.type, question: q.question, options: q.type === 'true_false' ? ['True', 'False'] : [...(q.options || []), '', '', '', ''].slice(0, 4), correctAnswer: q.correctAnswer || 0, correctAnswers: q.correctAnswers || [], acceptedAnswers: (q.acceptedAnswers || []).join(' | '), explanation: q.explanation || '' });
+    setQForm({ type: q.type, question: q.question, options: q.type === 'true_false' ? ['True', 'False'] : [...(q.options || []), '', '', '', ''].slice(0, 4), correctAnswer: q.correctAnswer || 0, correctAnswers: q.correctAnswers || [], acceptedAnswers: (q.acceptedAnswers || []).join(' | '), answerNumber: q.answerNumber ?? '', answerTolerance: q.answerTolerance ?? '', answerUnit: q.answerUnit || '', explanation: q.explanation || '' });
   };
 
   if (managing) {
@@ -102,12 +103,21 @@ export default function QuizManager() {
         <div className="glass-strong rounded-[20px] p-6 space-y-4">
           <h3 className="font-bold">{editingQ ? 'Edit Question' : 'Add Question'}</h3>
           <div className="flex gap-2">
-            {[{ id: 'multiple_choice', label: 'Multiple Choice' }, { id: 'true_false', label: 'True/False' }, { id: 'multiple_answer', label: 'Multiple Answer' }, { id: 'short_answer', label: 'Short Answer' }].map((t) => (
+            {[{ id: 'multiple_choice', label: 'Multiple Choice' }, { id: 'true_false', label: 'True/False' }, { id: 'multiple_answer', label: 'Multiple Answer' }, { id: 'short_answer', label: 'Short Answer' }, { id: 'numeric', label: 'Numeric / Calculation' }].map((t) => (
               <button key={t.id} onClick={() => setQForm({ ...qForm, type: t.id })} className={`px-4 py-2 rounded-full text-xs font-bold ${qForm.type === t.id ? 'bg-white text-black' : 'glass text-white/60'}`}>{t.label}</button>
             ))}
           </div>
           <input value={qForm.question} onChange={(e) => setQForm({ ...qForm, question: e.target.value })} placeholder="Question text" className="w-full h-11 rounded-full glass px-4 text-sm" />
-          {qForm.type === 'short_answer' ? (
+          {qForm.type === 'numeric' ? (
+            <div className="space-y-3">
+              <div className="grid sm:grid-cols-3 gap-3">
+                <div><label className="text-xs text-white/40 font-bold">CORRECT ANSWER</label><input type="number" step="any" value={qForm.answerNumber} onChange={(e) => setQForm({ ...qForm, answerNumber: e.target.value })} placeholder="e.g. 42 or 0.05" className="mt-1 w-full h-11 rounded-full glass px-4 text-sm" /></div>
+                <div><label className="text-xs text-white/40 font-bold">TOLERANCE (±, optional)</label><input type="number" step="any" value={qForm.answerTolerance} onChange={(e) => setQForm({ ...qForm, answerTolerance: e.target.value })} placeholder="e.g. 0.01" className="mt-1 w-full h-11 rounded-full glass px-4 text-sm" /></div>
+                <div><label className="text-xs text-white/40 font-bold">UNIT (shown to students)</label><input value={qForm.answerUnit} onChange={(e) => setQForm({ ...qForm, answerUnit: e.target.value })} placeholder="e.g. cm, mol/L, ₦" className="mt-1 w-full h-11 rounded-full glass px-4 text-sm" /></div>
+              </div>
+              <div className="text-[11px] text-white/40">Students type a number; grading is server-side with the tolerance you set (exact if blank).</div>
+            </div>
+          ) : qForm.type === 'short_answer' ? (
             <div className="space-y-2">
               <input value={qForm.acceptedAnswers} onChange={(e) => setQForm({ ...qForm, acceptedAnswers: e.target.value })} placeholder="Accepted answers (separate with |  e.g.  HyperText | hypertext)" className="w-full h-11 rounded-full glass px-4 text-sm" />
               <div className="text-[11px] text-white/30">Answers match case-insensitively; partial matches containing an accepted answer also pass.</div>
