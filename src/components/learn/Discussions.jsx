@@ -44,17 +44,17 @@ export default function Discussions({ courseId, lessonId = null, user, title = '
   };
 
   return (
-    <div className="rounded-3xl glass p-6 space-y-4">
+    <div className="rounded-3xl glass p-4 sm:p-6 space-y-4">
       <div className="flex flex-wrap justify-between items-center gap-2">
         <h3 className="font-bold flex items-center gap-2"><MessagesSquare className="h-5 w-5 text-amber-300" /> {title} ({posts.length})</h3>
-        <button onClick={() => setShowForm(!showForm)} className="px-4 py-2 rounded-full bg-white text-black font-bold text-xs">ASK A QUESTION</button>
+        <button onClick={() => setShowForm(!showForm)} className="min-h-11 px-4 rounded-full bg-white text-black font-bold text-xs">ASK A QUESTION</button>
       </div>
 
       {showForm && (
         <div className="rounded-2xl bg-white/[0.03] border border-white/10 p-4 space-y-3">
           <input value={newPost.title} onChange={(e) => setNewPost({ ...newPost, title: e.target.value })} placeholder="Question title..." className="w-full h-11 rounded-full glass px-4 text-sm" />
           <textarea value={newPost.body} onChange={(e) => setNewPost({ ...newPost, body: e.target.value })} placeholder="Describe your question in detail..." className="w-full rounded-2xl glass p-4 text-sm h-24" />
-          <button onClick={handlePost} className="btn-primary !py-2.5 text-xs">POST QUESTION</button>
+          <button onClick={handlePost} className="btn-primary min-h-11 text-xs">POST QUESTION</button>
         </div>
       )}
 
@@ -79,14 +79,14 @@ export default function Discussions({ courseId, lessonId = null, user, title = '
                   </div>
                   <div className="text-xs text-white/40 mt-0.5">{p.authorName} • {new Date(p.createdAt).toLocaleString()}</div>
                   <p className="text-sm text-white/70 mt-2 whitespace-pre-line">{p.body}</p>
-                  <button onClick={() => toggleOpen(p.id)} className="mt-2 text-xs font-bold text-cyan-300 flex items-center gap-1">
+                  <button onClick={() => toggleOpen(p.id)} className="mt-2 min-h-11 text-xs font-bold text-cyan-300 flex items-center gap-1">
                     <MessageCircle className="h-3.5 w-3.5" /> {list.length} REPLIES {isOpen ? '▲' : '▼'}
                   </button>
                 </div>
               </div>
 
               {isOpen && (
-                <div className="mt-3 ml-12 space-y-2">
+                <div className="mt-3 sm:ml-12 space-y-2">
                   {list.map((c) => (
                     <div key={c.id} className={`rounded-xl p-3 text-sm ${c.isAdmin ? 'bg-purple-500/10 border border-purple-500/30' : 'bg-white/[0.03]'}`}>
                       <span className="font-bold text-xs">{c.authorName}</span>
@@ -101,9 +101,9 @@ export default function Discussions({ courseId, lessonId = null, user, title = '
                       onChange={(e) => setDrafts({ ...drafts, [p.id]: e.target.value })}
                       onKeyDown={(e) => e.key === 'Enter' && handleComment(p.id)}
                       placeholder="Write a reply..."
-                      className="flex-1 h-10 rounded-full glass px-4 text-sm"
+                      className="flex-1 min-w-0 h-11 rounded-full glass px-4 text-sm"
                     />
-                    <button onClick={() => handleComment(p.id)} className="h-10 w-10 rounded-full bg-white text-black flex items-center justify-center shrink-0"><Send className="h-4 w-4" /></button>
+                    <button aria-label="Send reply" onClick={() => handleComment(p.id)} className="h-11 w-11 rounded-full bg-white text-black flex items-center justify-center shrink-0"><Send className="h-4 w-4" /></button>
                   </div>
                 </div>
               )}

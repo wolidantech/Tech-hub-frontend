@@ -1,8 +1,7 @@
-// PGlite behavioral verification for migrations 001-008.
-// NOTE: PGlite runs as superuser so RLS *enforcement* cannot be tested
-// here — RLS is verified at the policy-definition level (pg_policies) plus
-// SECURITY DEFINER auth checks, which DO execute. Full enforcement is
-// covered by scripts/smoke-supabase.mjs against a live project.
+// PGlite behavioral verification for migrations 001-009.
+// Most fixtures run as the database owner; H26 creates and switches to genuine
+// non-owner anon/authenticated roles so PostgreSQL enforces the catalog/content
+// RLS policies and catches is_admin() recursion on a fresh database.
 import { PGlite } from '@electric-sql/pglite';
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
@@ -15,10 +14,16 @@ const here = dirname(fileURLToPath(import.meta.url));
 const MIG = join(here, '../migrations');
 const db = new PGlite();
 await db.exec(readFileSync(join(here, 'stubs.sql'), 'utf8'));
-for (const f of ['001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql', '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql', '007_classroom_upgrade.sql', '008_cv_builder_and_study_tools.sql']) {
+const migrations = [
+  '001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql',
+  '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql',
+  '007_classroom_upgrade.sql', '008_cv_builder_and_study_tools.sql',
+  '009_fix_is_admin_recursion.sql',
+];
+for (const f of migrations) {
   await db.exec(readFileSync(`${MIG}/${f}`, 'utf8'));
 }
-console.log('migrations 001-008 applied clean');
+console.log('migrations 001-009 applied clean');
 
 const ADMIN = '11111111-1111-1111-1111-111111111111';
 const STU = '22222222-2222-2222-2222-222222222222';
@@ -529,6 +534,109 @@ await t('H25 CV documents + study tools: tables exist, own-rows policies scoped'
   await one(`delete from study_notes where id='${note.id}'`);
   await one(`delete from cv_documents where id='${cv.id}'`);
   await anon();
+});
+
+// ---------- H26: migration 009 + real non-owner RLS enforcement ----------
+await t('H26 migration 009 is idempotent and RLS enforces catalog/content gates without recursion', async () => {
+  const rlsDb = new PGlite();
+  try {
+    await rlsDb.exec(readFileSync(join(here, 'stubs.sql'), 'utf8'));
+    for (const f of migrations) await rlsDb.exec(readFileSync(`${MIG}/${f}`, 'utf8'));
+    // Applying 009 again models the already-hot-fixed live project.
+    await rlsDb.exec(readFileSync(`${MIG}/009_fix_is_admin_recursion.sql`, 'utf8'));
+
+    const fn = (await rlsDb.query(`
+      select p.prosecdef, p.proconfig
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.proname = 'is_admin'
+    `)).rows[0];
+    assert(fn?.prosecdef === true, 'is_admin() is not SECURITY DEFINER');
+    assert((fn.proconfig || []).some(v => v === 'search_path=public'), 'is_admin() search_path is not fixed to public');
+
+    const elevatedFunctions = (await rlsDb.query(`
+      select p.proname, p.proconfig
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.prosecdef = true
+    `)).rows;
+    const unpinned = elevatedFunctions.filter(f => !(f.proconfig || []).some(v => v === 'search_path=public'));
+    assert(unpinned.length === 0,
+      `SECURITY DEFINER functions without fixed search_path: ${unpinned.map(f => f.proname).join(', ')}`);
+
+    const coursePolicy = (await rlsDb.query(`
+      select qual from pg_policies
+      where schemaname = 'public' and tablename = 'courses'
+        and policyname = 'published courses public'
+    `)).rows[0];
+    assert(String(coursePolicy?.qual).includes('archived'), 'public course policy does not exclude archived rows');
+
+    const RLS_STUDENT = '71000000-0000-0000-0000-000000000001';
+    const RLS_ADMIN = '71000000-0000-0000-0000-000000000002';
+    const LIVE = '72000000-0000-0000-0000-000000000001';
+    const ARCHIVED = '72000000-0000-0000-0000-000000000002';
+    const DRAFT = '72000000-0000-0000-0000-000000000003';
+
+    await rlsDb.exec(`
+      insert into auth.users (id, email, raw_user_meta_data) values
+        ('${RLS_STUDENT}', 'rls-student@example.test', '{"full_name":"RLS Student"}'),
+        ('${RLS_ADMIN}', 'rls-admin@example.test', '{"full_name":"RLS Admin"}');
+      update public.profiles set role = 'admin' where id = '${RLS_ADMIN}';
+
+      insert into public.courses (id, slug, title, published, archived) values
+        ('${LIVE}', 'rls-live', 'RLS live', true, false),
+        ('${ARCHIVED}', 'rls-archived', 'RLS archived', true, true),
+        ('${DRAFT}', 'rls-draft', 'RLS draft', false, false);
+
+      insert into public.course_modules (course_id, title, position)
+      values ('${LIVE}', 'Live module', 0), ('${ARCHIVED}', 'Archived module', 0), ('${DRAFT}', 'Draft module', 0);
+
+      insert into public.course_lessons (module_id, course_id, title, position)
+      select m.id, m.course_id, c.slug || ' lesson', 0
+      from public.course_modules m join public.courses c on c.id = m.course_id;
+
+      insert into public.course_content (lesson_id, body_markdown)
+      select id, 'Enrolled-only body' from public.course_lessons where course_id = '${LIVE}';
+      insert into public.course_videos (lesson_id, provider, url, status)
+      select id, 'youtube', 'https://www.youtube.com/watch?v=RlsFixture1', 'published'
+      from public.course_lessons where course_id = '${LIVE}';
+      insert into public.enrollments (user_id, course_id, status)
+      values ('${RLS_STUDENT}', '${LIVE}', 'active');
+
+      create role verify_anon nologin;
+      create role verify_authenticated nologin;
+      grant usage on schema public, auth to verify_anon, verify_authenticated;
+      grant select on public.profiles, public.courses, public.course_modules,
+        public.course_lessons, public.course_content, public.course_videos,
+        public.enrollments to verify_anon, verify_authenticated;
+    `);
+
+    // These queries run as a non-owner role, so RLS is genuinely enforced.
+    await rlsDb.exec(`set app.session_uid = ''; set role verify_anon;`);
+    let rows = (await rlsDb.query(`select slug from public.courses order by slug`)).rows;
+    assert(rows.length === 1 && rows[0].slug === 'rls-live', `anon course scope wrong: ${JSON.stringify(rows)}`);
+    assert(Number((await rlsDb.query(`select count(*)::int as n from public.course_modules`)).rows[0].n) === 1, 'anon module scope wrong');
+    assert(Number((await rlsDb.query(`select count(*)::int as n from public.course_lessons`)).rows[0].n) === 1, 'anon lesson-title scope wrong');
+    assert(Number((await rlsDb.query(`select count(*)::int as n from public.course_content`)).rows[0].n) === 0, 'anon can read lesson bodies');
+    assert(Number((await rlsDb.query(`select count(*)::int as n from public.course_videos`)).rows[0].n) === 0, 'anon can read lesson videos');
+    // Selecting profiles invokes the profiles policy -> is_admin(); completion
+    // without a stack-depth error is the regression check for the recursion.
+    assert(Number((await rlsDb.query(`select count(*)::int as n from public.profiles`)).rows[0].n) === 0, 'anon can read profiles');
+    assert((await rlsDb.query(`select public.is_admin() as admin`)).rows[0].admin === false, 'anon reported as admin');
+
+    await rlsDb.exec(`reset role; set app.session_uid = '${RLS_STUDENT}'; set role verify_authenticated;`);
+    assert(Number((await rlsDb.query(`select count(*)::int as n from public.course_content`)).rows[0].n) === 1, 'active student cannot read lesson body');
+    assert(Number((await rlsDb.query(`select count(*)::int as n from public.course_videos`)).rows[0].n) === 1, 'active student cannot read published video');
+    assert((await rlsDb.query(`select public.is_admin() as admin`)).rows[0].admin === false, 'student reported as admin');
+
+    await rlsDb.exec(`reset role; set app.session_uid = '${RLS_ADMIN}'; set role verify_authenticated;`);
+    assert((await rlsDb.query(`select public.is_admin() as admin`)).rows[0].admin === true, 'admin lookup failed');
+    rows = (await rlsDb.query(`select slug from public.courses`)).rows;
+    assert(rows.length === 3, `admin cannot inspect all courses: ${rows.length}`);
+    await rlsDb.exec('reset role;');
+  } finally {
+    await rlsDb.close();
+  }
 });
 
 console.log(`\n==== RESULT: ${pass} passed, ${fail} failed ====`);

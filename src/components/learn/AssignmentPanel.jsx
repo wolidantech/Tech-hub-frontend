@@ -121,7 +121,7 @@ export default function AssignmentPanel({ assignment, user, onSubmitted }) {
                   <div className="text-sm flex flex-wrap items-center gap-2 min-w-0 break-words">
                     <KIcon className="h-3.5 w-3.5 text-cyan-300" />
                     <span className="font-bold">
-                      {sk === 'file' ? s.fileName : sk === 'link' ? <a href={s.linkUrl} target="_blank" rel="noreferrer" className="text-cyan-300 underline break-all">{s.linkUrl}</a> : `Text submission #${subs.length - idx}`}
+                      {sk === 'file' ? s.fileName : sk === 'link' ? <a href={s.linkUrl} target="_blank" rel="noreferrer" className="min-h-11 inline-flex items-center text-cyan-300 underline break-all">{s.linkUrl}</a> : `Text submission #${subs.length - idx}`}
                     </span>
                     <span className="text-white/40 text-xs ml-1">
                       {sk === 'file' && s.fileSize ? `${(s.fileSize / 1024).toFixed(0)} KB • ` : ''}{new Date(s.submittedAt).toLocaleString()}
@@ -156,11 +156,11 @@ export default function AssignmentPanel({ assignment, user, onSubmitted }) {
           <div className="flex flex-wrap justify-between items-center gap-2">
             <div className="font-bold text-sm">SUBMISSION AREA</div>
             {allowed.length > 1 && (
-              <div className="flex gap-1.5">
+              <div className="flex flex-wrap gap-1.5">
                 {allowed.map((k) => {
                   const KIcon = KIND_META[k].icon;
                   return (
-                    <button key={k} type="button" onClick={() => setKind(k)} className={`px-3 py-1.5 rounded-full text-[11px] font-bold flex items-center gap-1 ${kind === k ? 'bg-white text-black' : 'glass text-white/60'}`}>
+                    <button key={k} type="button" onClick={() => setKind(k)} className={`min-h-11 px-3 rounded-full text-[11px] font-bold flex items-center gap-1 ${kind === k ? 'bg-white text-black' : 'glass text-white/60'}`}>
                       <KIcon className="h-3 w-3" /> {KIND_META[k].label}
                     </button>
                   );

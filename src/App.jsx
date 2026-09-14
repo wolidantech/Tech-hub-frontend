@@ -97,6 +97,8 @@ function GatedApp() {
               <Route path="/courses" element={<Layout><Courses /></Layout>} />
               <Route path="/course/:slug" element={<Layout><CourseDetails /></Layout>} />
               <Route path="/courses/:slug" element={<Layout><CourseDetails /></Layout>} />
+              <Route path="/app/courses" element={<Layout><Courses /></Layout>} />
+              <Route path="/app/course/:slug" element={<Layout><CourseDetails /></Layout>} />
               <Route path="/login" element={<Layout><Login /></Layout>} />
               <Route path="/register" element={<Layout><Register /></Layout>} />
               <Route path="/about" element={<Layout><About /></Layout>} />

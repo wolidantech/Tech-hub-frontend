@@ -6,14 +6,14 @@
 -- Paste this ENTIRE file into Supabase Dashboard -> SQL Editor -> Run.
 -- It is the concatenation, in order, of:
 --   1. seed_12_courses.sql       — the 12 launch courses (as drafts)
---   2. seed_curriculum.sql       — their modules, lessons and text bodies
---   3. publish_courses.sql       — flips published = true on courses with lessons
+--   2. seed_curriculum.sql       — modules, lessons, bodies, videos + resources
+--   3. publish_courses.sql       — publishes draft courses that have modules
 --   4. seed_learning_paths.sql   — 4 guided learning paths over the live catalog
 --
--- Run AFTER migrations 001-008. Idempotent: safe to re-run; never duplicates
--- rows and never unpublishes a course you deliberately hid.
+-- Run AFTER migrations 001-009. Idempotent: safe to re-run; never duplicates
+-- seed rows and never changes a published course to unpublished.
 --
--- Expected end state: 12 published courses with real lesson counts and
+-- Expected end state: all 12 launch courses published with 16 lessons each and
 -- 4 published learning paths that reference real course ids.
 -- Verify with:
 --   select count(*) filter (where published) as published,
@@ -26,13 +26,13 @@
 
 -- ============================================================
 -- WOLI DAN TECH HUB — Seed: 12 launch courses + categories
--- Run AFTER migrations 001-005, in Supabase SQL Editor, as ONE query.
+-- Run AFTER migrations 001-009, in Supabase SQL Editor, as ONE query.
 -- IDEMPOTENT: keyed on slug/name — safe to re-run, never duplicates.
 -- Re-runs update catalog copy/prices but NEVER touch published/featured
 -- (so re-running cannot unpublish a live course).
--- NOTE: courses seed as UNPUBLISHED with no curriculum. Build real
--- lessons via Admin → Courses, then publish. Placeholder demo videos
--- from the offline catalog are intentionally NOT seeded.
+-- NOTE: new courses seed as UNPUBLISHED. Next run seed_curriculum.sql,
+-- which provides the complete modules, bodies, resources and lesson videos;
+-- only then run publish_courses.sql.
 -- ============================================================
 
 -- ---------- Categories ----------
@@ -240,7 +240,8 @@ select name from public.categories order by name;
 -- GENERATED FILE — do not edit by hand.
 -- Regenerate: node supabase/seed/generate_curriculum.mjs
 --
--- Run AFTER 001-006 and AFTER seed_12_courses.sql, as ONE query.
+-- Run AFTER migrations 001-009 and AFTER seed_12_courses.sql, as ONE query.
+-- Requires lesson resources (003) and expanded lesson types (007).
 -- IDEMPOTENT: modules/lessons matched by (course slug, module title,
 -- lesson title); content upserts; videos matched on (lesson_id, url).
 -- Re-running updates bodies/resources and never duplicates rows.
@@ -255,6 +256,20 @@ select name from public.categories order by name;
 -- ============================================================
 
 begin;
+
+-- Fail before writing anything if the catalog seed was skipped or drifted.
+do $seed_guard$
+declare missing_slugs text;
+begin
+  select string_agg(required.slug, ', ' order by required.slug)
+    into missing_slugs
+    from unnest(array['ai-video-content-creation', 'video-editing-capcut', 'graphic-design-canva', 'digital-marketing', 'mobile-app-development', 'portfolio-creation', 'frontend-web-development', 'web-design-wordpress', 'ui-ux-design-figma', 'microsoft-excel', 'microsoft-word', 'microsoft-powerpoint']::text[]) as required(slug)
+   where not exists (select 1 from public.courses c where c.slug = required.slug);
+  if missing_slugs is not null then
+    raise exception 'seed_curriculum: required course slugs are missing: %', missing_slugs;
+  end if;
+end
+$seed_guard$;
 
 -- ---------- ai-video-content-creation ----------
 with c as (select id from public.courses where slug = 'ai-video-content-creation')
@@ -17115,8 +17130,9 @@ from public.courses c order by c.slug;
 --
 -- HOW TO USE
 --   Supabase Dashboard -> SQL Editor -> paste -> Run.
---   Safe to re-run: it only flips published from false to true and never
---   unpublishes anything, so a course you deliberately hid stays hidden.
+--   Safe to re-run: it only flips eligible rows from false to true and never
+--   changes any course from published to unpublished. Note that any draft,
+--   unarchived course with a module is eligible each time this file is run.
 -- ============================================================
 
 begin;

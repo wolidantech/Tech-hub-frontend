@@ -335,7 +335,10 @@ export const fetchCourseDetail = async (courseId) => {
   if (ids.length) {
     // course_content/course_videos are enrolled-only; RLS returns [] for outsiders (no error).
     contents = await one(sb().from('course_content').select('*').in('lesson_id', ids));
-    videos = await one(sb().from('course_videos').select('*').in('lesson_id', ids));
+    // Students should only render released video rows. Migration 009 enforces
+    // the same predicate in RLS; this filter also makes admin preview match the
+    // student classroom when an editor has draft/processing videos.
+    videos = await one(sb().from('course_videos').select('*').in('lesson_id', ids).eq('status', 'published'));
   }
   const contentById = Object.fromEntries(contents.map((c) => [c.lesson_id, c.body_markdown || '']));
   const videosById = {};

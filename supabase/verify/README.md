@@ -1,41 +1,51 @@
-# Migration & seed verification (PGlite)
+# Migration and seed verification (PGlite)
 
-Runs the real SQL in throwaway Postgres — no Supabase project, no network, no
-cleanup.
+The checks run the real SQL in throwaway PostgreSQL (PGlite): no Supabase
+project, network connection, credentials, or cleanup is required.
+
+From the repository root:
 
 ```bash
-cd supabase/verify
-npm install
-npm run verify        # migrations 001-006, behaviorally
-npm run verify:seed   # the seed chain an administrator is told to run
+npm ci
+npm --prefix supabase/verify ci
+npm run verify
+npm run verify:seed
 ```
 
 Expected:
 
-- `npm run verify` → `44 passed, 0 failed`
-- `npm run verify:seed` → `29 passed, 0 failed`
+- `npm run verify` → `46 passed, 0 failed`
+- `npm run verify:seed` → `38 passed, 0 failed`
 
-## What each covers
+## Coverage
 
-`run.mjs` applies `migrations/001`–`007` on top of `stubs.sql` (which emulates
-the Supabase-managed bits: `auth.users`, `auth.uid()`, `storage.buckets`) and
-then exercises scoring, coupon redemption, payment approval, certificate
-issuance, bundles, portfolios and the RLS hardening in 003.
+`run.mjs` applies migrations 001–009 to a fresh database and behaviorally tests
+auth/profile setup, scoring, coupons, payments, certificates, portfolios,
+storage policy definitions, study tools, and migration 009.
 
-`verify-seed.mjs` proves the setup sequence actually produces a working site:
-the 12 seeded courses, the generated curriculum, idempotent re-runs, and the two
-failure modes that are invisible until launch —
+The migration-009 regression creates separate non-owner `verify_anon` and
+`verify_authenticated` PostgreSQL roles. After switching to them, it confirms
+that RLS is actually enforced: no `is_admin()` recursion, public access only to
+published/unarchived catalog titles, no anonymous body/video access, and body +
+published-video access for an active enrollment. It also verifies
+`is_admin()` is `SECURITY DEFINER`, every elevated `public` function has
+`search_path=public`, and applying 009 a second time is clean.
 
-- `publish_courses.sql` leaves the storefront **non-empty**, and only publishes
-  courses that have curriculum (no empty shells sold to paying students);
-- `make_admin.sql` breaks the bootstrap deadlock (signup always creates a
-  `student`, and `/admin/login` rejects non-admins) and refuses to run with the
-  placeholder email still in place.
+`verify-seed.mjs` proves the documented setup sequence produces exactly the 12
+expected launch slugs, 48 modules, 192 lessons, 192 full bodies, 192 resource
+sets, 192 published YouTube videos, 12 quizzes, 120 questions, 12 final projects,
+and four published learning paths. It executes the seeds twice to prove stable
+row counts, verifies the migration column contract, and confirms
+`publish_courses.sql`:
 
-## Caveat
+- newly publishes a draft only when it has a module;
+- does not publish an empty custom draft;
+- never unpublishes an already-published row.
 
-PGlite runs as superuser, so RLS **enforcement** cannot be tested here. Policies
-are asserted at definition level (`pg_policies`) and every `SECURITY DEFINER`
-auth check (`auth.uid()`, `is_admin()`) executes for real. Confirm enforcement
-against a live project by logging out and loading `/courses` in a private window
-— or open `/backend-status`, which probes the deployed backend directly.
+It also executes `verify_curriculum.sql` against the complete migrated seed
+chain, so the SQL Editor inventory and release-blocker diagnostics are
+syntax-checked automatically.
+
+Most non-authorization behavior tests run as the database owner for predictable
+fixtures. The dedicated RLS regression is the enforcement test; policy metadata
+checks alone are not treated as proof of authorization.

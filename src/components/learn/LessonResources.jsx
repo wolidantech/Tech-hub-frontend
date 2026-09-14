@@ -40,9 +40,9 @@ function Resource({ resource }) {
       {resource.description && <p className="text-sm text-white/60">{resource.description}</p>}
     </div></div>
     {url ? <div className="flex flex-wrap gap-3 text-sm">
-      <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 p-2 rounded-lg glass"><ExternalLink size={16} /> Open</a>
-      <button disabled={busy} onClick={download} className="inline-flex items-center gap-1 p-2 rounded-lg glass disabled:opacity-50"><Download size={16} />{busy ? 'Downloading…' : error ? 'Retry download' : 'Download'}</button>
-      {typeof navigator.share === 'function' && <button onClick={share} className="inline-flex items-center gap-1 p-2 rounded-lg glass"><Share2 size={16} /> Share</button>}
+      <a href={url} target="_blank" rel="noopener noreferrer" className="min-h-11 inline-flex items-center gap-1 px-3 rounded-lg glass"><ExternalLink size={16} /> Open</a>
+      <button disabled={busy} onClick={download} className="min-h-11 inline-flex items-center gap-1 px-3 rounded-lg glass disabled:opacity-50"><Download size={16} />{busy ? 'Downloading…' : error ? 'Retry download' : 'Download'}</button>
+      {typeof navigator.share === 'function' && <button onClick={share} className="min-h-11 inline-flex items-center gap-1 px-3 rounded-lg glass"><Share2 size={16} /> Share</button>}
     </div> : <p role="status" className="text-sm text-amber-200">Resource has no valid URL. Contact your instructor.</p>}
     {error && <p role="alert" className="text-sm text-amber-200">{error}</p>}
   </article>;

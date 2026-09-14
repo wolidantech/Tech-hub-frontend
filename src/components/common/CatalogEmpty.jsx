@@ -11,7 +11,7 @@ import { DatabaseZap, Stethoscope, SearchX } from 'lucide-react';
 //   filtering  -> the visitor typed/filtered themselves into an empty result
 //   backend    -> the catalog query failed, or returned nothing because the
 //                 seed was never run / every course is still unpublished
-export default function CatalogEmpty({ filtering = false, error = null, compact = false }) {
+export default function CatalogEmpty({ filtering = false, error = null, compact = false, onRetry = null }) {
   if (filtering) {
     return (
       <div className={`text-center glass rounded-[24px] ${compact ? 'py-10' : 'py-20'}`}>
@@ -42,6 +42,11 @@ export default function CatalogEmpty({ filtering = false, error = null, compact 
         )}
       </p>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+        {error && onRetry && (
+          <button type="button" onClick={onRetry} className="inline-flex items-center h-11 px-6 rounded-full bg-white text-black font-bold text-sm hover:bg-white/90">
+            TRY AGAIN
+          </button>
+        )}
         <Link
           to="/backend-status"
           className="inline-flex items-center gap-2 h-11 px-6 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 font-bold text-sm transition hover:brightness-110"

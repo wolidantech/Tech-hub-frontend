@@ -13,7 +13,7 @@ import { SKILL_AREAS, coursesForSubject } from '../data/skillsLibrary';
 const DIFFICULTIES = ['Beginner', 'Intermediate', 'Advanced', 'Professional', 'Expert'];
 
 export default function Courses() {
-  const { courses, coursesLoading, coursesError, getUserEnrollments, getProgress } = useCourses();
+  const { courses, coursesLoading, coursesError, refreshCourses, getUserEnrollments, getProgress } = useCourses();
   const { categories, courseViews, bundles } = useLMS();
   const liveBundles = bundles.filter((b) => b.published !== false);
   const { user } = useAuth();
@@ -61,13 +61,13 @@ export default function Courses() {
   const cats = ['All', ...categories];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen max-w-full overflow-x-clip">
       <div className="border-b border-white/[0.06] bg-gradient-to-br from-[#061236] to-[#020a1f]">
-        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-12">
+        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass text-[10px] font-black tracking-[0.2em] mb-3"><Sparkles className="h-3.5 w-3.5 text-cyan-300" /> ANY SKILL • ANY SUBJECT • ANY LEVEL</div>
-              <h1 className="font-display font-black text-[32px] md:text-[48px] leading-none">GLOBAL SKILLS LIBRARY</h1>
+              <div className="max-w-full inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl glass text-[9px] sm:text-[10px] font-black tracking-[0.12em] sm:tracking-[0.2em] mb-3"><Sparkles className="h-3.5 w-3.5 shrink-0 text-cyan-300" /> <span>ANY SKILL • ANY SUBJECT • ANY LEVEL</span></div>
+              <h1 className="font-display font-black text-[30px] sm:text-[36px] md:text-[48px] leading-none break-words">GLOBAL SKILLS LIBRARY</h1>
               <p className="mt-3 text-white/60 max-w-[560px]">A growing world-class library — AI, coding, design, video, marketing, business, office productivity & more. Every course ships with lessons, videos, quizzes, projects and a certificate. Pick your level and start.</p>
               <div className="mt-4 flex items-center gap-2 text-[13px] flex-wrap">
                 <span className="px-3 py-1 rounded-full glass font-bold">{filtered.length} COURSES</span>
@@ -83,7 +83,7 @@ export default function Courses() {
               </div>
               <div className="relative">
                 <SlidersHorizontal className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-                <select value={sort} onChange={(e) => setSort(e.target.value)} className="h-12 rounded-full glass pl-11 pr-10 text-sm bg-transparent appearance-none focus:outline-none">
+                <select value={sort} onChange={(e) => setSort(e.target.value)} className="h-12 w-full rounded-full glass pl-11 pr-10 text-sm bg-transparent appearance-none focus:outline-none">
                   <option className="bg-[#061236]" value="popular">Most Popular</option>
                   <option className="bg-[#061236]" value="rating">Top Rated</option>
                   <option className="bg-[#061236]" value="price-low">Price: Low to High</option>
@@ -93,19 +93,19 @@ export default function Courses() {
             </div>
           </div>
 
-          <div className="mt-8 flex gap-2 overflow-x-auto pb-2 scrollbar-none" aria-label="Course categories">
+          <div className="mt-8 flex flex-wrap gap-2" aria-label="Course categories">
             {cats.map((cat) => (
-              <button key={cat} onClick={() => setActiveCat(cat)} className={`whitespace-nowrap px-5 py-2.5 rounded-full text-[13px] font-bold tracking-wide transition-all ${activeCat === cat ? 'bg-gradient-to-r from-cyan-400 to-blue-600 text-white shadow-[0_0_20px_rgba(14,165,233,0.4)]' : 'glass text-white/60 hover:text-white hover:bg-white/[0.08]'}`}>
+              <button key={cat} onClick={() => setActiveCat(cat)} className={`min-h-11 px-4 sm:px-5 rounded-full text-[12px] sm:text-[13px] font-bold tracking-wide transition-all ${activeCat === cat ? 'bg-gradient-to-r from-cyan-400 to-blue-600 text-white shadow-[0_0_20px_rgba(14,165,233,0.4)]' : 'glass text-white/60 hover:text-white hover:bg-white/[0.08]'}`}>
                 {cat.toUpperCase()}
               </button>
             ))}
           </div>
 
           {/* Difficulty / student level filter */}
-          <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none" aria-label="Filter by difficulty level">
-            <span className="text-[10px] font-black tracking-widest text-white/35 shrink-0">YOUR LEVEL:</span>
+          <div className="mt-3 flex flex-wrap items-center gap-2" aria-label="Filter by difficulty level">
+            <span className="w-full sm:w-auto text-[10px] font-black tracking-widest text-white/35">YOUR LEVEL:</span>
             {['All', ...DIFFICULTIES].map((lv) => (
-              <button key={lv} onClick={() => setLevel(lv)} className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-all ${level === lv ? 'bg-purple-500 text-white' : 'glass text-white/50 hover:text-white'}`}>
+              <button key={lv} onClick={() => setLevel(lv)} className={`min-h-11 px-3.5 rounded-full text-[11px] font-bold transition-all ${level === lv ? 'bg-purple-500 text-white' : 'glass text-white/50 hover:text-white'}`}>
                 {lv === 'All' ? 'ALL LEVELS' : lv.toUpperCase()}
               </button>
             ))}
@@ -128,7 +128,7 @@ export default function Courses() {
                       const n = coursesForSubject(sub, visible).length;
                       return (
                         <button key={sub.name} onClick={() => (sub.category ? setActiveCat(sub.category) : setSearch(sub.name))}
-                          className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition ${n > 0 ? 'bg-cyan-500/15 text-cyan-200 border border-cyan-400/30 hover:bg-cyan-500/25' : 'glass text-white/40 hover:text-white'}`}>
+                          className={`min-h-11 px-3 rounded-full text-[11px] font-bold transition ${n > 0 ? 'bg-cyan-500/15 text-cyan-200 border border-cyan-400/30 hover:bg-cyan-500/25' : 'glass text-white/40 hover:text-white'}`}>
                           {sub.name}{n > 0 ? ` (${n})` : ''}
                         </button>
                       );
@@ -193,7 +193,7 @@ export default function Courses() {
               ))}
             </div>
           ) : filtered.length === 0 ? (
-            <CatalogEmpty filtering={filtering} error={coursesError} />
+            <CatalogEmpty filtering={filtering && !coursesError} error={coursesError} onRetry={refreshCourses} />
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filtered.map((c) => (

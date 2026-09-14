@@ -32,11 +32,20 @@ in this order:
 | 3 | `migrations/003_production_backend.sql` | **the signup trigger**, scoring/approval RPCs, XP, storage buckets, RLS hardening |
 | 4 | `migrations/004_notify_and_counts.sql` | notification fan-out, server-maintained counters |
 | 5 | `migrations/005_showcase_reads.sql` | public showcase reads |
+| 6 | `migrations/006_payment_notes.sql` | payer notes for manual payment review |
+| 7 | `migrations/007_classroom_upgrade.sql` | expanded lesson types and lesson activity |
+| 8 | `migrations/008_cv_builder_and_study_tools.sql` | saved CVs, notes and bookmarks |
+| 9 | `migrations/009_fix_is_admin_recursion.sql` | recursion-safe admin helper and archived-course RLS scope |
 
-> **Do not skip 003.** It owns `on_auth_user_created`, the trigger that creates a
-> `profiles` row when someone registers. Without it, authentication succeeds but
+> **Do not skip 003 or 009.** 003 owns `on_auth_user_created`, the trigger that
+> creates a `profiles` row when someone registers. Without it, authentication succeeds but
 > the app immediately signs the user back out with *"Account setup is incomplete"*
-> — which looks exactly like "users are unable to login".
+> — which looks exactly like "users are unable to login". Without 009, guarded
+> queries can fail with `stack depth limit exceeded` because `is_admin()` reads
+> the same RLS-protected `profiles` table whose policies call it. Migration 009
+> also pins the two legacy `SECURITY DEFINER` functions that lacked a fixed
+> search path; the verifier checks that no elevated `public` function is left
+> unpinned.
 
 ## 3. Seed the catalog
 
@@ -45,8 +54,12 @@ Same place, one file at a time:
 | File | Effect |
 |---|---|
 | `seed/seed_12_courses.sql` | 12 courses + categories, **as drafts** |
-| `seed/seed_curriculum.sql` | modules, lesson titles/durations and text bodies for those 12 |
-| `seed/publish_courses.sql` | flips `published = true` on courses that have curriculum |
+| `seed/seed_curriculum.sql` | 48 modules, 192 lessons, bodies, resources, YouTube videos, quizzes and projects |
+| `seed/publish_courses.sql` | flips `published = true` on eligible courses that have modules |
+| `seed/seed_learning_paths.sql` | four published paths over the launch catalog |
+
+For production restoration and large-file SQL Editor instructions, follow
+[`seed/README_RUNBOOK.md`](seed/README_RUNBOOK.md).
 
 > **This is the step people miss.** Seeded courses are drafts, and the policy
 > `published courses public` only exposes `published = true` to anyone who is not
@@ -54,13 +67,13 @@ Same place, one file at a time:
 > empty storefront** — while the admin dashboard shows all 12. Run
 > `publish_courses.sql` (or publish them from Admin → Courses).
 >
-> All three files are idempotent: re-running never duplicates rows and never
-> unpublishes a course you deliberately hid.
+> The seed chain is idempotent: re-running does not duplicate canonical seed rows,
+> and `publish_courses.sql` never changes a published course to unpublished. Any
+> draft, unarchived course with a module is eligible for publishing on each run.
 >
 > `seed_curriculum.sql` is generated from `src/data/courses.js` by
-> `node seed/generate_curriculum.mjs`. It intentionally seeds **no video rows** —
-> the offline catalog only ever contained one placeholder URL. Lessons show
-> "Video coming soon" until you upload real videos in Admin → Courses.
+> `node seed/generate_curriculum.mjs`. It includes one curated YouTube video,
+> written body, and resource list for every one of the 192 launch lessons.
 
 ## 4. Create the first administrator
 
@@ -185,15 +198,15 @@ prints the key.
 ### Verifying changes before you deploy them
 
 ```bash
-cd supabase/verify
-npm install
-npm run verify        # migrations 001-005 behaviorally
-npm run verify:seed   # seed chain → non-empty storefront + working admin bootstrap
+npm ci
+npm --prefix supabase/verify ci
+npm run verify        # migrations 001-009 + backend and non-owner RLS checks
+npm run verify:seed   # seed chain → full curriculum + published catalog
 ```
 
 Both run in throwaway Postgres (PGlite) — no project, no network, no cleanup.
 
-> PGlite runs as superuser, so RLS *enforcement* is not exercised. Policies are
-> asserted at definition level (`pg_policies`) and all `SECURITY DEFINER` checks
-> (`auth.uid()`, `is_admin()`) execute for real. Confirm enforcement against your
-> live project by logging out and browsing `/courses` in a private window.
+> Most behavioral fixtures run as the PGlite owner. The dedicated authorization
+> checks switch to non-owner `anon`/`authenticated` roles so PostgreSQL enforces
+> course, curriculum, body and video RLS. Production should still be smoke-tested
+> logged out and with an approved test enrollment before release.

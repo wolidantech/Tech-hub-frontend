@@ -62,11 +62,11 @@ function ReviewsSection({ course, user, enrolled }) {
           <div className="font-bold text-sm">Write a review</div>
           <div className="flex gap-1">
             {[1, 2, 3, 4, 5].map((s) => (
-              <button key={s} onClick={() => setRating(s)}><Star className={`h-7 w-7 ${s <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-white/20'} hover:scale-110 transition`} /></button>
+              <button key={s} aria-label={`${s} star rating`} onClick={() => setRating(s)} className="h-11 w-11 inline-flex items-center justify-center"><Star className={`h-7 w-7 ${s <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-white/20'} hover:scale-110 transition`} /></button>
             ))}
           </div>
           <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Share your experience with this course..." className="w-full rounded-2xl glass p-3 text-sm h-20" />
-          <button onClick={submit} className="btn-primary !py-2.5 text-xs">SUBMIT REVIEW</button>
+          <button onClick={submit} className="btn-primary min-h-11 text-xs">SUBMIT REVIEW</button>
         </div>
       )}
       {!user && <div className="mt-4 text-sm text-white/40">Enroll and log in to write a review.</div>}
@@ -83,27 +83,46 @@ export default function CourseDetails() {
   const navigate = useNavigate();
   const [openModule, setOpenModule] = useState(null);
   const [detailError, setDetailError] = useState('');
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const course = getCourseBySlug(slug);
 
   useEffect(() => {
-    if (coursesLoading) return <div role="status" className="p-8">Loading course…</div>;
-  if (coursesError) return <div role="alert" className="p-8">{coursesError}<button onClick={refreshCourses}>Retry</button></div>;
-  if (!course) return;
+    if (coursesLoading || !course?.id) return undefined;
+    let alive = true;
     trackView(user?.id, course.id);
     setDetailError('');
-    {
-      ensureCourseDetail(course.id).catch((err) => setDetailError(err.message));
-    }
+    setDetailLoading(true);
+    ensureCourseDetail(course.id)
+      .catch((err) => { if (alive) setDetailError(err.message); })
+      .finally(() => { if (alive) setDetailLoading(false); });
+    return () => { alive = false; };
+    // Reload after identity/enrollment changes so RLS can return bodies/videos
+    // only when the database says this session has access.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug, course?.id, accessKey]);
+  }, [slug, course?.id, accessKey, coursesLoading]);
 
   useEffect(() => {
     if (course?.curriculum?.length && !openModule) setOpenModule(course.curriculum[0].id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course?.curriculum]);
 
-  if (!course) return <div className="p-20 text-center">Course not found</div>;
+  const refreshCurriculum = async () => {
+    if (!course?.id || detailLoading) return;
+    setDetailError('');
+    setDetailLoading(true);
+    try {
+      await ensureCourseDetail(course.id);
+    } catch (err) {
+      setDetailError(err.message);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  if (coursesLoading) return <div role="status" className="min-h-[60vh] grid place-content-center p-6 text-center text-white/60">Loading course…</div>;
+  if (coursesError && !course) return <div role="alert" className="min-h-[60vh] grid place-content-center gap-4 p-6 text-center"><p>{coursesError}</p><button className="btn-primary min-h-11 mx-auto" onClick={refreshCourses}>Try again</button></div>;
+  if (!course) return <div className="min-h-[60vh] grid place-content-center gap-4 p-6 text-center"><p>Course not found.</p><Link className="btn-secondary min-h-11" to="/courses">Browse courses</Link></div>;
 
   const enrolled = user ? isEnrolled(user.id, course.id) : false;
   const manualPayment = user ? getManualPaymentByCourse(user.id, course.id) : null;
@@ -138,11 +157,11 @@ export default function CourseDetails() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen max-w-full overflow-x-clip">
       <div className="relative border-b border-white/[0.06] overflow-hidden">
         <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-20`} />
         <div className="absolute inset-0 bg-gradient-to-t from-[#020a1f] via-[#020a1f]/80 to-transparent" />
-        <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+        <div className="relative mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
           <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-10 items-start">
             <div className="space-y-6">
               <div className="flex flex-wrap gap-2">
@@ -151,8 +170,8 @@ export default function CourseDetails() {
                 <span className="px-3 py-1 rounded-full glass text-[11px] font-bold">{course.level}</span>
               </div>
 
-              <h1 className="font-display font-black text-[32px] md:text-[48px] leading-[0.9]">{course.title}</h1>
-              <p className="text-[18px] text-white/70 leading-relaxed">{course.description}</p>
+              <h1 className="font-display font-black text-[30px] sm:text-[36px] md:text-[48px] leading-[1] sm:leading-[0.95] break-words">{course.title}</h1>
+              <p className="text-base sm:text-[18px] text-white/70 leading-relaxed">{course.description}</p>
               <p className="text-sm text-white/50 leading-relaxed">{course.longDescription}</p>
 
               <div className="flex flex-wrap items-center gap-4 text-sm">
@@ -176,10 +195,10 @@ export default function CourseDetails() {
                     <div className="absolute bottom-4 left-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 backdrop-blur text-xs font-bold"><Play className="h-3 w-3" /> PREVIEW COURSE</div>
                   </div>
                   <div className="p-6 space-y-5">
-                    <div className="flex items-baseline gap-3">
+                    <div className="flex flex-wrap items-baseline gap-3">
                       <div className="font-black text-[32px]">{formatNaira(course.price)}</div>
                       <div className="text-sm line-through text-white/40">{formatNaira(course.originalPrice)}</div>
-                      <div className="ml-auto px-2.5 py-1 rounded-full bg-green-500/20 text-green-300 text-xs font-bold">{Math.round((1 - course.price / course.originalPrice) * 100)}% OFF</div>
+                      <div className="sm:ml-auto px-2.5 py-1 rounded-full bg-green-500/20 text-green-300 text-xs font-bold">{Math.round((1 - course.price / course.originalPrice) * 100)}% OFF</div>
                     </div>
 
                     {manualPayment?.status === 'pending' && (
@@ -271,29 +290,34 @@ export default function CourseDetails() {
           )}
 
           <div className="rounded-[24px] glass p-6 md:p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold text-xl">Course Curriculum</h3>
-              <span className="text-xs px-3 py-1 rounded-full glass">{(course.curriculum || []).length} modules • {totalLessons} lessons</span>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+              <div>
+                <h3 className="font-bold text-xl">Course Curriculum</h3>
+                <span className="mt-2 inline-flex text-xs px-3 py-1.5 rounded-full glass">{(course.curriculum || []).length} modules • {totalLessons} lessons</span>
+              </div>
+              <button disabled={detailLoading} onClick={refreshCurriculum} className="min-h-11 px-4 rounded-full glass text-xs font-bold hover:bg-white/10 disabled:opacity-50">
+                {detailLoading ? 'Refreshing…' : 'Refresh curriculum'}
+              </button>
             </div>
-            {detailError && <div className="text-sm text-red-300 mb-3">Couldn't load full curriculum: {detailError} <button onClick={() => { setDetailError(''); ensureCourseDetail(course.id).catch(err => setDetailError(err.message)); }}>Retry</button></div>}
-            {course.curriculum?.length === 0 && <p>No curriculum is available for this course yet.</p>}
-            {!course.curriculum && !detailError && <div className="text-sm text-white/40 py-4">Loading curriculum…</div>}
+            {detailError && <div role="alert" className="text-sm text-red-300 mb-3">Couldn't load full curriculum: {detailError} <button className="min-h-11 px-3 font-bold underline" onClick={refreshCurriculum}>Retry</button></div>}
+            {!detailLoading && course.curriculum?.length === 0 && <div className="rounded-2xl bg-white/[0.03] p-5 text-sm text-white/60"><p className="font-bold text-white">No curriculum is available for this course yet.</p><p className="mt-1">Refresh if lessons were just published, or contact support before enrolling.</p></div>}
+            {detailLoading && !course.curriculum && !detailError && <div role="status" className="text-sm text-white/40 py-4">Loading curriculum…</div>}
             <div className="space-y-3">
               {(course.curriculum || []).map(mod => (
                 <div key={mod.id} className="rounded-2xl border border-white/10 overflow-hidden">
-                  <button onClick={() => setOpenModule(openModule === mod.id ? null : mod.id)} className="w-full flex items-center justify-between p-4 bg-white/[0.03] hover:bg-white/[0.05] transition text-left">
-                    <div className="font-bold">{mod.title}</div>
-                    <div className="text-xs text-white/50">{(mod.lessons || []).length} lessons</div>
+                  <button aria-expanded={openModule === mod.id} onClick={() => setOpenModule(openModule === mod.id ? null : mod.id)} className="w-full min-h-11 flex items-center justify-between gap-3 p-4 bg-white/[0.03] hover:bg-white/[0.05] transition text-left">
+                    <div className="min-w-0 font-bold break-words">{mod.title}</div>
+                    <div className="shrink-0 text-xs text-white/50">{(mod.lessons || []).length} lessons</div>
                   </button>
                   {openModule === mod.id && (
                     <div className="divide-y divide-white/5">
                       {(mod.lessons || []).map(lesson => (
-                        <div key={lesson.id} className="flex items-center gap-3 p-4 text-sm">
+                        <div key={lesson.id} className="min-h-11 flex items-center gap-3 p-4 text-sm">
                           <div className="h-8 w-8 rounded-full glass flex items-center justify-center shrink-0">
                             {lesson.type === 'video' ? <Play className="h-3.5 w-3.5" /> : <BookOpen className="h-3.5 w-3.5" />}
                           </div>
-                          <div className="flex-1">
-                            <div className="font-medium">{lesson.title}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium break-words">{lesson.title}</div>
                             <div className="text-xs text-white/40 capitalize">{lesson.type} • {lesson.duration}</div>
                           </div>
                           {!enrolled && <div className="h-5 w-5 rounded-full border border-white/20 flex items-center justify-center"><div className="h-2 w-2 rounded-full bg-white/20" /></div>}
@@ -323,20 +347,20 @@ export default function CourseDetails() {
             <h4 className="font-bold mb-4">Share This Course</h4>
             <div className="flex gap-2">
               <button onClick={() => navigator.clipboard.writeText(window.location.href)} className="flex-1 h-11 rounded-full glass text-sm font-bold hover:bg-white/10">Copy Link</button>
-              <a href={`https://wa.me/?text=Check out this course: ${course.title} ${window.location.href}`} target="_blank" className="flex-1 h-11 rounded-full bg-[#25D366] text-white text-sm font-bold flex items-center justify-center">WhatsApp</a>
+              <a href={`https://wa.me/?text=Check out this course: ${course.title} ${window.location.href}`} target="_blank" rel="noreferrer" className="flex-1 h-11 rounded-full bg-[#25D366] text-white text-sm font-bold flex items-center justify-center">WhatsApp</a>
             </div>
           </div>
 
           <div className="rounded-[24px] bg-gradient-to-br from-purple-500/20 to-blue-600/20 border border-purple-500/20 p-6">
             <h4 className="font-bold mb-2 flex items-center gap-2"><FileText className="h-5 w-5 text-purple-300" /> Turn Skills Into a CV</h4>
             <p className="text-sm text-white/60 mb-4">Build a professional CV in minutes — free, no account needed. Add what you learn here and download a print-ready PDF.</p>
-            <Link to="/cv-builder" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-purple-500 text-white font-bold text-sm hover:bg-purple-600 transition"><ArrowRight className="h-4 w-4" /> CREATE MY CV FREE</Link>
+            <Link to="/cv-builder" className="min-h-11 inline-flex items-center gap-2 px-5 rounded-full bg-purple-500 text-white font-bold text-sm hover:bg-purple-600 transition"><ArrowRight className="h-4 w-4" /> CREATE MY CV FREE</Link>
           </div>
 
           <div className="rounded-[24px] bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/20 p-6">
             <h4 className="font-bold mb-2">Need Help?</h4>
             <p className="text-sm text-white/60 mb-4">Chat with us on WhatsApp for payment or course questions.</p>
-            <a href="https://wa.me/2348159610509" target="_blank" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black font-bold text-sm"><User className="h-4 w-4" /> CHAT ON WHATSAPP</a>
+            <a href="https://wa.me/2348159610509" target="_blank" rel="noreferrer" className="min-h-11 inline-flex items-center gap-2 px-5 rounded-full bg-white text-black font-bold text-sm"><User className="h-4 w-4" /> CHAT ON WHATSAPP</a>
           </div>
         </div>
       </div>

@@ -4,8 +4,8 @@
 //   cd supabase/verify && npm install && npm run verify:seed
 //
 // Proves the sequence an administrator is told to run actually produces a
-// working, non-empty storefront — migrations 001-005, then the three seed
-// files. This is the chain that previously ended in "no courses visible"
+// working, non-empty storefront — migrations 001-009, then the catalog,
+// curriculum, publish and learning-path seeds. This is the chain that previously ended in "no courses visible"
 // (everything seeded as an unpublished draft) and "no admin can log in"
 // (nothing ever promotes a profile).
 //
@@ -39,6 +39,20 @@ async function t(name, fn) {
   }
 }
 const assert = (c, msg) => { if (!c) throw new Error(msg || 'assertion failed'); };
+const EXPECTED_SLUGS = [
+  'ai-video-content-creation',
+  'video-editing-capcut',
+  'graphic-design-canva',
+  'digital-marketing',
+  'mobile-app-development',
+  'portfolio-creation',
+  'frontend-web-development',
+  'web-design-wordpress',
+  'ui-ux-design-figma',
+  'microsoft-excel',
+  'microsoft-word',
+  'microsoft-powerpoint',
+].sort();
 async function tErr(name, fn, match) {
   try {
     await fn();
@@ -61,17 +75,20 @@ for (const f of [
   '001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql',
   '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql',
   '007_classroom_upgrade.sql', '008_cv_builder_and_study_tools.sql',
+  '009_fix_is_admin_recursion.sql',
 ]) {
   await db.exec(read(join(here, '../migrations', f)));
 }
-console.log('migrations 001-008 applied clean');
+console.log('migrations 001-009 applied clean');
 
 // ---------- 2. catalog seed ----------
 await db.exec(read(join(here, '../seed/seed_12_courses.sql')));
 
-await t('seed creates the 12 launch courses', async () => {
-  const n = await count(`select count(*)::int as n from courses`);
-  assert(n === 12, `expected 12 courses, got ${n}`);
+await t('seed creates exactly the 12 expected launch slugs', async () => {
+  const rows = (await db.query(`select slug from courses order by slug`)).rows.map(r => r.slug).sort();
+  assert(rows.length === 12, `expected 12 courses, got ${rows.length}`);
+  assert(JSON.stringify(rows) === JSON.stringify(EXPECTED_SLUGS),
+    `slug mismatch: ${JSON.stringify(rows)}`);
 });
 
 await t('categories are seeded', async () => {
@@ -98,6 +115,37 @@ await t('curriculum seed creates the full 12×4×4 catalog', async () => {
   const l = await count(`select count(*)::int as n from course_lessons`);
   assert(m === 48, `expected 48 modules (12 courses × 4), got ${m}`);
   assert(l === 192, `expected 192 lessons (48 modules × 4), got ${l}`);
+});
+
+await t('curriculum SQL matches the migrated module/lesson/content/video schema', async () => {
+  const required = {
+    course_modules: ['course_id', 'title', 'position'],
+    course_lessons: ['module_id', 'course_id', 'title', 'type', 'duration', 'position', 'resources'],
+    course_content: ['lesson_id', 'body_markdown'],
+    course_videos: ['lesson_id', 'provider', 'url', 'status'],
+  };
+  for (const [table, columns] of Object.entries(required)) {
+    const rows = (await db.query(`
+      select column_name from information_schema.columns
+      where table_schema = 'public' and table_name = $1
+    `, [table])).rows.map(r => r.column_name);
+    const missing = columns.filter(column => !rows.includes(column));
+    assert(missing.length === 0, `${table} missing columns: ${missing.join(', ')}`);
+  }
+});
+
+await t('each launch slug has 4 modules and 16 lessons', async () => {
+  const rows = (await db.query(`
+    select c.slug,
+      (select count(*)::int from course_modules m where m.course_id = c.id) as modules,
+      (select count(*)::int from course_lessons l where l.course_id = c.id) as lessons
+    from courses c order by c.slug
+  `)).rows;
+  assert(rows.length === 12, `expected 12 inventory rows, got ${rows.length}`);
+  for (const row of rows) {
+    assert(Number(row.modules) === 4 && Number(row.lessons) === 16,
+      `${row.slug}: expected 4 modules/16 lessons, got ${row.modules}/${row.lessons}`);
+  }
 });
 
 await t('every lesson is attached to a module of its own course', async () => {
@@ -223,6 +271,13 @@ await t('re-running the seeds does not duplicate curriculum', async () => {
 });
 
 // ---------- 5. publish ----------
+// Model the live project's extra custom course: one empty draft must not be
+// newly published, while an already-published row must never be unpublished.
+await db.exec(`
+  insert into courses (slug, title, published, archived) values
+    ('empty-custom-draft', 'Empty custom draft', false, false),
+    ('empty-custom-live', 'Empty custom live', true, false)
+`);
 await db.exec(read(join(here, '../seed/publish_courses.sql')));
 
 await t('publish_courses makes the storefront non-empty', async () => {
@@ -230,12 +285,20 @@ await t('publish_courses makes the storefront non-empty', async () => {
   assert(n > 0, 'still zero published courses — visitors would see an empty catalog');
 });
 
-await t('only courses that have curriculum get published', async () => {
-  const bad = await count(`
+await t('publish_courses newly publishes only draft courses that have modules', async () => {
+  const launchPublished = await count(`
     select count(*)::int as n from courses c
-    where c.published
-      and not exists (select 1 from course_modules m where m.course_id = c.id)`);
-  assert(bad === 0, `${bad} published courses have no modules (empty shells)`);
+    where c.slug = any($1::text[]) and c.published
+      and exists (select 1 from course_modules m where m.course_id = c.id)
+  `, [EXPECTED_SLUGS]);
+  const emptyDraft = await one(`select published from courses where slug = 'empty-custom-draft'`);
+  assert(launchPublished === 12, `expected 12 curriculum-backed launch courses, got ${launchPublished}`);
+  assert(emptyDraft.published === false, 'empty custom draft was published');
+});
+
+await t('publish_courses never unpublishes an existing course', async () => {
+  const row = await one(`select published from courses where slug = 'empty-custom-live'`);
+  assert(row.published === true, 'existing published custom course was unpublished');
 });
 
 await t('re-running publish_courses is stable', async () => {
@@ -272,6 +335,10 @@ await t('re-running the learning paths seed never duplicates', async () => {
   await db.exec(read(join(here, '../seed/seed_learning_paths.sql')));
   const n = await count(`select count(*)::int as n from learning_paths`);
   assert(n === 4, `expected 4 paths after re-run, got ${n}`);
+});
+
+await t('operational verification SQL executes read-only against the complete seed chain', async () => {
+  await db.exec(read(join(here, 'verify_curriculum.sql')));
 });
 
 await t('CV builder + study tools tables exist for the seeded storefront', async () => {
@@ -327,6 +394,7 @@ for (const f of [
   '001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql',
   '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql',
   '007_classroom_upgrade.sql', '008_cv_builder_and_study_tools.sql',
+  '009_fix_is_admin_recursion.sql',
 ]) {
   await fresh.exec(read(join(here, '../migrations', f)));
 }

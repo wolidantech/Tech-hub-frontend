@@ -6,19 +6,19 @@ import CourseArt from './CourseArt';
 export default function CourseCard({ course, onEnroll }) {
   const totalLessons = course.curriculum?.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) || course.lessonsCount || 0;
   return (
-    <div className="group relative rounded-[24px] glass-card overflow-hidden hover:border-white/[0.15] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(0,0,0,0.4),0_0_40px_rgba(14,165,233,0.15)] flex flex-col">
+    <article className="group relative min-w-0 max-w-full rounded-[24px] glass-card overflow-hidden hover:border-white/[0.15] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(0,0,0,0.4),0_0_40px_rgba(14,165,233,0.15)] flex flex-col">
       {/* Premium 3D thumbnail */}
       <div className="relative">
         <CourseArt course={course} />
-        <div className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40 backdrop-blur border border-white/15 text-[11px] font-bold tracking-wide">
-          <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-          {course.category.toUpperCase()}
+        <div className="absolute top-3 sm:top-4 left-3 sm:left-4 z-20 max-w-[55%] inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-black/50 backdrop-blur border border-white/15 text-[10px] sm:text-[11px] font-bold tracking-wide">
+          <span className="h-2 w-2 shrink-0 rounded-full bg-green-400 animate-pulse" />
+          <span className="truncate">{course.category.toUpperCase()}</span>
         </div>
         {/* Price badge */}
-        <div className="absolute top-4 right-4 z-20 px-3 py-1.5 rounded-full bg-white text-black font-black text-sm shadow-lg">
+        <div className="absolute top-3 sm:top-4 right-3 sm:right-4 z-20 px-2.5 sm:px-3 py-1.5 rounded-full bg-white text-black font-black text-xs sm:text-sm shadow-lg">
           {formatNaira(course.price)}
           {course.originalPrice > course.price && (
-            <span className="ml-2 text-[11px] line-through text-black/50 font-medium">{formatNaira(course.originalPrice)}</span>
+            <span className="hidden min-[400px]:inline ml-2 text-[11px] line-through text-black/50 font-medium">{formatNaira(course.originalPrice)}</span>
           )}
         </div>
         {/* Level */}
@@ -40,16 +40,16 @@ export default function CourseCard({ course, onEnroll }) {
           {course.shortDescription}
         </p>
 
-        <div className="mt-4 flex items-center gap-3 text-[12px] text-white/50">
-          <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" /> {course.instructor}</span>
+        <div className="mt-4 flex flex-wrap items-center gap-3 text-[12px] text-white/50">
+          <span className="min-w-0 flex items-center gap-1"><User className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{course.instructor}</span></span>
           <span className="h-1 w-1 rounded-full bg-white/20" />
           <span className="flex items-center gap-1"><Star className="h-3.5 w-3.5 text-yellow-400 fill-yellow-400" /> {course.rating}</span>
         </div>
 
-        <div className="mt-4 flex items-center gap-4 text-[12px] text-white/50">
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] text-white/50">
           <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {course.duration}</span>
           <span className="flex items-center gap-1.5"><BookOpen className="h-3.5 w-3.5" /> {totalLessons} lessons</span>
-          <span className="ml-auto flex items-center gap-1 text-white/40"><span className="h-1.5 w-1.5 rounded-full bg-green-400" /> {course.students} students</span>
+          <span className="sm:ml-auto flex items-center gap-1 text-white/40"><span className="h-1.5 w-1.5 rounded-full bg-green-400" /> {course.students} students</span>
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-2">
@@ -64,6 +64,6 @@ export default function CourseCard({ course, onEnroll }) {
 
       {/* Hover glow */}
       <div className="pointer-events-none absolute -inset-px rounded-[24px] opacity-0 group-hover:opacity-100 transition duration-700 bg-gradient-to-r from-cyan-400/20 via-blue-500/20 to-purple-500/20 blur-[1px]" />
-    </div>
+    </article>
   );
 }

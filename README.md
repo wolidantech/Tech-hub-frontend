@@ -20,7 +20,8 @@ npm run build
 > checklist instead. That is why an unconfigured deploy looks like "login is
 > broken and there are no courses".
 >
-> Full setup, in the correct order: **[`supabase/README.md`](supabase/README.md)**.
+> Full setup: **[`supabase/README.md`](supabase/README.md)**. Production curriculum
+> restore: **[`supabase/seed/README_RUNBOOK.md`](supabase/seed/README_RUNBOOK.md)**.
 > Something is configured but still broken: open **`/backend-status`** in the app.
 
 Optional integrations via `.env` (see `.env.example`):
@@ -79,8 +80,8 @@ catalog) with the fix for each. It also has a **Copy report** button.
 ```bash
 cd supabase/verify
 npm install
-npm run verify        # migrations 001-005 behaviorally (41 assertions)
-npm run verify:seed   # the seed chain -> non-empty storefront + first admin
+npm run verify        # migrations 001-009 + backend/RLS behavior (46 assertions)
+npm run verify:seed   # exact 12-course curriculum seed chain (38 assertions)
 ```
 
 Both run in throwaway Postgres (PGlite), so they need no Supabase project.

@@ -1,12 +1,12 @@
 -- ============================================================
 -- WOLI DAN TECH HUB — Seed: 12 launch courses + categories
--- Run AFTER migrations 001-005, in Supabase SQL Editor, as ONE query.
+-- Run AFTER migrations 001-009, in Supabase SQL Editor, as ONE query.
 -- IDEMPOTENT: keyed on slug/name — safe to re-run, never duplicates.
 -- Re-runs update catalog copy/prices but NEVER touch published/featured
 -- (so re-running cannot unpublish a live course).
--- NOTE: courses seed as UNPUBLISHED with no curriculum. Build real
--- lessons via Admin → Courses, then publish. Placeholder demo videos
--- from the offline catalog are intentionally NOT seeded.
+-- NOTE: new courses seed as UNPUBLISHED. Next run seed_curriculum.sql,
+-- which provides the complete modules, bodies, resources and lesson videos;
+-- only then run publish_courses.sql.
 -- ============================================================
 
 -- ---------- Categories ----------

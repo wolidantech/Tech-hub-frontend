@@ -42,16 +42,39 @@ describe('Classroom regression coverage', () => {
     await screen.findByText('Backend supplied theory text');
     expect(screen.queryByText('Your WOLI DAN TECH HUB certificate is ready.')).toBeNull();
   });
-  it('shows empty curriculum instead of an empty classroom', async () => {
+  it('shows empty curriculum and can refresh it from the database', async () => {
     course.curriculum = [];
     render(app());
     expect(await screen.findByText(/No curriculum is available/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh curriculum' }));
+    await waitFor(() => expect(mocks.courses.ensureCourseDetail).toHaveBeenCalledTimes(2));
+  });
+  it('renders backend video, written content and resources in a responsive media frame', async () => {
+    course.curriculum[0].lessons[0] = {
+      ...course.curriculum[0].lessons[0],
+      videoUrl: 'https://www.youtube.com/watch?v=VideoFixture1',
+      textContent: 'Written lesson from course_content',
+      content: 'Written lesson from course_content',
+      resources: [{ title: 'Lesson guide', type: 'docs', url: 'https://example.org/guide' }],
+    };
+    const { container } = render(app());
+    expect(await screen.findByRole('button', { name: 'Play Reading' })).toBeTruthy();
+    expect(container.querySelector('.aspect-video')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Open' }).getAttribute('href')).toBe('https://example.org/guide');
+    fireEvent.click(screen.getByRole('button', { name: /^READ(?: LESSON)?$/ }));
+    expect(await screen.findByText('Written lesson from course_content')).toBeTruthy();
+  });
+  it('saves explicit lesson progress through the database action', async () => {
+    render(app());
+    await screen.findByText('Backend supplied theory text');
+    fireEvent.click(screen.getByRole('button', { name: /MARK AS COMPLETE/ }));
+    await waitFor(() => expect(mocks.courses.markLessonComplete).toHaveBeenCalledWith('student', 'course', 'lesson'));
   });
   it('shows query failures with retry and recovers', async () => {
     mocks.courses.ensureCourseDetail.mockRejectedValueOnce(new Error('Network unavailable'));
     render(app());
     expect((await screen.findByRole('alert')).textContent).toContain('Network unavailable');
-    fireEvent.click(screen.getByText('Retry'));
+    fireEvent.click(screen.getByRole('button', { name: 'Retry curriculum' }));
     await waitFor(() => expect(screen.getByText('Backend supplied theory text')).toBeTruthy());
   });
   it('redirects only after enrollment has resolved as unavailable', async () => {

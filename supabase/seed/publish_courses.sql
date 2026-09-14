@@ -16,8 +16,9 @@
 --
 -- HOW TO USE
 --   Supabase Dashboard -> SQL Editor -> paste -> Run.
---   Safe to re-run: it only flips published from false to true and never
---   unpublishes anything, so a course you deliberately hid stays hidden.
+--   Safe to re-run: it only flips eligible rows from false to true and never
+--   changes any course from published to unpublished. Note that any draft,
+--   unarchived course with a module is eligible each time this file is run.
 -- ============================================================
 
 begin;

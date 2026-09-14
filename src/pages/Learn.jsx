@@ -45,7 +45,7 @@ function VideoFacade({ url, title }) {
   const yid = youtubeId(url);
   if (!url) {
     return (
-      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#0a1a4a] to-[#020a1f] p-8">
+      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#0a1a4a] to-[#020a1f] p-4 sm:p-8">
         <div className="text-center">
           <Video className="h-12 w-12 mx-auto text-white/20 mb-3" />
           <div className="font-bold">No video attached</div>
@@ -58,7 +58,7 @@ function VideoFacade({ url, title }) {
     return <iframe src={yid ? `https://www.youtube-nocookie.com/embed/${yid}` : url} className="absolute inset-0 w-full h-full" allowFullScreen title={title} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" />;
   }
   return (
-    <button onClick={() => setLoaded(true)} className="absolute inset-0 group w-full h-full text-left">
+    <button type="button" aria-label={`Play ${title}`} onClick={() => setLoaded(true)} className="absolute inset-0 group w-full h-full text-left">
       {yid ? (
         <img src={`https://i.ytimg.com/vi/${yid}/hqdefault.jpg`} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
       ) : (
@@ -66,7 +66,7 @@ function VideoFacade({ url, title }) {
       )}
       <div className="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition" />
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-        <div className="h-20 w-20 rounded-full bg-white/90 flex items-center justify-center group-hover:scale-110 transition shadow-2xl">
+        <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-white/90 flex items-center justify-center group-hover:scale-110 transition shadow-2xl">
           <Play className="h-8 w-8 text-black ml-1" />
         </div>
         <div className="text-sm font-bold text-white/90">▶ PLAY LESSON VIDEO</div>
@@ -89,12 +89,16 @@ function LessonVideo({ lesson, onVideoProgress }) {
     setVideoError('');
     if (lesson.videoStoragePath) {
       signedUrl('lesson-videos', lesson.videoStoragePath)
-        .then((u) => { if (alive) setSigned(u); })
-        .catch(err => { if (alive) setVideoError(err.message); });
+        .then((u) => {
+          if (!alive) return;
+          if (u) setSigned(u);
+          else setVideoError('The private video link could not be created. Check your enrollment and try again.');
+        })
+        .catch(err => { if (alive) setVideoError(err.message || 'The video could not be loaded.'); });
     }
     return () => { alive = false; };
   }, [lesson.videoStoragePath, videoRetry]);
-  if (videoError) return <div role="alert" className="absolute inset-0 grid place-content-center p-4 text-center">{videoError}<button onClick={() => { setVideoError(''); setVideoRetry(n => n + 1); }}>Retry video</button></div>;
+  if (videoError) return <div role="alert" className="absolute inset-0 grid place-content-center gap-3 p-4 text-center text-sm">{videoError}<button className="min-h-11 rounded-full glass px-5 font-bold" onClick={() => { setVideoError(''); setVideoRetry(n => n + 1); }}>Retry video</button></div>;
   if (lesson.videoStoragePath || /\.(mp4|webm|mov)(\?|$)/i.test(lesson.videoUrl || '')) {
     if (lesson.videoStoragePath && !signed) {
       return (
@@ -124,9 +128,9 @@ function LessonVideo({ lesson, onVideoProgress }) {
             }
           }}
         />
-        <div className="absolute bottom-16 right-3 flex gap-1.5">
+        <div className="absolute bottom-14 right-2 sm:right-3 flex gap-1">
           {SPEEDS.map((s) => (
-            <button key={s} onClick={() => setSpeed(s)} className={`px-2.5 py-1 rounded-full text-[11px] font-bold backdrop-blur bg-black/60 border transition ${speed === s ? 'border-cyan-400 text-cyan-300' : 'border-white/20 text-white/70 hover:text-white'}`}>{s}×</button>
+            <button key={s} aria-label={`Set playback speed to ${s} times`} onClick={() => setSpeed(s)} className={`min-h-11 min-w-11 px-2 rounded-full text-[11px] font-bold backdrop-blur bg-black/70 border transition ${speed === s ? 'border-cyan-400 text-cyan-300' : 'border-white/20 text-white/70 hover:text-white'}`}>{s}×</button>
           ))}
         </div>
       </>
@@ -250,14 +254,14 @@ export default function Learn() {
       .filter((mod) => mod.lessons.length > 0);
   }, [course, q]);
 
-  if (coursesLoading || dataLoading) return <div role="status" className="p-8">Loading course and enrollment…</div>;
-  if (coursesError || dataError) return <div role="alert" className="p-8">{coursesError || dataError}<button className="btn-primary m-3" onClick={() => { refreshCourses(); refreshMine(); }}>Retry</button></div>;
-  if (!course) return <div className="p-8">Course not found. <Link to="/courses">Browse courses</Link></div>;
+  if (coursesLoading || dataLoading) return <div role="status" className="min-h-[60vh] grid place-content-center p-6 text-center text-white/60">Loading course and enrollment…</div>;
+  if (coursesError || dataError) return <div role="alert" className="min-h-[60vh] grid place-content-center gap-4 p-6 text-center"><p>{coursesError || dataError}</p><button className="btn-primary min-h-11 mx-auto" onClick={() => { refreshCourses(); refreshMine(); }}>Try again</button></div>;
+  if (!course) return <div className="min-h-[60vh] grid place-content-center gap-4 p-6 text-center"><p>Course not found.</p><Link className="btn-secondary min-h-11" to="/courses">Browse courses</Link></div>;
   if (!user) return <Navigate to="/login" replace />;
   if (!preview && !isEnrolled(user.id, course.id)) return <Navigate to={`/course/${slug}`} replace />;
-  if (detailLoading) return <div role="status" className="p-8">Loading full curriculum…</div>;
-  if (detailError) return <div role="alert" className="p-8">Couldn't load curriculum: {detailError}<button className="btn-primary m-3" onClick={() => setRetry(n => n + 1)}>Retry</button></div>;
-  if (!allLessons.length) return <div className="p-8">No curriculum is available for this course yet.<button className="btn-primary m-3" onClick={() => setRetry(n => n + 1)}>Refresh curriculum</button><Link to={`/course/${slug}`}>Back to course</Link></div>;
+  if (detailLoading) return <div role="status" className="min-h-[60vh] grid place-content-center p-6 text-center text-white/60">Loading modules, lessons and resources…</div>;
+  if (detailError) return <div role="alert" className="min-h-[60vh] grid place-content-center gap-4 p-6 text-center"><p>Couldn't load curriculum: {detailError}</p><button className="btn-primary min-h-11 mx-auto" onClick={() => setRetry(n => n + 1)}>Retry curriculum</button></div>;
+  if (!allLessons.length) return <div className="min-h-[60vh] grid place-content-center gap-4 p-6 text-center"><div><BookOpen className="mx-auto mb-3 h-10 w-10 text-white/30" /><p className="font-bold">No curriculum is available for this course yet.</p><p className="mt-2 text-sm text-white/50">If lessons were just added, refresh the database-backed curriculum.</p></div><div className="flex flex-wrap justify-center gap-3"><button className="btn-primary min-h-11" onClick={() => setRetry(n => n + 1)}>Refresh curriculum</button><Link className="btn-secondary min-h-11" to={`/course/${slug}`}>Back to course</Link></div></div>;
 
   const handleComplete = async () => {
     if (!activeLesson || savingProgress || preview) return;
@@ -285,16 +289,17 @@ export default function Learn() {
   const lessonAssignments = activeLesson ? getCourseAssignments(course.id).filter((a) => a.lessonId === activeLesson.id) : [];
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-[#020a1f]">
+    <div className="classroom-shell min-h-screen max-w-full overflow-x-clip flex flex-col lg:flex-row bg-[#020a1f] pb-[max(1rem,env(safe-area-inset-bottom))] lg:pb-0">
       <Toaster richColors />
       {/* Sidebar — sticky column on desktop, slide-over drawer on mobile */}
       <div className={`${sidebarOpen ? 'fixed inset-0 z-50 flex' : 'hidden'} lg:static lg:flex lg:w-[360px] lg:shrink-0`}>
         {sidebarOpen && <button aria-label="Close curriculum" onClick={() => setSidebarOpen(false)} className="absolute inset-0 bg-black/70 lg:hidden" />}
-        <div className="relative w-[86%] max-w-[360px] lg:w-full lg:max-w-none border-r border-white/[0.06] bg-[#061236] lg:bg-[#061236]/50 backdrop-blur-xl flex flex-col h-full lg:h-screen lg:sticky lg:top-0 lg:overflow-hidden">
-        <div className="p-5 border-b border-white/10 space-y-4">
+        <aside aria-label="Course curriculum" className="relative w-[min(90%,360px)] max-w-full lg:w-full lg:max-w-none border-r border-white/[0.06] bg-[#061236] lg:bg-[#061236]/50 backdrop-blur-xl flex flex-col h-[100dvh] lg:h-screen lg:sticky lg:top-0 lg:overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-white/10 space-y-4">
+          <div className="mx-auto h-1 w-10 rounded-full bg-white/20 lg:hidden" aria-hidden="true" />
           <div className="flex items-center justify-between">
-            <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white"><ArrowLeft className="h-4 w-4" /> Back to Dashboard</Link>
-            <button onClick={() => setSidebarOpen(false)} className="lg:hidden h-8 w-8 rounded-full glass flex items-center justify-center"><X className="h-4 w-4" /></button>
+            <Link to="/dashboard" className="inline-flex min-h-11 items-center gap-2 text-sm text-white/60 hover:text-white"><ArrowLeft className="h-4 w-4" /> Back to Dashboard</Link>
+            <button aria-label="Close curriculum panel" onClick={() => setSidebarOpen(false)} className="lg:hidden h-11 w-11 rounded-full glass flex items-center justify-center"><X className="h-4 w-4" /></button>
           </div>
           <div>
             <h2 className="font-bold leading-tight">{course.title}</h2>
@@ -324,9 +329,9 @@ export default function Learn() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search lessons, topics, resources…"
-              className="w-full h-10 rounded-full bg-white/[0.06] border border-white/10 pl-10 pr-4 text-sm placeholder:text-white/30 focus:outline-none focus:border-cyan-400/50"
+              className="w-full h-11 rounded-full bg-white/[0.06] border border-white/10 pl-10 pr-12 text-sm placeholder:text-white/30 focus:outline-none focus:border-cyan-400/50"
             />
-            {query && <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"><X className="h-4 w-4" /></button>}
+            {query && <button aria-label="Clear curriculum search" onClick={() => setQuery('')} className="absolute right-0 top-1/2 h-11 w-11 -translate-y-1/2 grid place-content-center text-white/40 hover:text-white"><X className="h-4 w-4" /></button>}
           </div>
         </div>
 
@@ -338,9 +343,9 @@ export default function Learn() {
           )}
           {filteredCurriculum.map((mod) => (
             <div key={mod.id} className="rounded-2xl overflow-hidden border border-white/5">
-              <button aria-expanded={!!openModules[mod.id] || !!q} onClick={() => toggleModule(mod.id)} className="w-full flex items-center justify-between p-4 bg-white/[0.03] hover:bg-white/[0.05] transition text-left">
-                <div><div className="font-bold text-sm">{mod.title}</div><div className="text-[11px] text-white/40">{(mod.lessons || []).filter((l) => (progress.completedLessons || []).includes(l.id)).length}/{(mod.lessons || []).length} completed</div></div>
-                {openModules[mod.id] ? <ChevronUp className="h-4 w-4 text-white/40" /> : <ChevronDown className="h-4 w-4 text-white/40" />}
+              <button aria-expanded={!!openModules[mod.id] || !!q} onClick={() => toggleModule(mod.id)} className="w-full min-h-11 flex items-center justify-between gap-3 p-4 bg-white/[0.03] hover:bg-white/[0.05] transition text-left">
+                <div className="min-w-0"><div className="font-bold text-sm break-words">{mod.title}</div><div className="text-[11px] text-white/40">{(mod.lessons || []).filter((l) => (progress.completedLessons || []).includes(l.id)).length}/{(mod.lessons || []).length} completed</div></div>
+                {openModules[mod.id] ? <ChevronUp className="h-4 w-4 shrink-0 text-white/40" /> : <ChevronDown className="h-4 w-4 shrink-0 text-white/40" />}
               </button>
               {(openModules[mod.id] || !!q) && (
                 <div className="divide-y divide-white/[0.04] bg-[#020a1f]/50">
@@ -351,7 +356,7 @@ export default function Learn() {
                     const hasTask = getCourseAssignments(course.id).some((a) => a.lessonId === lesson.id);
                     const { Icon: TypeIcon } = lessonType(lesson);
                     return (
-                      <button key={lesson.id} onClick={() => selectLesson(lesson, mod.id)} className={`w-full flex items-center gap-3 p-3 text-left hover:bg-white/[0.04] transition ${isActive ? 'bg-cyan-500/10 border-l-2 border-cyan-400' : 'border-l-2 border-transparent'}`}>
+                      <button key={lesson.id} onClick={() => selectLesson(lesson, mod.id)} className={`w-full min-h-11 flex items-center gap-3 p-3 text-left hover:bg-white/[0.04] transition ${isActive ? 'bg-cyan-500/10 border-l-2 border-cyan-400' : 'border-l-2 border-transparent'}`}>
                         <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 ${isDone ? 'bg-green-500 text-white' : isActive ? 'bg-cyan-400 text-black' : 'glass'}`}>
                           {isDone ? <CheckCircle2 className="h-4 w-4" /> : <TypeIcon className="h-3.5 w-3.5" />}
                         </div>
@@ -374,19 +379,19 @@ export default function Learn() {
             </div>
           ))}
         </div>
-        </div>
+        </aside>
       </div>
 
       {/* Main */}
-      <div className="flex-1 min-w-0">
+      <main className="flex-1 min-w-0 max-w-full pb-20 lg:pb-0">
         {/* Mobile curriculum drawer toggle */}
-        <button onClick={() => setSidebarOpen(true)} className="lg:hidden fixed bottom-5 left-5 z-40 inline-flex items-center gap-2 px-4 py-3 rounded-full bg-cyan-400 text-black font-bold text-xs shadow-2xl">
+        <button onClick={() => setSidebarOpen(true)} className="lg:hidden fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-4 z-40 inline-flex min-h-11 items-center gap-2 px-4 rounded-full bg-cyan-400 text-black font-bold text-xs shadow-2xl">
           <Menu className="h-4 w-4" /> CURRICULUM
         </button>
 
         {/* Admin preview bar */}
         {preview && (
-          <div className="sticky top-0 z-30 bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-2.5 flex flex-wrap items-center gap-3 text-xs font-bold">
+          <div className="sticky top-0 z-30 bg-gradient-to-r from-purple-600 to-indigo-600 px-4 sm:px-6 py-2.5 flex flex-wrap items-center gap-3 text-xs font-bold">
             <span className="uppercase tracking-widest">👁 Admin Preview — exactly what students see</span>
             {(() => {
               const courseAI = aiContent.filter((c) => c.targetCourseId === course.id);
@@ -395,10 +400,10 @@ export default function Learn() {
               courseAI.forEach((c) => { byStatus[c.status] = (byStatus[c.status] || 0) + 1; });
               return <span className="font-medium normal-case">AI content: {Object.entries(byStatus).map(([s, n]) => `${n} ${s}`).join(' · ')} — students only see approved/published</span>;
             })()}
-            <span className="ml-auto flex gap-2">
+            <span className="w-full sm:w-auto sm:ml-auto flex flex-wrap gap-2">
               <span className="px-3 py-1 rounded-full bg-white text-purple-700">STUDENT VIEW</span>
-              <Link to="/admin/dashboard" className="px-3 py-1 rounded-full bg-white/20 hover:bg-white/30">ADMIN EDIT VIEW</Link>
-              <Link to={`/course/${slug}`} className="px-3 py-1 rounded-full bg-white/20 hover:bg-white/30">EXIT PREVIEW</Link>
+              <Link to="/admin/dashboard" className="min-h-11 inline-flex items-center px-3 rounded-full bg-white/20 hover:bg-white/30">ADMIN EDIT VIEW</Link>
+              <Link to={`/course/${slug}`} className="min-h-11 inline-flex items-center px-3 rounded-full bg-white/20 hover:bg-white/30">EXIT PREVIEW</Link>
             </span>
           </div>
         )}
@@ -406,10 +411,10 @@ export default function Learn() {
         <div className="p-4 sm:p-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div><h1 className="font-bold text-xl">{course.title}</h1><p className="text-sm text-white/60">Lesson progress: {progress.progress}%</p></div>
-            <button onClick={() => setSidebarOpen(true)} className="lg:hidden glass rounded-xl p-3" aria-label="Open scheme of work">Scheme of work ▾</button>
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden min-h-11 glass rounded-xl px-4" aria-label="Open scheme of work">Scheme of work ▾</button>
           </div>
           <details className="glass rounded-2xl p-4">
-            <summary className="cursor-pointer font-bold">Course guide — description, objectives & requirements</summary>
+            <summary className="cursor-pointer min-h-11 flex items-center font-bold">Course guide — description, objectives & requirements</summary>
             <div className="mt-4 space-y-4">
               {(course.longDescription || course.description) && <LessonBody markdown={course.longDescription || course.description} />}
               {course.whatYouWillLearn?.length > 0 && <div><h2 className="font-bold">Learning objectives</h2><ul className="list-disc pl-5">{course.whatYouWillLearn.map((objective, i) => <li key={i}>{objective}</li>)}</ul></div>}
@@ -422,20 +427,20 @@ export default function Learn() {
         {activeLesson ? (
           <div className="max-w-[960px] mx-auto pb-16">
             {/* Tabs */}
-            <div className="sticky top-0 z-10 bg-[#020a1f]/90 backdrop-blur-xl border-b border-white/[0.06] px-6 md:px-8 pt-4">
-              <div className="flex gap-2">
-                <button onClick={() => setView('video')} className={`px-5 py-2.5 rounded-t-2xl font-bold text-sm flex items-center gap-2 ${view === 'video' ? 'bg-white/[0.06] text-cyan-300' : 'text-white/50 hover:text-white'}`}>
-                  <Video className="h-4 w-4" /> VIDEO LESSON
+            <div className="sticky top-0 z-10 bg-[#020a1f]/90 backdrop-blur-xl border-b border-white/[0.06] px-4 sm:px-6 md:px-8 pt-2 sm:pt-4">
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => setView('video')} className={`min-w-0 min-h-11 px-2 sm:px-5 rounded-t-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 ${view === 'video' ? 'bg-white/[0.06] text-cyan-300' : 'text-white/50 hover:text-white'}`}>
+                  <Video className="h-4 w-4 shrink-0" /> VIDEO <span className="hidden sm:inline">LESSON</span>
                 </button>
-                <button onClick={() => setView('read')} className={`px-5 py-2.5 rounded-t-2xl font-bold text-sm flex items-center gap-2 ${view === 'read' ? 'bg-white/[0.06] text-cyan-300' : 'text-white/50 hover:text-white'}`}>
-                  <BookOpen className="h-4 w-4" /> READ LESSON
+                <button onClick={() => setView('read')} className={`min-w-0 min-h-11 px-2 sm:px-5 rounded-t-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 ${view === 'read' ? 'bg-white/[0.06] text-cyan-300' : 'text-white/50 hover:text-white'}`}>
+                  <BookOpen className="h-4 w-4 shrink-0" /> READ <span className="hidden sm:inline">LESSON</span>
                 </button>
               </div>
             </div>
 
             {view === 'video' ? (
               <>
-                <div className="bg-black aspect-video relative overflow-hidden">
+                <div className="w-full max-w-full bg-black aspect-video relative overflow-hidden">
                   <LessonVideo
                     lesson={activeLesson}
                     onVideoProgress={user && !preview ? (secs, dur) => reportVideoProgress(user.id, course.id, activeLesson.id, secs, dur) : null}
@@ -445,7 +450,7 @@ export default function Learn() {
                     lesson is complete even before opening the full text. */}
                 {(extractSection(activeLesson.textContent || activeLesson.content, 'learn').length > 0
                   || extractSection(activeLesson.textContent || activeLesson.content, 'Checklist').length > 0) && (
-                  <div className="px-6 md:px-8 pt-6">
+                  <div className="px-4 sm:px-6 md:px-8 pt-5 sm:pt-6">
                     <div className="grid md:grid-cols-2 gap-4">
                       {extractSection(activeLesson.textContent || activeLesson.content, 'learn').length > 0 && (
                         <div className="glass rounded-2xl p-5">
@@ -465,7 +470,7 @@ export default function Learn() {
                               <li key={i} className="text-sm text-white/75 flex gap-2"><CheckCircle2 className="h-4 w-4 text-green-400 shrink-0 mt-0.5" /> {o}</li>
                             ))}
                           </ul>
-                          <button onClick={() => setView('read')} className="mt-3 text-xs font-bold text-cyan-300 hover:text-cyan-200 inline-flex items-center gap-1"><BookOpen className="h-3.5 w-3.5" /> Read the full lesson →</button>
+                          <button onClick={() => setView('read')} className="mt-3 min-h-11 text-xs font-bold text-cyan-300 hover:text-cyan-200 inline-flex items-center gap-1"><BookOpen className="h-3.5 w-3.5" /> Read the full lesson →</button>
                         </div>
                       )}
                     </div>
@@ -473,8 +478,8 @@ export default function Learn() {
                 )}
               </>
             ) : (
-              <div className="px-6 md:px-8 pt-6">
-                <div className="glass rounded-2xl p-6 md:p-8">
+              <div className="px-4 sm:px-6 md:px-8 pt-5 sm:pt-6">
+                <div className="glass rounded-2xl p-4 sm:p-6 md:p-8">
                   {(activeLesson.textContent || activeLesson.content) ? (
                     <LessonBody markdown={activeLesson.textContent || activeLesson.content} />
                   ) : (
@@ -488,27 +493,27 @@ export default function Learn() {
               </div>
             )}
 
-            <div className="p-6 md:p-8 space-y-6">
+            <div className="p-4 sm:p-6 md:p-8 space-y-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-3">
-                    <Link to={`/course/${slug}`} className="text-[11px] text-white/40 hover:text-white font-bold tracking-wide">← BACK TO COURSE</Link>
+                    <Link to={`/course/${slug}`} className="min-h-11 inline-flex items-center text-[11px] text-white/40 hover:text-white font-bold tracking-wide">← BACK TO COURSE</Link>
                     <span className="text-white/20">/</span>
-                    <button onClick={() => { setOpenModules((prev) => ({ ...prev, [activeModuleId]: true })); setSidebarOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="text-[11px] text-white/40 hover:text-white font-bold tracking-wide text-left">BACK TO MODULE</button>
+                    <button onClick={() => { setOpenModules((prev) => ({ ...prev, [activeModuleId]: true })); setSidebarOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="min-h-11 text-[11px] text-white/40 hover:text-white font-bold tracking-wide text-left">BACK TO MODULE</button>
                   </div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass text-[11px] font-bold tracking-widest mb-3">
+                  <div className="max-w-full inline-flex flex-wrap items-center gap-2 px-3 py-2 rounded-2xl glass text-[11px] font-bold tracking-wide sm:tracking-widest mb-3 break-words">
                     {(() => { const { Icon: TIcon, label } = lessonType(activeLesson); return (<><TIcon className="h-3.5 w-3.5 text-cyan-300" /> <span className="text-cyan-300">{label}</span></>); })()}
                     <span className="text-white/30">•</span> {activeModuleId ? (course.curriculum || []).find((m) => m.id === activeModuleId)?.title?.toUpperCase() : 'LESSON'} • {activeLesson.duration}
                   </div>
                   <h1 className="font-display font-bold text-[24px] md:text-[28px] leading-tight">{activeLesson.title}</h1>
                   <div className="mt-2 text-sm text-white/50">Lesson {currentIndex + 1} of {totalLessons} • {course.title}</div>
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                  <button disabled={savingProgress || preview} onClick={handleComplete} className={`inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm transition ${(progress.completedLessons || []).includes(activeLesson.id) ? 'bg-green-500 text-white' : 'btn-primary'}`}>
+                <div className="w-full sm:w-auto flex flex-col items-stretch sm:items-end gap-2">
+                  <button disabled={savingProgress || preview} onClick={handleComplete} className={`min-h-11 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold text-sm transition ${(progress.completedLessons || []).includes(activeLesson.id) ? 'bg-green-500 text-white' : 'btn-primary'}`}>
                     <CheckCircle2 className="h-4 w-4" /> {(progress.completedLessons || []).includes(activeLesson.id) ? 'COMPLETED' : savingProgress ? 'SAVING…' : 'MARK AS COMPLETE'}
                   </button>
                   {!isAdmin && (
-                    <button onClick={() => window.dispatchEvent(new CustomEvent('wdth_open_dantech', { detail: { prompt: `Explain this lesson in simple terms: ${activeLesson.title}` } }))} className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-xs font-bold text-purple-300 hover:bg-white/10 transition">
+                    <button onClick={() => window.dispatchEvent(new CustomEvent('wdth_open_dantech', { detail: { prompt: `Explain this lesson in simple terms: ${activeLesson.title}` } }))} className="min-h-11 inline-flex items-center justify-center gap-2 px-4 rounded-full glass text-xs font-bold text-purple-300 hover:bg-white/10 transition">
                       <Sparkles className="h-3.5 w-3.5" /> Ask DanTECH AI
                     </button>
                   )}
@@ -517,7 +522,7 @@ export default function Learn() {
 
               {/* Sub-lessons checklist */}
               {activeLesson.subLessons?.length > 0 && (
-                <div className="glass rounded-2xl p-6 space-y-3">
+                <div className="glass rounded-2xl p-4 sm:p-6 space-y-3">
                   <h3 className="font-bold flex items-center gap-2"><ListChecks className="h-4 w-4 text-green-300" /> In This Lesson ({activeLesson.subLessons.length} topics)</h3>
                   <div className="grid sm:grid-cols-2 gap-2">
                     {activeLesson.subLessons.map((s) => (
@@ -539,7 +544,7 @@ export default function Learn() {
                     <div className="font-bold mt-1">{lc.title}</div>
                     <div className="text-xs text-white/60">{lc.date} • {lc.time} ({lc.duration} mins) • {lc.platform}</div>
                   </div>
-                  <a href={lc.meetingLink} target="_blank" rel="noreferrer" className="px-5 py-2.5 rounded-full bg-red-500 text-white font-bold text-xs hover:bg-red-400">JOIN CLASS 🔴</a>
+                  <a href={lc.meetingLink} target="_blank" rel="noreferrer" className="min-h-11 inline-flex items-center px-5 rounded-full bg-red-500 text-white font-bold text-xs hover:bg-red-400">JOIN CLASS 🔴</a>
                 </div>
               ))}
 
@@ -564,7 +569,7 @@ export default function Learn() {
                   <Award className="h-10 w-10 mx-auto text-green-300 mb-2" />
                   <div className="font-black text-xl">All Requirements Completed! 🎓</div>
                   <p className="text-sm text-white/60 mt-1">Your WOLI DAN TECH HUB certificate is ready.</p>
-                  <Link to="/certificates" className="inline-flex mt-4 px-6 py-3 rounded-full bg-green-500 text-white font-bold text-sm">VIEW & DOWNLOAD CERTIFICATE</Link>
+                  <Link to="/certificates" className="min-h-11 inline-flex items-center mt-4 px-6 py-3 rounded-full bg-green-500 text-white font-bold text-sm">VIEW & DOWNLOAD CERTIFICATE</Link>
                 </div>
               )}
 
@@ -574,19 +579,19 @@ export default function Learn() {
               )}
 
               <div className="flex flex-wrap justify-between gap-4">
-                <button disabled={!prevLesson} onClick={() => prevLesson && selectLesson(prevLesson, prevLesson.moduleId)} className="px-6 py-3 rounded-full glass font-bold text-sm disabled:opacity-30 hover:bg-white/10 transition">← Previous</button>
+                <button disabled={!prevLesson} onClick={() => prevLesson && selectLesson(prevLesson, prevLesson.moduleId)} className="min-h-11 px-6 py-3 rounded-full glass font-bold text-sm disabled:opacity-30 hover:bg-white/10 transition">← Previous</button>
                 {nextLesson ? (
-                  <button onClick={() => selectLesson(nextLesson, nextLesson.moduleId)} className="px-6 py-3 rounded-full bg-white text-black font-bold text-sm hover:bg-white/90 transition">Next →</button>
+                  <button onClick={() => selectLesson(nextLesson, nextLesson.moduleId)} className="min-h-11 px-6 py-3 rounded-full bg-white text-black font-bold text-sm hover:bg-white/90 transition">Next →</button>
                 ) : (
-                  <Link to="/certificates" className="px-6 py-3 rounded-full glass font-bold text-sm">Check certificate status</Link>
+                  <Link to="/certificates" className="min-h-11 inline-flex items-center px-6 py-3 rounded-full glass font-bold text-sm">Check certificate status</Link>
                 )}
               </div>
             </div>
           </div>
         ) : (
-          <div className="p-20 text-center text-white/40">Select a lesson to start</div>
+          <div className="p-8 sm:p-20 text-center text-white/40">Select a lesson to start</div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
