@@ -1,5 +1,5 @@
 /* WOLI DAN TECH HUB service worker — cache-first shell, network-first pages */
-const CACHE = 'wdth-v1';
+const CACHE = 'wdth-v2';
 const SHELL = ['/', '/favicon.svg', '/manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
@@ -20,6 +20,9 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(fetch(request).catch(() => caches.match('/')));
     return;
   }
+  // Never cache same-origin API responses, signed downloads, or dev modules.
+  const path = new URL(request.url).pathname;
+  if (!path.startsWith('/assets/') && !['/favicon.svg', '/logo.svg', '/manifest.webmanifest'].includes(path)) return;
   // Static assets: cache-first
   e.respondWith(
     caches.match(request).then((hit) => {

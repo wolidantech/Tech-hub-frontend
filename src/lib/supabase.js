@@ -112,6 +112,7 @@ function uploadViaXhr(bucket, path, file, onProgress) {
       const url = `${SUPABASE_URL.replace(/\/+$/, '')}/storage/v1/object/${bucket}/${encodedPath}`;
       const xhr = new XMLHttpRequest();
       xhr.open('POST', url);
+      xhr.timeout = 120000;
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
       xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
       xhr.setRequestHeader('x-upsert', 'false');
@@ -164,6 +165,7 @@ export async function uploadFile(bucket, folder, file, onProgress = null) {
   }
   const { error } = await sb.storage.from(bucket).upload(path, file, { upsert: false });
   if (error) throw new Error(friendlyError(error, 'Upload failed. Please try again.'));
+  if (typeof onProgress === 'function') onProgress(100);
   return path;
 }
 

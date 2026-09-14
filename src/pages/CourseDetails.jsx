@@ -77,7 +77,7 @@ function ReviewsSection({ course, user, enrolled }) {
 
 export default function CourseDetails() {
   const { slug } = useParams();
-  const { getCourseBySlug, isEnrolled, getManualPaymentByCourse, ensureCourseDetail } = useCourses();
+  const { coursesLoading, coursesError, refreshCourses, accessKey, getCourseBySlug, isEnrolled, getManualPaymentByCourse, ensureCourseDetail } = useCourses();
   const { trackView, getCourseQuizzes, getCourseAssignments, siteSettings } = useLMS();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -87,13 +87,16 @@ export default function CourseDetails() {
   const course = getCourseBySlug(slug);
 
   useEffect(() => {
-    if (!course) return;
+    if (coursesLoading) return <div role="status" className="p-8">Loading course…</div>;
+  if (coursesError) return <div role="alert" className="p-8">{coursesError}<button onClick={refreshCourses}>Retry</button></div>;
+  if (!course) return;
     trackView(user?.id, course.id);
-    if (!course.curriculum) {
+    setDetailError('');
+    {
       ensureCourseDetail(course.id).catch((err) => setDetailError(err.message));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug, course?.id]);
+  }, [slug, course?.id, accessKey]);
 
   useEffect(() => {
     if (course?.curriculum?.length && !openModule) setOpenModule(course.curriculum[0].id);
@@ -153,7 +156,7 @@ export default function CourseDetails() {
               <p className="text-sm text-white/50 leading-relaxed">{course.longDescription}</p>
 
               <div className="flex flex-wrap items-center gap-4 text-sm">
-                <span className="flex items-center gap-2"><div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-bold text-xs">{course.instructor.charAt(0)}</div> {course.instructor} • {course.instructorRole}</span>
+                <span className="flex items-center gap-2"><div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-bold text-xs">{(course.instructor || '?').charAt(0)}</div> {course.instructor} • {course.instructorRole}</span>
                 <span className="flex items-center gap-1.5 text-white/60"><Star className="h-4 w-4 text-yellow-400 fill-yellow-400" /> {course.rating} ({course.students} students)</span>
               </div>
 
@@ -272,7 +275,8 @@ export default function CourseDetails() {
               <h3 className="font-bold text-xl">Course Curriculum</h3>
               <span className="text-xs px-3 py-1 rounded-full glass">{(course.curriculum || []).length} modules • {totalLessons} lessons</span>
             </div>
-            {detailError && <div className="text-sm text-red-300 mb-3">Couldn't load full curriculum: {detailError}</div>}
+            {detailError && <div className="text-sm text-red-300 mb-3">Couldn't load full curriculum: {detailError} <button onClick={() => { setDetailError(''); ensureCourseDetail(course.id).catch(err => setDetailError(err.message)); }}>Retry</button></div>}
+            {course.curriculum?.length === 0 && <p>No curriculum is available for this course yet.</p>}
             {!course.curriculum && !detailError && <div className="text-sm text-white/40 py-4">Loading curriculum…</div>}
             <div className="space-y-3">
               {(course.curriculum || []).map(mod => (
@@ -303,7 +307,7 @@ export default function CourseDetails() {
           </div>
 
           <div className="rounded-[24px] glass p-6 md:p-8 flex gap-4">
-            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-black text-xl shrink-0">{course.instructor.charAt(0)}</div>
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-black text-xl shrink-0">{(course.instructor || '?').charAt(0)}</div>
             <div>
               <div className="font-bold text-lg">{course.instructor}</div>
               <div className="text-sm text-cyan-300">{course.instructorRole}</div>

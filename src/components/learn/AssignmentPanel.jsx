@@ -1,3 +1,4 @@
+import LessonBody from './LessonBody';
 import { useState } from 'react';
 import { Upload, FileText, CheckCircle2, Clock, AlertTriangle, Award, Link2, Type } from 'lucide-react';
 import { useLMS } from '../../context/LMSContext';
@@ -27,6 +28,9 @@ export default function AssignmentPanel({ assignment, user, onSubmitted }) {
   const [linkUrl, setLinkUrl] = useState('');
   const [note, setNote] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [submitError, setSubmitError] = useState('');
+  const [succeeded, setSucceeded] = useState(false);
   const subs = getUserSubmissions(user.id).filter((s) => s.assignmentId === assignment.id);
   const latest = subs[0];
 
@@ -45,17 +49,22 @@ export default function AssignmentPanel({ assignment, user, onSubmitted }) {
 
   const handleSubmit = async (ev) => {
     ev.preventDefault();
+    if (uploading) return;
+    setSubmitError(''); setSucceeded(false); setUploadProgress(0);
     if (kind === 'file' && !file) { toast.error('Please select a file to upload'); return; }
     setUploading(true);
     try {
       await submitAssignment({
         assignmentId: assignment.id, userId: user.id, studentName: user.fullName,
-        kind, file, textContent, linkUrl, note,
+        kind, file, textContent, linkUrl, note, onUploadProgress: setUploadProgress,
       });
       setFile(null); setTextContent(''); setLinkUrl(''); setNote('');
+      setSucceeded(true);
+      ev.target.reset();
       toast.success(overdue ? 'Submitted late ⚠️ — instructor will review.' : 'Assignment submitted! 🎉 Awaiting review.');
       onSubmitted?.();
     } catch (err) {
+      setSubmitError(err.message);
       toast.error(err.message);
     } finally {
       setUploading(false);
@@ -66,7 +75,7 @@ export default function AssignmentPanel({ assignment, user, onSubmitted }) {
     <div className="space-y-4">
       <div className="glass rounded-2xl p-5 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h4 className="font-bold flex items-center gap-2"><FileText className="h-4 w-4 text-cyan-300" /> PRACTICAL TASK</h4>
+          <h4 className="font-bold flex items-center gap-2"><FileText className="h-4 w-4 text-cyan-300" /> {assignment.isFinalProject ? 'FINAL PRACTICAL / PROJECT' : 'ASSIGNMENT'}</h4>
           <div className="flex gap-2">
             {assignment.isFinalProject && <span className="px-2 py-1 rounded-full bg-purple-500/20 text-purple-300 text-[11px] font-bold">FINAL PROJECT</span>}
             {assignment.deadline && (
@@ -81,7 +90,7 @@ export default function AssignmentPanel({ assignment, user, onSubmitted }) {
         {assignment.instructions && (
           <div className="rounded-xl bg-white/[0.03] border border-white/10 p-4">
             <div className="text-[11px] font-bold tracking-widest text-white/40 mb-2">INSTRUCTIONS</div>
-            <div className="text-sm text-white/70 whitespace-pre-line leading-relaxed">{assignment.instructions}</div>
+            <LessonBody markdown={assignment.instructions} />
           </div>
         )}
         {assignment.requiredOutput && (
@@ -96,6 +105,8 @@ export default function AssignmentPanel({ assignment, user, onSubmitted }) {
         </div>
       </div>
 
+      {succeeded && <p role="status" className="text-green-200">Submission saved. Awaiting instructor review.</p>}
+      {!latest && <p className="text-sm text-white/60">Status: Pending — not submitted</p>}
       {/* Submission history + feedback */}
       {subs.length > 0 && (
         <div className="space-y-2">
@@ -107,7 +118,7 @@ export default function AssignmentPanel({ assignment, user, onSubmitted }) {
             return (
               <div key={s.id} className="glass rounded-2xl p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="text-sm flex items-center gap-2">
+                  <div className="text-sm flex flex-wrap items-center gap-2 min-w-0 break-words">
                     <KIcon className="h-3.5 w-3.5 text-cyan-300" />
                     <span className="font-bold">
                       {sk === 'file' ? s.fileName : sk === 'link' ? <a href={s.linkUrl} target="_blank" rel="noreferrer" className="text-cyan-300 underline break-all">{s.linkUrl}</a> : `Text submission #${subs.length - idx}`}
@@ -141,7 +152,7 @@ export default function AssignmentPanel({ assignment, user, onSubmitted }) {
 
       {/* Submit new (allowed unless latest approved) */}
       {(!latest || latest.status !== 'approved') && (
-        <form onSubmit={handleSubmit} className="glass rounded-2xl p-5 space-y-4">
+        <form aria-busy={uploading} onSubmit={handleSubmit} className="glass rounded-2xl p-5 space-y-4">
           <div className="flex flex-wrap justify-between items-center gap-2">
             <div className="font-bold text-sm">SUBMISSION AREA</div>
             {allowed.length > 1 && (
@@ -171,6 +182,8 @@ export default function AssignmentPanel({ assignment, user, onSubmitted }) {
             <input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://your-work-link... (Google Drive, YouTube, GitHub, Behance...)" className="w-full h-[52px] rounded-2xl glass px-4 text-sm focus:outline-none focus:border-cyan-400/50" />
           )}
           <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add a note about your work (optional)..." className="w-full rounded-2xl glass p-4 text-sm h-20 focus:outline-none focus:border-cyan-400/50" />
+          {uploading && <div role="status" className="text-sm text-cyan-200">{kind === 'file' ? uploadProgress >= 100 ? 'Upload sent. Saving submission…' : `Uploading file: ${uploadProgress}%` : 'Saving submission…'}{kind === 'file' && <progress aria-label="File upload progress" value={uploadProgress} max="100" className="w-full" />}</div>}
+          {submitError && <p role="alert" className="text-sm text-red-300">{submitError} Your answer is retained; submit again to retry.</p>}
           <button disabled={uploading} className="w-full btn-primary !py-3 disabled:opacity-50">
             <Upload className="h-4 w-4 mr-2" /> {uploading ? 'SUBMITTING...' : latest ? 'RESUBMIT ASSIGNMENT' : 'SUBMIT ASSIGNMENT'}
           </button>
