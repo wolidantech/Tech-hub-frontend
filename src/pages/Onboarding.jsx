@@ -32,7 +32,7 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#020a1f] via-[#061236] to-[#020a1f] py-12">
+    <div className="min-h-screen bg-gradient-to-br from-[#020a1f] via-[#061236] to-[#020a1f] pt-[max(3rem,env(safe-area-inset-top))] pb-[max(3rem,env(safe-area-inset-bottom))]">
       <Toaster richColors />
       <div className="mx-auto max-w-[720px] px-4">
         <div className="text-center mb-8">
@@ -44,7 +44,7 @@ export default function Onboarding() {
           </div>
         </div>
 
-        <div className="glass-strong rounded-[24px] p-8">
+        <div className="glass-strong rounded-[24px] p-5 sm:p-8">
           {step === 0 && (
             <div className="space-y-4">
               <h2 className="font-bold text-xl">What are you interested in?</h2>

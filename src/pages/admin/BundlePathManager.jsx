@@ -34,7 +34,7 @@ export function BundleManager() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-3">
         <h3 className="font-bold flex items-center gap-2"><Package className="h-5 w-5 text-amber-300" /> Course Bundles ({bundles.length})</h3>
         <button onClick={() => setShowForm(true)} className="btn-primary !py-2.5 !px-5 text-xs gap-2"><Plus className="h-4 w-4" /> CREATE BUNDLE</button>
       </div>
@@ -68,7 +68,7 @@ export function BundleManager() {
         {bundles.map((b) => (
           <div key={b.id} className="glass rounded-[20px] p-4 flex flex-wrap items-center gap-4">
             <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-2xl shrink-0">🎁</div>
-            <div className="flex-1 min-w-[200px]">
+            <div className="flex-1 min-w-0 sm:min-w-[200px]">
               <div className="font-bold flex items-center gap-2 flex-wrap">{b.title}
                 {b.badge && <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold">{b.badge}</span>}
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${b.published !== false ? 'bg-green-500/20 text-green-300' : 'bg-white/10 text-white/50'}`}>{b.published !== false ? 'LIVE' : 'HIDDEN'}</span>
@@ -116,7 +116,7 @@ export function PathManager() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-3">
         <h3 className="font-bold flex items-center gap-2"><Map className="h-5 w-5 text-green-300" /> Learning Paths ({learningPaths.length})</h3>
         <button onClick={() => setShowForm(true)} className="btn-primary !py-2.5 !px-5 text-xs gap-2"><Plus className="h-4 w-4" /> CREATE PATH</button>
       </div>
@@ -153,7 +153,7 @@ export function PathManager() {
         {learningPaths.map((p) => (
           <div key={p.id} className="glass rounded-[20px] p-4 flex flex-wrap items-center gap-4">
             <div className="text-4xl shrink-0">{p.icon}</div>
-            <div className="flex-1 min-w-[200px]">
+            <div className="flex-1 min-w-0 sm:min-w-[200px]">
               <div className="font-bold">{p.title}</div>
               <div className="text-xs text-white/40 mt-1">{p.level} • {(p.courseSlugs || []).length} steps</div>
               <div className="text-[11px] text-white/30 mt-0.5 truncate">{(p.courseSlugs || []).join(' → ')}</div>

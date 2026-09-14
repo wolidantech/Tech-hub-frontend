@@ -112,7 +112,7 @@ export default function CourseManager() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <button onClick={() => setManaging(null)} className="text-sm text-white/60 hover:text-white">← Back to courses</button>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Link to={`/learn/${course.slug}?preview=1`} className="px-4 py-2 rounded-full text-xs font-bold glass flex items-center gap-1.5 hover:bg-white/10 transition">
               <Eye className="h-3.5 w-3.5" /> PREVIEW AS STUDENT
             </Link>
@@ -164,19 +164,19 @@ export default function CourseManager() {
         </div>
 
         {/* Modules */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h3 className="font-bold text-lg">Curriculum — {course.curriculum?.length || 0} modules</h3>
-          <div className="flex gap-2">
-            <input value={newModuleTitle} onChange={(e) => setNewModuleTitle(e.target.value)} placeholder="New module title" className="h-10 w-[220px] rounded-full glass px-4 text-sm" />
-            <button onClick={async () => { if (!newModuleTitle.trim()) return toast.error('Enter module title'); try { await addModule(course.id, newModuleTitle.trim()); setNewModuleTitle(''); toast.success('Module added'); } catch (err) { toast.error(err.message); } }} className="px-4 h-10 rounded-full bg-white text-black font-bold text-xs">+ ADD MODULE</button>
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+            <input value={newModuleTitle} onChange={(e) => setNewModuleTitle(e.target.value)} placeholder="New module title" className="h-11 w-full sm:w-[220px] rounded-full glass px-4 text-sm" />
+            <button onClick={async () => { if (!newModuleTitle.trim()) return toast.error('Enter module title'); try { await addModule(course.id, newModuleTitle.trim()); setNewModuleTitle(''); toast.success('Module added'); } catch (err) { toast.error(err.message); } }} className="h-11 px-4 rounded-full bg-white text-black font-bold text-xs">+ ADD MODULE</button>
           </div>
         </div>
 
         <div className="space-y-3">
           {(course.curriculum || []).map((mod, mi) => (
             <div key={mod.id} className="glass rounded-[20px] overflow-hidden">
-              <div className="flex items-center justify-between p-4 bg-white/[0.03]">
-                <button onClick={() => setOpenMod(openMod === mod.id ? null : mod.id)} className="flex items-center gap-2 font-bold text-left">
+              <div className="flex items-start justify-between gap-2 p-4 bg-white/[0.03]">
+                <button onClick={() => setOpenMod(openMod === mod.id ? null : mod.id)} className="flex min-w-0 flex-1 flex-wrap items-center gap-2 font-bold text-left">
                   {openMod === mod.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   <span className="text-cyan-300 text-sm">MODULE {mi + 1}</span> {mod.title}
                   <span className="text-xs text-white/40 font-normal">{(mod.lessons || []).length} lessons)</span>
@@ -244,14 +244,14 @@ export default function CourseManager() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {[{ id: 'courses', label: `Courses (${courses.length})` }, { id: 'bundles', label: 'Bundles' }, { id: 'paths', label: 'Learning Paths' }].map((t) => (
             <button key={t.id} onClick={() => setView(t.id)} className={`px-4 py-2 rounded-full text-xs font-bold ${view === t.id ? 'bg-white text-black' : 'glass text-white/60'}`}>{t.label}</button>
           ))}
         </div>
         {view === 'courses' && (
-          <div className="flex gap-2">
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search courses..." className="h-10 w-[220px] rounded-full glass px-4 text-sm" />
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search courses..." className="h-11 w-full sm:w-[220px] rounded-full glass px-4 text-sm" />
             <button onClick={() => setShowAdd(true)} className="btn-primary !py-2.5 !px-5 text-xs gap-2"><Plus className="h-4 w-4" /> ADD COURSE</button>
           </div>
         )}
@@ -275,8 +275,8 @@ export default function CourseManager() {
           ))}
         </div>
         <div className="flex gap-2">
-          <input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="New category name" className="h-10 flex-1 max-w-[280px] rounded-full glass px-4 text-sm" />
-          <button onClick={async () => { try { await addCategory(newCat, user); setNewCat(''); toast.success('Category added'); } catch (e) { toast.error(e.message); } }} className="h-10 px-4 rounded-full bg-white text-black font-bold text-xs">ADD</button>
+          <input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="New category name" className="h-11 w-full sm:flex-1 sm:max-w-[280px] rounded-full glass px-4 text-sm" />
+          <button onClick={async () => { try { await addCategory(newCat, user); setNewCat(''); toast.success('Category added'); } catch (e) { toast.error(e.message); } }} className="h-11 px-4 rounded-full bg-white text-black font-bold text-xs">ADD</button>
         </div>
       </div>
 
@@ -301,7 +301,7 @@ export default function CourseManager() {
         {filtered.map((c) => (
           <div key={c.id} className="glass rounded-[20px] p-4 flex flex-wrap items-center gap-4">
             <div className="h-16 w-24 rounded-xl overflow-hidden shrink-0"><CourseArt course={c} className="h-16" /></div>
-            <div className="flex-1 min-w-[200px]">
+            <div className="flex-1 min-w-0 sm:min-w-[200px]">
               {editing === c.id ? (
                 <div className="grid sm:grid-cols-2 gap-2">
                   <input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} className="h-9 rounded-full glass px-3 text-xs sm:col-span-2" />

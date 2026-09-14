@@ -69,9 +69,9 @@ function PublicAdminRoute({ children }) {
 
 function Layout({ children }) {
   return (
-    <div className="min-h-screen flex flex-col bg-[#020a1f]">
+    <div className="min-h-screen max-w-full overflow-x-clip flex flex-col bg-[#020a1f]">
       <Navbar />
-      <main className="flex-1">{children}</main>
+      <main className="app-main flex-1 min-w-0 max-w-full">{children}</main>
       <Footer />
     </div>
   );

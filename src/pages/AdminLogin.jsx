@@ -36,7 +36,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#020a1f]">
+    <div className="mobile-safe-top safe-bottom min-h-screen flex bg-[#020a1f]">
       <Toaster richColors position="top-center" />
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
         <div className="w-full max-w-[420px] space-y-8">

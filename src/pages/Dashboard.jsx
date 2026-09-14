@@ -258,7 +258,7 @@ export default function Dashboard() {
         </div>
 
         {/* Payment Summary */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="glass rounded-[20px] p-5 border border-green-500/20 bg-green-500/5">
             <div className="flex items-center justify-between mb-3"><DollarSign className="h-5 w-5 text-green-400" /><span className="text-[11px] font-bold tracking-widest text-white/40">TOTAL PAID</span></div>
             <div className="font-black text-2xl text-green-300">{formatNaira(paymentSummary.totalPaid)}</div>

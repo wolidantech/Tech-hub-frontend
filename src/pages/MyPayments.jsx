@@ -77,7 +77,7 @@ export default function MyPayments() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="glass rounded-[20px] p-5 border border-green-500/20 bg-green-500/5">
             <div className="flex items-center justify-between mb-2"><span className="text-[11px] font-bold tracking-widest text-white/40">TOTAL PAID</span><CheckCircle2 className="h-4 w-4 text-green-400" /></div>
             <div className="font-black text-xl text-green-300">{formatNaira(summary.totalPaid)}</div>

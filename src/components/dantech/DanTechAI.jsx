@@ -34,6 +34,7 @@ export default function DanTechAI() {
   const enabled = siteSettings?.dantechEnabled !== false;
   const isStudent = user && user.role !== 'admin';
   const onAdmin = location.pathname.startsWith('/admin');
+  const onStandaloneAI = location.pathname === '/ai';
 
   // ---- Lesson context (Learn page publishes current lesson to sessionStorage) ----
   const lessonCtx = useMemo(() => {
@@ -73,8 +74,9 @@ export default function DanTechAI() {
     return () => window.removeEventListener('wdth_open_dantech', onOpen);
   }, []);
 
-  // Hide for admins/guests (when disabled, hide for all). After all hooks.
-  if (!enabled || !isStudent || onAdmin) return null;
+  // Hide for admins/guests and on the dedicated AI page, where a second
+  // floating composer would cover the full-page composer. After all hooks.
+  if (!enabled || !isStudent || onAdmin || onStandaloneAI) return null;
 
   const persist = async (msgs, id = convoId) => {
     try {
@@ -159,7 +161,8 @@ export default function DanTechAI() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-5 right-5 z-40 flex items-center gap-2.5 pl-2 pr-5 py-2 rounded-full bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:scale-105 transition-all"
+          aria-label={`Ask ${DANTECH_NAME}`}
+          className="safe-floating-bottom fixed right-[max(0.75rem,env(safe-area-inset-right))] z-40 flex max-w-[calc(100vw-1.5rem)] items-center gap-2.5 pl-2 pr-4 sm:pr-5 py-2 rounded-full bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:scale-105 transition-all"
         >
           <span className="h-11 w-11 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-2xl animate-pulse">🤖</span>
           <span className="text-left leading-tight">
@@ -171,18 +174,18 @@ export default function DanTechAI() {
 
       {/* Chat panel */}
       {open && (
-        <div className="fixed z-50 inset-x-3 bottom-3 sm:inset-x-auto sm:right-5 sm:bottom-5 sm:w-[420px] h-[78vh] sm:h-[600px] max-h-[700px] rounded-[24px] overflow-hidden glass-strong shadow-2xl flex flex-col border border-purple-500/30">
+        <div role="dialog" aria-modal="true" aria-label={`${DANTECH_NAME} chat`} className="safe-floating-bottom fixed z-50 inset-x-2 sm:inset-x-auto sm:right-[max(1.25rem,env(safe-area-inset-right))] sm:w-[420px] h-[min(78dvh,700px)] sm:h-[600px] max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-1rem)] rounded-[20px] sm:rounded-[24px] overflow-hidden glass-strong shadow-2xl flex flex-col border border-purple-500/30">
           {/* Header */}
-          <div className="bg-gradient-to-r from-violet-600 to-indigo-600 p-4 flex items-center gap-3">
+          <div className="bg-gradient-to-r from-violet-600 to-indigo-600 p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
             <div className="h-11 w-11 rounded-2xl bg-white/20 flex items-center justify-center text-2xl shrink-0">🤖</div>
             <div className="flex-1 min-w-0">
               <div className="font-black flex items-center gap-1.5">{DANTECH_NAME} <Sparkles className="h-3.5 w-3.5" /></div>
               <div className="text-[11px] text-white/70 truncate">Your AI Learning Assistant {course ? `• 📖 ${course.title.slice(0, 26)}` : ''}</div>
             </div>
-            <Link to="/ai" onClick={() => setOpen(false)} title="Open full page" className="h-8 w-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25"><Maximize2 className="h-4 w-4" /></Link>
-            <button onClick={() => setShowHistory(!showHistory)} title="History" className="h-8 w-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25"><History className="h-4 w-4" /></button>
-            <button onClick={newChat} title="New chat" className="h-8 w-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25"><Plus className="h-4 w-4" /></button>
-            <button onClick={() => setOpen(false)} className="h-8 w-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25"><X className="h-4 w-4" /></button>
+            <Link to="/ai" onClick={() => setOpen(false)} title="Open full page" aria-label="Open full AI page" className="hidden min-[375px]:flex h-11 w-11 shrink-0 rounded-full bg-white/15 items-center justify-center hover:bg-white/25"><Maximize2 className="h-4 w-4" /></Link>
+            <button onClick={() => setShowHistory(!showHistory)} title="History" aria-label="Conversation history" className="h-11 w-11 shrink-0 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25"><History className="h-4 w-4" /></button>
+            <button onClick={newChat} title="New chat" aria-label="Start new chat" className="hidden min-[375px]:flex h-11 w-11 shrink-0 rounded-full bg-white/15 items-center justify-center hover:bg-white/25"><Plus className="h-4 w-4" /></button>
+            <button onClick={() => setOpen(false)} aria-label="Close AI chat" className="h-11 w-11 shrink-0 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25"><X className="h-4 w-4" /></button>
           </div>
 
           {/* AI modes */}

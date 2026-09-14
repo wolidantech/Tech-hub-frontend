@@ -183,7 +183,7 @@ export default function QuizManager() {
           const attempts = quizAttempts.filter((a) => a.quizId === q.id);
           return (
             <div key={q.id} className="glass rounded-[20px] p-4 flex flex-wrap items-center gap-4">
-              <div className="flex-1 min-w-[220px]">
+              <div className="flex-1 min-w-0 sm:min-w-[220px]">
                 <div className="font-bold">{q.title} {q.isFinal && <span className="ml-1 px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px]">FINAL</span>}</div>
                 <div className="text-xs text-white/40 mt-1">{course?.title} • {n} questions • Pass {q.passingScore}% • {attempts.length} attempts {q.allowRetake ? '' : '• no retakes'}</div>
               </div>

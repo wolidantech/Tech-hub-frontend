@@ -40,11 +40,11 @@ export default function Navbar() {
   const pendingCount = isAdmin ? getPendingManualPayments().length : 0;
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#020a1f]/80 backdrop-blur-2xl">
-      <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
-        <div className="flex h-[72px] items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <img src="/logo.svg" alt="WOLI DAN TECH HUB — Learn • Build • Grow" className="w-[190px] h-12" />
+    <nav className="mobile-safe-top sticky top-0 z-50 max-w-full border-b border-white/[0.06] bg-[#020a1f]/80 backdrop-blur-2xl">
+      <div className="safe-inline mx-auto max-w-[1920px] lg:px-8">
+        <div className="flex h-[72px] min-w-0 items-center justify-between gap-3">
+          <Link to="/" className="flex min-h-11 min-w-0 items-center gap-3">
+            <img src="/logo.svg" alt="WOLI DAN TECH HUB — Learn • Build • Grow" className="w-[160px] sm:w-[190px] h-auto max-h-12" />
           </Link>
 
           <div className="hidden min-[1600px]:flex items-center gap-1">
@@ -95,15 +95,15 @@ export default function Navbar() {
             )}
           </div>
 
-          <button aria-label={open ? "Close navigation" : "Open navigation"} aria-expanded={open} aria-controls="mobile-navigation" onClick={() => setOpen(!open)} className="min-[1600px]:hidden p-2 rounded-full glass">
+          <button aria-label={open ? "Close navigation" : "Open navigation"} aria-expanded={open} aria-controls="mobile-navigation" onClick={() => setOpen(!open)} className="min-[1600px]:hidden h-11 w-11 shrink-0 rounded-full glass inline-flex items-center justify-center">
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
 
       {open && (
-        <div id="mobile-navigation" className="max-h-[calc(100dvh-72px)] overflow-y-auto min-[1600px]:hidden border-t border-white/10 bg-[#061236]/95 backdrop-blur-2xl">
-          <div className="px-4 py-6 space-y-4">
+        <div id="mobile-navigation" className="max-h-[calc(100dvh-72px-env(safe-area-inset-top))] overflow-y-auto min-[1600px]:hidden border-t border-white/10 bg-[#061236]/95 backdrop-blur-2xl">
+          <div className="safe-inline safe-bottom py-6 space-y-4">
             <form onSubmit={doSearch} className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
               <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search courses, lessons, paths..." className="h-11 w-full rounded-full glass pl-11 pr-4 text-sm focus:outline-none" />

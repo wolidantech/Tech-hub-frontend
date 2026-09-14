@@ -90,12 +90,12 @@ export default function StudentControl() {
         {/* Enrollments + progress control */}
         <div className="glass rounded-[20px] p-6 space-y-4">
           <h3 className="font-bold">Enrollments & Progress</h3>
-          <div className="flex gap-2">
-            <select value={enrollCourse} onChange={(e) => setEnrollCourse(e.target.value)} className="h-10 rounded-full glass px-4 text-sm flex-1">
+          <div className="flex flex-wrap gap-2">
+            <select value={enrollCourse} onChange={(e) => setEnrollCourse(e.target.value)} className="h-11 min-w-0 rounded-full glass px-4 text-sm flex-1">
               <option className="bg-[#061236]" value="">Select course to enroll manually</option>
               {courses.filter((c) => !studentEnrollments.some((e) => e.courseId === c.id && e.status !== 'removed')).map((c) => <option className="bg-[#061236]" key={c.id} value={c.id}>{c.title}</option>)}
             </select>
-            <button onClick={() => { if (!enrollCourse) return toast.error('Select a course'); doAction('Manually enroll student', async () => { await grantEnrollment(student.id, enrollCourse, { method: 'admin_manual', grantedBy: user.email }); audit(user, 'enrollment.grant', 'enrollment', enrollCourse, { studentId: student.id }); setEnrollCourse(''); }); }} className="h-10 px-4 rounded-full bg-green-500 text-white text-xs font-bold">ENROLL</button>
+            <button onClick={() => { if (!enrollCourse) return toast.error('Select a course'); doAction('Manually enroll student', async () => { await grantEnrollment(student.id, enrollCourse, { method: 'admin_manual', grantedBy: user.email }); audit(user, 'enrollment.grant', 'enrollment', enrollCourse, { studentId: student.id }); setEnrollCourse(''); }); }} className="h-11 px-4 rounded-full bg-green-500 text-white text-xs font-bold">ENROLL</button>
           </div>
           <div className="space-y-3">
             {studentEnrollments.map((e) => {
@@ -205,12 +205,12 @@ export default function StudentControl() {
             ))}
             {certs.length === 0 && <div className="text-sm text-white/40">No certificates.</div>}
           </div>
-          <div className="flex gap-2">
-            <select id="manual-cert-course" className="h-10 rounded-full glass px-4 text-sm flex-1" defaultValue="">
+          <div className="flex flex-wrap gap-2">
+            <select id="manual-cert-course" className="h-11 min-w-0 rounded-full glass px-4 text-sm flex-1" defaultValue="">
               <option className="bg-[#061236]" value="">Select course to issue certificate manually</option>
               {studentEnrollments.map((e) => { const c = courses.find((x) => x.id === e.courseId); return c ? <option className="bg-[#061236]" key={e.id} value={c.id}>{c.title}</option> : null; })}
             </select>
-            <button onClick={() => { const sel = document.getElementById('manual-cert-course'); if (!sel.value) return toast.error('Select a course'); const c = courses.find((x) => x.id === sel.value); doAction('Issue certificate manually', async () => { await issueCertificateManual({ userId: student.id, courseId: c.id }); await sendNotificationToUser(student.id, { title: 'Congratulations! 🎓', message: `Congratulations! 🎓 You have successfully completed ${c.title}. Your WOLI DAN TECH HUB certificate is now available.`, type: 'course_completed', courseId: c.id }); audit(user, 'certificate.issue_manual', 'certificate', c.id, { studentId: student.id }); }); }} className="h-10 px-4 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1"><Award className="h-3.5 w-3.5" /> ISSUE</button>
+            <button onClick={() => { const sel = document.getElementById('manual-cert-course'); if (!sel.value) return toast.error('Select a course'); const c = courses.find((x) => x.id === sel.value); doAction('Issue certificate manually', async () => { await issueCertificateManual({ userId: student.id, courseId: c.id }); await sendNotificationToUser(student.id, { title: 'Congratulations! 🎓', message: `Congratulations! 🎓 You have successfully completed ${c.title}. Your WOLI DAN TECH HUB certificate is now available.`, type: 'course_completed', courseId: c.id }); audit(user, 'certificate.issue_manual', 'certificate', c.id, { studentId: student.id }); }); }} className="h-11 px-4 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1"><Award className="h-3.5 w-3.5" /> ISSUE</button>
           </div>
         </div>
 
@@ -229,14 +229,14 @@ export default function StudentControl() {
     <div className="space-y-6">
       <div className="flex flex-wrap gap-4 items-center justify-between">
         <h2 className="font-bold text-xl flex items-center gap-2"><UserCheck className="h-5 w-5 text-cyan-300" /> Student Control ({students.length})</h2>
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search students..." className="h-10 w-[280px] rounded-full glass pl-10 pr-4 text-sm" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search students..." className="h-11 w-full sm:w-[280px] rounded-full glass pl-10 pr-4 text-sm" />
         </div>
       </div>
       <div className="glass rounded-[20px] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[760px] text-sm">
             <thead className="bg-white/[0.03] text-[11px] tracking-widest text-white/40">
               <tr><th className="text-left p-4">Student</th><th className="text-left p-4">Contact</th><th className="text-left p-4">Enrolled</th><th className="text-left p-4">Paid</th><th className="text-left p-4">Joined</th><th className="text-left p-4">Action</th></tr>
             </thead>

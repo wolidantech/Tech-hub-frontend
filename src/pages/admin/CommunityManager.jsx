@@ -76,7 +76,7 @@ export default function CommunityManager() {
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <h2 className="font-bold text-xl flex items-center gap-2"><MessagesSquare className="h-5 w-5 text-amber-300" /> Community & Live</h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {[{ id: 'discussions', label: `Discussions (${posts.length})`, icon: MessagesSquare }, { id: 'live', label: `Live Classes (${liveClasses.length})`, icon: Radio }, { id: 'reviews', label: `Reviews (${reviews.length})`, icon: Star }].map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)} className={`px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 ${tab === t.id ? 'bg-white text-black' : 'glass text-white/60'}`}>
               <t.icon className="h-3.5 w-3.5" /> {t.label}
@@ -87,7 +87,7 @@ export default function CommunityManager() {
 
       {tab === 'discussions' && (
         <div className="space-y-4">
-          <select value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)} className="h-10 rounded-full glass px-4 text-sm">
+          <select value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)} className="h-11 w-full sm:w-auto rounded-full glass px-4 text-sm">
             <option className="bg-[#061236]" value="">All courses</option>
             {courses.map((c) => <option className="bg-[#061236]" key={c.id} value={c.id}>{c.title.slice(0, 40)}</option>)}
           </select>

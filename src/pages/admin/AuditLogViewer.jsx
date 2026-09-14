@@ -19,15 +19,15 @@ export default function AuditLogViewer() {
           <h2 className="font-bold text-xl flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-green-400" /> Audit Logs</h2>
           <p className="text-sm text-white/50 mt-1">Every sensitive admin action is recorded. Showing last 500.</p>
         </div>
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search action, actor..." className="h-10 w-[280px] rounded-full glass pl-10 pr-4 text-sm" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search action, actor..." className="h-11 w-full sm:w-[280px] rounded-full glass pl-10 pr-4 text-sm" />
         </div>
       </div>
 
       <div className="glass rounded-[20px] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[760px] text-sm">
             <thead className="bg-white/[0.03] text-[11px] tracking-widest text-white/40">
               <tr><th className="text-left p-4">Time</th><th className="text-left p-4">Actor</th><th className="text-left p-4">Action</th><th className="text-left p-4">Entity</th><th className="text-left p-4">Details</th></tr>
             </thead>

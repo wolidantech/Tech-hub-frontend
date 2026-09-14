@@ -289,12 +289,12 @@ export default function Learn() {
   const lessonAssignments = activeLesson ? getCourseAssignments(course.id).filter((a) => a.lessonId === activeLesson.id) : [];
 
   return (
-    <div className="classroom-shell min-h-screen max-w-full overflow-x-clip flex flex-col lg:flex-row bg-[#020a1f] pb-[max(1rem,env(safe-area-inset-bottom))] lg:pb-0">
+    <div className="classroom-shell mobile-safe-top min-h-screen max-w-full overflow-x-clip flex flex-col lg:flex-row bg-[#020a1f] pb-[max(1rem,env(safe-area-inset-bottom))] lg:pb-0">
       <Toaster richColors />
       {/* Sidebar — sticky column on desktop, slide-over drawer on mobile */}
       <div className={`${sidebarOpen ? 'fixed inset-0 z-50 flex' : 'hidden'} lg:static lg:flex lg:w-[360px] lg:shrink-0`}>
         {sidebarOpen && <button aria-label="Close curriculum" onClick={() => setSidebarOpen(false)} className="absolute inset-0 bg-black/70 lg:hidden" />}
-        <aside aria-label="Course curriculum" className="relative w-[min(90%,360px)] max-w-full lg:w-full lg:max-w-none border-r border-white/[0.06] bg-[#061236] lg:bg-[#061236]/50 backdrop-blur-xl flex flex-col h-[100dvh] lg:h-screen lg:sticky lg:top-0 lg:overflow-hidden">
+        <aside aria-label="Course curriculum" className={`relative w-[min(90%,360px)] max-w-full lg:w-full lg:max-w-none border-r border-white/[0.06] bg-[#061236] lg:bg-[#061236]/50 backdrop-blur-xl flex flex-col h-[100dvh] lg:h-screen lg:sticky lg:top-0 lg:overflow-hidden ${sidebarOpen ? 'mobile-safe-top safe-bottom' : ''}`}>
         <div className="p-4 sm:p-5 border-b border-white/10 space-y-4">
           <div className="mx-auto h-1 w-10 rounded-full bg-white/20 lg:hidden" aria-hidden="true" />
           <div className="flex items-center justify-between">
