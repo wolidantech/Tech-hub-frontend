@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Printer, Share2, BadgeCheck } from 'lucide-react';
+import { ArrowLeft, ImageDown, Loader2, Printer, Share2, BadgeCheck } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useAuth } from '../context/AuthContext';
 import { useCourses } from '../context/CourseContext';
+import { captureCertificatePng, certificateFileName, saveOrShareImage } from '../lib/certImage';
 import { copyText, formatDate } from '../lib/utils';
 
 // The sheet is designed as a fixed A4-landscape canvas (96dpi) and scaled to
@@ -15,6 +16,15 @@ const CERT_H = 792;
 const GOLD = '#c9a227';
 const GOLD_LIGHT = '#e9cf8b';
 const GOLD_PALE = '#f5e2a2';
+
+// Button copy for the PNG action. "Failed, try Print" deliberately points at the
+// flow that always works, so the button never leaves a student at a dead end.
+const IMAGE_LABELS = {
+  idle: 'Download Image (PNG)',
+  working: 'Downloading…',
+  saved: 'Saved ✓',
+  failed: 'Failed, try Print',
+};
 
 /* ---------------------------------------------------------------- ornaments
    All artwork is inline SVG — no external images, nothing hotlinked. */
@@ -100,13 +110,16 @@ function GoldDivider({ className = '' }) {
 
 /* ------------------------------------------------------------------ sheet */
 
-function CertificateSheet({ cert, name, qrUrl }) {
+// `ref` points at the exact node the PNG is rendered from — the card itself, so
+// no nav, action bar, Ask-AI widget or page background can ever bleed into it.
+const CertificateSheet = forwardRef(function CertificateSheet({ cert, name, qrUrl }, ref) {
   const [logoBroken, setLogoBroken] = useState(false);
   const revoked = cert?.status === 'revoked';
   const longName = name.length > 24;
   const longCourse = (cert?.courseName || '').length > 40;
   return (
     <div
+      ref={ref}
       className="cert-sheet relative overflow-hidden"
       style={{
         width: CERT_W, height: CERT_H,
@@ -197,7 +210,7 @@ function CertificateSheet({ cert, name, qrUrl }) {
       </div>
     </div>
   );
-}
+});
 
 /* ------------------------------------------------------------------- page */
 
@@ -212,6 +225,12 @@ export default function CertificateView() {
   const [copied, setCopied] = useState(false);
   const fitRef = useRef(null);
   const [scale, setScale] = useState(1);
+  // PNG export: the sheet node is the only thing handed to the renderer.
+  const certRef = useRef(null);
+  const [imageState, setImageState] = useState('idle'); // idle | working | saved | failed
+  const imageHintTimer = useRef(null);
+
+  useEffect(() => () => clearTimeout(imageHintTimer.current), []);
 
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
@@ -266,6 +285,30 @@ export default function CertificateView() {
     } catch { /* user dismissed share sheet */ }
   };
 
+  // Save the certificate as a PNG. Phones get the share sheet, which is where
+  // "Save to Photos" / WhatsApp live; everywhere else falls back to a download.
+  // Print / Download PDF stays untouched as the fallback if a browser refuses
+  // to rasterise the card at all.
+  const downloadImage = async () => {
+    if (imageState === 'working') return;
+    clearTimeout(imageHintTimer.current);
+    setImageState('working');
+    let next = 'failed';
+    try {
+      const shot = await captureCertificatePng(certRef.current);
+      const saved = await saveOrShareImage({
+        ...shot,
+        fileName: certificateFileName(cert?.certificateId),
+        title: 'My WOLI DAN TECH HUB Certificate',
+        text: `My WOLI DAN TECH HUB Certificate — ${cert?.courseName || ''} — verify: ${verifyUrl}`,
+      });
+      if (saved === 'dismissed') { setImageState('idle'); return; } // sheet was closed, not an error
+      next = saved === 'failed' ? 'failed' : 'saved';
+    } catch { next = 'failed'; }
+    setImageState(next);
+    if (next === 'saved') imageHintTimer.current = setTimeout(() => setImageState('idle'), 2400);
+  };
+
   if (loading) return (
     <div className="min-h-screen bg-gradient-to-br from-[#020a1f] via-[#061236] to-[#020a1f] flex items-center justify-center py-16">
       <div className="glass rounded-[24px] px-10 py-8 text-center">
@@ -299,6 +342,17 @@ export default function CertificateView() {
             <button onClick={() => window.print()} className="h-11 px-5 rounded-full glass flex items-center gap-2 text-sm font-bold hover:bg-white/10 transition">
               <Printer className="h-4 w-4" /> Print / Download PDF
             </button>
+            <button
+              onClick={downloadImage}
+              disabled={imageState === 'working'}
+              title="Save a PNG picture of the certificate — phones offer “Save to Photos”"
+              className="h-11 px-5 rounded-full glass flex items-center gap-2 text-sm font-bold hover:bg-white/10 transition disabled:opacity-60"
+            >
+              {imageState === 'working'
+                ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                : <ImageDown className="h-4 w-4" aria-hidden="true" />}
+              <span role="status" aria-live="polite">{IMAGE_LABELS[imageState]}</span>
+            </button>
             <button onClick={share} className="h-11 px-5 rounded-full bg-[#c9a227] text-[#0a1a4a] flex items-center gap-2 text-sm font-bold hover:bg-[#e9cf8b] transition">
               <Share2 className="h-4 w-4" /> {copied ? 'Link Copied ✓' : 'Share'}
             </button>
@@ -314,7 +368,7 @@ export default function CertificateView() {
         {/* scaled certificate sheet */}
         <div ref={fitRef} className="cert-fit-wrap w-full" style={{ height: CERT_H * scale }}>
           <div className="cert-scaler" style={{ width: CERT_W, height: CERT_H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
-            <CertificateSheet cert={cert} name={name} qrUrl={qrUrl} />
+            <CertificateSheet ref={certRef} cert={cert} name={name} qrUrl={qrUrl} />
           </div>
         </div>
 

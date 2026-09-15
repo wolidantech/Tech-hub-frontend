@@ -18,6 +18,7 @@
     "@supabase/supabase-js": "^2.116.0",
     "dompurify": "^3.4.15",
     "framer-motion": "^11.5.4",
+    "html-to-image": "^1.11.13",
     "lucide-react": "^0.438.0",
     "marked": "^15.0.12",
     "qrcode": "^1.5.4",
