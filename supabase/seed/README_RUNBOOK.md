@@ -19,7 +19,7 @@ in the Supabase Dashboard SQL Editor.
 
 ## Exact order
 
-### Fast path (any project that already has migrations 001–009)
+### Fast path (any project that already has migrations 001–010)
 
 One paste, one Run:
 
@@ -45,6 +45,7 @@ Run each migration as a separate SQL Editor query, in numeric order:
 7. `supabase/migrations/007_classroom_upgrade.sql`
 8. `supabase/migrations/008_cv_builder_and_study_tools.sql`
 9. `supabase/migrations/009_fix_is_admin_recursion.sql`
+10. `supabase/migrations/010_certificate_fullname.sql`
 
 Then run these files, one at a time, in this exact order:
 
@@ -54,8 +55,8 @@ Then run these files, one at a time, in this exact order:
 4. `supabase/seed/seed_learning_paths.sql`
 5. `supabase/verify/verify_curriculum.sql` (read-only verification)
 
-In short: **migrations 001–008 → migration 009 → 12-course catalog → curriculum
-→ publish eligible courses → four learning paths → verify**.
+In short: **migrations 001–008 → migration 009 → migration 010 → 12-course
+catalog → curriculum → publish eligible courses → four learning paths → verify**.
 
 `setup_full_catalog.sql` is the generated combination of the four seed files and
 is useful for a brand-new project. For a production repair, the separate files
@@ -69,15 +70,24 @@ Apply the checked-in sequence below so migration history and data are repaired:
 
 1. Run `009_fix_is_admin_recursion.sql`. It safely recreates `is_admin()` and is
    idempotent, even when the equivalent hotfix is already present.
-2. Run `seed_12_courses.sql`. Existing slug rows are updated without changing
-   their `published`/`featured` flags; missing launch rows are inserted as drafts.
-3. Run `seed_curriculum.sql` in one execution.
-4. Run `publish_courses.sql`. It only changes `published = false` to `true` for
+2. Run `010_certificate_fullname.sql`. It returns the full holder name from
+   `verify_certificate`, backfills any NULL/empty `verification_code` (the live
+   "—" bug), and re-enforces the NOT NULL invariant. It is idempotent and never
+   shuffles already-issued codes.
+3. Run `seed_12_courses.sql`. Existing slug rows are updated without changing
+   their `published`/`featured` flags; missing launch rows are inserted as
+   drafts. On the live project the five custom courses match the seeded twin
+   slugs, so their copy refreshes in place; the archived duplicate rows are
+   never touched.
+4. Run `seed_curriculum.sql` in one execution. Modules and lessons are matched
+   by (course slug, module title, lesson title), so on the live project this
+   refreshes the twins' cloned curriculum in place instead of duplicating it.
+5. Run `publish_courses.sql`. It only changes `published = false` to `true` for
    unarchived courses that have at least one module. It never sets any course to
    unpublished. A previously published empty custom course therefore remains a
    separate cleanup decision and will be exposed by verification.
-5. Run `seed_learning_paths.sql`.
-6. Run `verify_curriculum.sql` and save/export the result for the release record.
+6. Run `seed_learning_paths.sql`.
+7. Run `verify_curriculum.sql` and save/export the result for the release record.
 
 ## Pasting the curriculum in SQL Editor (fast path)
 
@@ -157,10 +167,12 @@ actually open, i.e. the live custom twin where one exists (see
 - 1 published final quiz with 10 questions, 1 published final project, and 1
   completion-rule row (these three are what gate the certificate)
 
-Launch subjects, by original slug: `ai-video-content-creation`,
-`video-editing-capcut`, `graphic-design-canva`, `digital-marketing`,
-`mobile-app-development`, `portfolio-creation`, `frontend-web-development`,
-`web-design-wordpress`, `ui-ux-design-figma`, `microsoft-excel`, `microsoft-word`,
+Launch subjects, by their live slug (the slugs students open — twin slugs where
+the catalog was consolidated): `ai-video-content-creation`,
+`video-editing-with-capcut`, `graphic-design-with-canva`, `digital-marketing`,
+`mobile-application-development`, `portfolio-creation`,
+`frontend-web-development`, `web-design-with-wordpress`,
+`ui-ux-design-with-figma`, `microsoft-excel`, `microsoft-word`,
 `microsoft-powerpoint`.
 
 There must also be exactly four published learning paths, and every step of each
@@ -181,9 +193,11 @@ populated and students would open an empty course.
 
 ## Course catalog topology (what "correct" means on this project)
 
-The live catalog was consolidated after the seed chain ran, and it no longer
-matches a fresh project one-to-one. Both topologies are supported by the seeds;
-nothing here may be "fixed" by unarchiving:
+The live catalog was consolidated after the first seed chain ran: five launch
+slugs were archived and their curriculum lives on under custom twin slugs. The
+seed chain now reproduces this consolidated topology directly (fresh projects
+get the twin slugs), and the archived originals exist only on the live project
+as legacy rows. Nothing here may be "fixed" by unarchiving:
 
 | Group | Slugs | State |
 |---|---|---|
@@ -197,10 +211,12 @@ nothing here may be "fixed" by unarchiving:
 and applied identically in the app (`isCatalogCourse` in `src/lib/lms.js`) so an
 admin's list can never show a duplicate next to its live twin.
 
-Because of this, the curriculum seed still writes the 12 launch subjects (the
-archived rows keep their curriculum as the source of truth for the twins and for
-a future fresh project), while **learning paths, UI and analytics must only ever
-reference the visible row**. `verify_curriculum.sql` reflects that: result 3
+Because of this, the seed chain writes the 12 launch subjects under their LIVE
+slugs — the seven taught directly plus the five custom twins — on fresh and live
+projects alike. The archived duplicate rows keep whatever curriculum they
+historically had, but no seed file creates, publishes, unarchives or references
+them; they exist on the live project only as audit records.
+`verify_curriculum.sql` reflects that: result 3
 checks the contract per subject (twin preferred), and result 3b lists the
 superseded originals with their enrollment/payment/certificate counts as
 reconciliation evidence.
@@ -255,25 +271,27 @@ where lp.title = any (array['Web & Mobile Developer', 'Digital Creator',
                             'Office Productivity Pro', 'Digital Business Growth'])
 order by lp.title, cid.i;
 
--- Then repoint, in one transaction.
+-- Then repoint, in one transaction. Steps resolve ONLY to the live slugs —
+-- the archived duplicates are never a candidate. A step whose live course is
+-- missing keeps its current value (coalesce), which the final check exposes.
 begin;
 create temp table _path_fix (title text, step int, candidates text[]) on commit drop;
 insert into _path_fix (title, step, candidates) values
   ('Web & Mobile Developer', 1, array['frontend-web-development']),
-  ('Web & Mobile Developer', 2, array['web-design-with-wordpress','web-design-wordpress']),
-  ('Web & Mobile Developer', 3, array['ui-ux-design-with-figma','ui-ux-design-figma']),
-  ('Web & Mobile Developer', 4, array['mobile-application-development','mobile-app-development']),
+  ('Web & Mobile Developer', 2, array['web-design-with-wordpress']),
+  ('Web & Mobile Developer', 3, array['ui-ux-design-with-figma']),
+  ('Web & Mobile Developer', 4, array['mobile-application-development']),
   ('Web & Mobile Developer', 5, array['portfolio-creation']),
   ('Digital Creator',        1, array['ai-video-content-creation']),
-  ('Digital Creator',        2, array['video-editing-with-capcut','video-editing-capcut']),
-  ('Digital Creator',        3, array['graphic-design-with-canva','graphic-design-canva']),
+  ('Digital Creator',        2, array['video-editing-with-capcut']),
+  ('Digital Creator',        3, array['graphic-design-with-canva']),
   ('Digital Creator',        4, array['digital-marketing']),
   ('Digital Creator',        5, array['portfolio-creation']),
   ('Office Productivity Pro',1, array['microsoft-word']),
   ('Office Productivity Pro',2, array['microsoft-excel']),
   ('Office Productivity Pro',3, array['microsoft-powerpoint']),
   ('Digital Business Growth',1, array['digital-marketing']),
-  ('Digital Business Growth',2, array['graphic-design-with-canva','graphic-design-canva']),
+  ('Digital Business Growth',2, array['graphic-design-with-canva']),
   ('Digital Business Growth',3, array['ai-video-content-creation']),
   ('Digital Business Growth',4, array['portfolio-creation']);
 
@@ -322,7 +340,7 @@ access and do not replace these policies.
 ## Migration 009 test and function audit
 
 The repository verification uses **PGlite, a fresh disposable PostgreSQL
-instance**, not the live project. `npm run verify` applies migrations 001–009 in
+instance**, not the live project. `npm run verify` applies migrations 001–010 in
 order and checks that `public.is_admin()` is `SECURITY DEFINER` with
 `search_path=public`. It then switches to non-owner `anon`/`authenticated` test
 roles to verify:

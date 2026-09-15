@@ -36,6 +36,7 @@ in this order:
 | 7 | `migrations/007_classroom_upgrade.sql` | expanded lesson types and lesson activity |
 | 8 | `migrations/008_cv_builder_and_study_tools.sql` | saved CVs, notes and bookmarks |
 | 9 | `migrations/009_fix_is_admin_recursion.sql` | recursion-safe admin helper and archived-course RLS scope |
+| 10 | `migrations/010_certificate_fullname.sql` | full holder name in `verify_certificate`, verification-code backfill |
 
 > **Do not skip 003 or 009.** 003 owns `on_auth_user_created`, the trigger that
 > creates a `profiles` row when someone registers. Without it, authentication succeeds but
@@ -207,7 +208,7 @@ prints the key.
 ```bash
 npm ci
 npm --prefix supabase/verify ci
-npm run verify        # migrations 001-009 + backend and non-owner RLS checks
+npm run verify        # migrations 001-010 + backend and non-owner RLS checks
 npm run verify:seed   # seed chain → full curriculum + published catalog
 ```
 

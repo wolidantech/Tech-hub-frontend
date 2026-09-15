@@ -33,6 +33,15 @@
 -- NOTE: new courses seed as UNPUBLISHED. Next run seed_curriculum.sql,
 -- which provides the complete modules, bodies, resources and lesson videos;
 -- only then run publish_courses.sql.
+--
+-- SLUGS MATCH THE CONSOLIDATED LIVE CATALOG. Five launch courses are seeded
+-- under their custom "twin" slugs — graphic-design-with-canva,
+-- mobile-application-development, ui-ux-design-with-figma,
+-- video-editing-with-capcut, web-design-with-wordpress — because that is how
+-- students open them on the live project. The five superseded launch slugs
+-- they replaced are ARCHIVED duplicates there: this seed never creates them,
+-- never unarchives them, never references them (README_RUNBOOK.md names them
+-- in the topology table for audit purposes only).
 -- ============================================================
 
 -- ---------- Categories ----------
@@ -61,7 +70,7 @@ on conflict (slug) do update set
   color = excluded.color, what_you_will_learn = excluded.what_you_will_learn,
   updated_at = now();
 insert into public.courses (slug, title, short_description, description, long_description, category, instructor, instructor_role, duration, level, price, original_price, thumbnail_key, color, what_you_will_learn, published, featured) values (
-  $$video-editing-capcut$$, $$VIDEO EDITING WITH CAPCUT$$, $$Edit like a pro on your phone & PC - transitions, effects, captions$$, $$Master CapCut for mobile and desktop. Learn cutting, transitions, effects, auto-captions, and trending editing styles used by top creators.$$, $$CapCut is the #1 editing tool for creators. This course teaches you everything from basic cuts to advanced effects, keyframes, color grading, and viral TikTok/Reels editing techniques. No laptop needed - start on your phone!$$,
+  $$video-editing-with-capcut$$, $$VIDEO EDITING WITH CAPCUT$$, $$Edit like a pro on your phone & PC - transitions, effects, captions$$, $$Master CapCut for mobile and desktop. Learn cutting, transitions, effects, auto-captions, and trending editing styles used by top creators.$$, $$CapCut is the #1 editing tool for creators. This course teaches you everything from basic cuts to advanced effects, keyframes, color grading, and viral TikTok/Reels editing techniques. No laptop needed - start on your phone!$$,
   $$Video & Media$$, $$Woli Dan$$, $$Video Editor$$, $$6 hours$$, $$Beginner$$,
   5000, 12000, $$video$$, $$from-cyan-500 to-blue-600$$,
   $JSON$["CapCut interface mastery","Cutting & trimming like a pro","Transitions & effects","Auto captions & text animations","Color grading & filters","Sound design & music","Export settings for all platforms","Creating viral short-form content"]$JSON$::jsonb, false, false
@@ -76,7 +85,7 @@ on conflict (slug) do update set
   color = excluded.color, what_you_will_learn = excluded.what_you_will_learn,
   updated_at = now();
 insert into public.courses (slug, title, short_description, description, long_description, category, instructor, instructor_role, duration, level, price, original_price, thumbnail_key, color, what_you_will_learn, published, featured) values (
-  $$graphic-design-canva$$, $$GRAPHIC DESIGN WITH CANVA$$, $$Design stunning graphics, flyers, logos & social posts without Photoshop$$, $$Learn professional graphic design using Canva. Create flyers, social media designs, logos, presentations, and brand kits that clients will pay for.$$, $$Canva has democratized design. This course shows you how to create professional-grade designs for businesses, even if you've never designed before. Includes client work templates and monetization strategies.$$,
+  $$graphic-design-with-canva$$, $$GRAPHIC DESIGN WITH CANVA$$, $$Design stunning graphics, flyers, logos & social posts without Photoshop$$, $$Learn professional graphic design using Canva. Create flyers, social media designs, logos, presentations, and brand kits that clients will pay for.$$, $$Canva has democratized design. This course shows you how to create professional-grade designs for businesses, even if you've never designed before. Includes client work templates and monetization strategies.$$,
   $$Design$$, $$Woli Dan$$, $$Brand Designer$$, $$5 hours$$, $$Beginner$$,
   5000, 10000, $$design$$, $$from-fuchsia-500 to-purple-600$$,
   $JSON$["Canva mastery from scratch","Design principles & typography","Social media design pack","Flyer & poster design","Logo & brand kit creation","Presentation design","Client project workflow","Selling designs online"]$JSON$::jsonb, false, false
@@ -106,7 +115,7 @@ on conflict (slug) do update set
   color = excluded.color, what_you_will_learn = excluded.what_you_will_learn,
   updated_at = now();
 insert into public.courses (slug, title, short_description, description, long_description, category, instructor, instructor_role, duration, level, price, original_price, thumbnail_key, color, what_you_will_learn, published, featured) values (
-  $$mobile-app-development$$, $$MOBILE APPLICATION DEVELOPMENT$$, $$Build real mobile apps with no-code & Flutterflow basics$$, $$Learn to build functional mobile apps without complex coding. From idea to Play Store.$$, $$Build your first mobile app in 2 weeks. This beginner-friendly course covers app ideation, UI design, no-code development, and publishing. Perfect for entrepreneurs with app ideas.$$,
+  $$mobile-application-development$$, $$MOBILE APPLICATION DEVELOPMENT$$, $$Build real mobile apps with no-code & Flutterflow basics$$, $$Learn to build functional mobile apps without complex coding. From idea to Play Store.$$, $$Build your first mobile app in 2 weeks. This beginner-friendly course covers app ideation, UI design, no-code development, and publishing. Perfect for entrepreneurs with app ideas.$$,
   $$Mobile Development$$, $$Woli Dan Tech Team$$, $$Mobile Developer$$, $$15 hours$$, $$Beginner$$,
   5000, 25000, $$mobile$$, $$from-emerald-500 to-teal-600$$,
   $JSON$["Mobile app fundamentals","UI/UX for mobile apps","No-code app development","Database & authentication","APIs & integrations","Testing & deployment","Publishing to Play Store","App monetization"]$JSON$::jsonb, false, false
@@ -151,7 +160,7 @@ on conflict (slug) do update set
   color = excluded.color, what_you_will_learn = excluded.what_you_will_learn,
   updated_at = now();
 insert into public.courses (slug, title, short_description, description, long_description, category, instructor, instructor_role, duration, level, price, original_price, thumbnail_key, color, what_you_will_learn, published, featured) values (
-  $$web-design-wordpress$$, $$WEB DESIGN WITH WORDPRESS$$, $$Build professional business websites with WordPress - no coding$$, $$Learn to build stunning WordPress websites for businesses. Domain, hosting, Elementor, and client delivery.$$, $$WordPress powers 40% of the web. Learn to build professional websites for clients, charge premium prices, and deliver in days not months. Includes hosting setup and client handover.$$,
+  $$web-design-with-wordpress$$, $$WEB DESIGN WITH WORDPRESS$$, $$Build professional business websites with WordPress - no coding$$, $$Learn to build stunning WordPress websites for businesses. Domain, hosting, Elementor, and client delivery.$$, $$WordPress powers 40% of the web. Learn to build professional websites for clients, charge premium prices, and deliver in days not months. Includes hosting setup and client handover.$$,
   $$Web Development$$, $$Woli Dan$$, $$WordPress Expert$$, $$8 hours$$, $$Beginner$$,
   5000, 15000, $$wordpress$$, $$from-sky-600 to-blue-700$$,
   $JSON$["WordPress fundamentals","Domain & hosting setup","Elementor page builder","Theme customization","E-commerce with WooCommerce","SEO basics","Security & maintenance","Charging clients & delivery"]$JSON$::jsonb, false, false
@@ -166,7 +175,7 @@ on conflict (slug) do update set
   color = excluded.color, what_you_will_learn = excluded.what_you_will_learn,
   updated_at = now();
 insert into public.courses (slug, title, short_description, description, long_description, category, instructor, instructor_role, duration, level, price, original_price, thumbnail_key, color, what_you_will_learn, published, featured) values (
-  $$ui-ux-design-figma$$, $$UI/UX DESIGN WITH FIGMA$$, $$Design beautiful apps & websites in Figma - from wireframe to prototype$$, $$Master UI/UX design with Figma. Learn user research, wireframing, design systems, and prototyping.$$, $$UI/UX is one of the highest-paying tech skills. This course teaches you to design user-centered digital products, create design systems, and build interactive prototypes that developers love.$$,
+  $$ui-ux-design-with-figma$$, $$UI/UX DESIGN WITH FIGMA$$, $$Design beautiful apps & websites in Figma - from wireframe to prototype$$, $$Master UI/UX design with Figma. Learn user research, wireframing, design systems, and prototyping.$$, $$UI/UX is one of the highest-paying tech skills. This course teaches you to design user-centered digital products, create design systems, and build interactive prototypes that developers love.$$,
   $$Design$$, $$Woli Dan Tech Team$$, $$Product Designer$$, $$12 hours$$, $$Beginner$$,
   5000, 18000, $$figma$$, $$from-purple-600 to-pink-600$$,
   $JSON$["UI/UX fundamentals","User research & personas","Wireframing & user flows","Figma mastery","Design systems & components","Prototyping & animations","Usability testing","Portfolio & job prep"]$JSON$::jsonb, false, false
@@ -276,7 +285,7 @@ declare missing_slugs text;
 begin
   select string_agg(required.slug, ', ' order by required.slug)
     into missing_slugs
-    from unnest(array['ai-video-content-creation', 'video-editing-capcut', 'graphic-design-canva', 'digital-marketing', 'mobile-app-development', 'portfolio-creation', 'frontend-web-development', 'web-design-wordpress', 'ui-ux-design-figma', 'microsoft-excel', 'microsoft-word', 'microsoft-powerpoint']::text[]) as required(slug)
+    from unnest(array['ai-video-content-creation', 'video-editing-with-capcut', 'graphic-design-with-canva', 'digital-marketing', 'mobile-application-development', 'portfolio-creation', 'frontend-web-development', 'web-design-with-wordpress', 'ui-ux-design-with-figma', 'microsoft-excel', 'microsoft-word', 'microsoft-powerpoint']::text[]) as required(slug)
    where not exists (select 1 from public.courses c where c.slug = required.slug);
   if missing_slugs is not null then
     raise exception 'seed_curriculum: required course slugs are missing: %', missing_slugs;
@@ -764,7 +773,7 @@ A student made 2 free sample ads for a local gym, posted them on WhatsApp, and a
 - [ ] I chose 1–2 income paths
 - [ ] My pricing & revision policy is written
 - [ ] I contacted 5 potential clients'),
-  ('video-editing-capcut', 'Module 1: CapCut Fundamentals', 0, 'Installing CapCut & Mastering the Interface', 0, 'video', '13 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"},{"title":"Pexels — free stock video & photos","url":"https://www.pexels.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=JsulvGcoEWU', '## 🎯 What you will learn
+  ('video-editing-with-capcut', 'Module 1: CapCut Fundamentals', 0, 'Installing CapCut & Mastering the Interface', 0, 'video', '13 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"},{"title":"Pexels — free stock video & photos","url":"https://www.pexels.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=JsulvGcoEWU', '## 🎯 What you will learn
 - CapCut Mobile vs PC vs Web — which to use when
 - Every main panel explained in plain English
 - Setting up your first project correctly
@@ -792,7 +801,7 @@ Editors who set the ratio *after* editing spend an hour re-positioning every cli
 - [ ] CapCut installed
 - [ ] I set the ratio before editing
 - [ ] I can name all 4 interface zones'),
-  ('video-editing-capcut', 'Module 1: CapCut Fundamentals', 0, 'Your First Edit: Import, Arrange, Trim', 1, 'video', '15 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"},{"title":"Pexels — free stock video & photos","url":"https://www.pexels.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=JsulvGcoEWU', '## 🎯 What you will learn
+  ('video-editing-with-capcut', 'Module 1: CapCut Fundamentals', 0, 'Your First Edit: Import, Arrange, Trim', 1, 'video', '15 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"},{"title":"Pexels — free stock video & photos","url":"https://www.pexels.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=JsulvGcoEWU', '## 🎯 What you will learn
 - The import → arrange → trim loop
 - Cutting out mistakes and dead moments
 - Thinking in "selects": keeping only the best moments
@@ -819,7 +828,7 @@ A vlogger films 20 minutes of a market visit. Her final video is 45 seconds — 
 - [ ] Clips arranged in story order
 - [ ] Every clip trimmed to its best part
 - [ ] I used split + delete confidently'),
-  ('video-editing-capcut', 'Module 1: CapCut Fundamentals', 0, 'Cuts, Transitions & the Art of Timing', 2, 'video', '16 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"},{"title":"This page is a great read on cut types","url":"https://www.studiobinder.com/blog/different-film-cuts/","type":"article"}]'::jsonb, 'https://www.youtube.com/watch?v=qfHX2cNA4MY', '## 🎯 What you will learn
+  ('video-editing-with-capcut', 'Module 1: CapCut Fundamentals', 0, 'Cuts, Transitions & the Art of Timing', 2, 'video', '16 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"},{"title":"This page is a great read on cut types","url":"https://www.studiobinder.com/blog/different-film-cuts/","type":"article"}]'::jsonb, 'https://www.youtube.com/watch?v=qfHX2cNA4MY', '## 🎯 What you will learn
 - Jump cut vs J/L cut vs cutaway
 - When transitions help vs hurt
 - Cutting on motion and on the beat
@@ -846,7 +855,7 @@ Two creators use the same clips. One cuts randomly; the other cuts exactly when 
 - [ ] I know jump cut / cutaway / cut-on-motion
 - [ ] My cuts land on beats or emphasis
 - [ ] Max one transition style per video'),
-  ('video-editing-capcut', 'Module 1: CapCut Fundamentals', 0, 'Aspect Ratios & Platform-Perfect Exports', 3, 'video', '12 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=JsulvGcoEWU', '## 🎯 What you will learn
+  ('video-editing-with-capcut', 'Module 1: CapCut Fundamentals', 0, 'Aspect Ratios & Platform-Perfect Exports', 3, 'video', '12 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=JsulvGcoEWU', '## 🎯 What you will learn
 - The ratios every platform expects
 - Framing safely so buttons never cover your content
 - Export settings that keep quality high
@@ -874,7 +883,7 @@ A creator''s captions kept getting hidden by TikTok''s buttons. Moving all text 
 - [ ] Correct ratio per platform
 - [ ] Content sits in the safe zone
 - [ ] Exported 1080p 30fps'),
-  ('video-editing-capcut', 'Module 2: Motion, Effects & Keyframes', 1, 'Keyframes: The Skill That Separates Pros', 0, 'video', '17 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=qfHX2cNA4MY', '## 🎯 What you will learn
+  ('video-editing-with-capcut', 'Module 2: Motion, Effects & Keyframes', 1, 'Keyframes: The Skill That Separates Pros', 0, 'video', '17 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=qfHX2cNA4MY', '## 🎯 What you will learn
 - What a keyframe actually is (in plain English)
 - Zoom-ins, pans and follows built with 2 keyframes
 - The slow-zoom trick that keeps static shots alive
@@ -901,7 +910,7 @@ Top talking-head creators never show a static frame: every 3–5 seconds there''
 - [ ] I can explain keyframes simply
 - [ ] I built a slow zoom + a punch-in
 - [ ] My motion is subtle'),
-  ('video-editing-capcut', 'Module 2: Motion, Effects & Keyframes', 1, 'Speed Ramps, Overlays & Picture-in-Picture', 1, 'video', '16 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"},{"title":"Pexels — free stock video & photos","url":"https://www.pexels.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=qfHX2cNA4MY', '## 🎯 What you will learn
+  ('video-editing-with-capcut', 'Module 2: Motion, Effects & Keyframes', 1, 'Speed Ramps, Overlays & Picture-in-Picture', 1, 'video', '16 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"},{"title":"Pexels — free stock video & photos","url":"https://www.pexels.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=qfHX2cNA4MY', '## 🎯 What you will learn
 - Speed ramps (slow-mo → fast) the right way
 - Overlays: layering video on video
 - Clean picture-in-picture and reaction layouts
@@ -928,7 +937,7 @@ A food creator films cooking hands (main track) and her reactions (overlay, bott
 - [ ] Speed ramp flows smoothly
 - [ ] Overlay placed consistently
 - [ ] Main action never blocked'),
-  ('video-editing-capcut', 'Module 2: Motion, Effects & Keyframes', 1, 'Effects, Filters & Motion Tracking', 2, 'video', '15 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=qfHX2cNA4MY', '## 🎯 What you will learn
+  ('video-editing-with-capcut', 'Module 2: Motion, Effects & Keyframes', 1, 'Effects, Filters & Motion Tracking', 2, 'video', '15 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=qfHX2cNA4MY', '## 🎯 What you will learn
 - Using effects with taste (the 20% rule)
 - Filters & adjustments for a consistent look
 - Motion tracking text/emojis to moving objects
@@ -958,7 +967,7 @@ A sneaker video tracks a price tag sticker to the shoe as it rotates. Ten second
 - [ ] One consistent filter everywhere
 - [ ] Effects used on ≤20% of runtime
 - [ ] One tracked element works'),
-  ('video-editing-capcut', 'Module 2: Motion, Effects & Keyframes', 1, 'Removing Backgrounds, Masks & Creative Tricks', 3, 'video', '15 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"},{"title":"Pixabay — free footage & music","url":"https://pixabay.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=qfHX2cNA4MY', '## 🎯 What you will learn
+  ('video-editing-with-capcut', 'Module 2: Motion, Effects & Keyframes', 1, 'Removing Backgrounds, Masks & Creative Tricks', 3, 'video', '15 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"},{"title":"Pixabay — free footage & music","url":"https://pixabay.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=qfHX2cNA4MY', '## 🎯 What you will learn
 - Cutout: removing backgrounds without green screen
 - Masks: revealing and shaping footage
 - Three creative tricks that look expensive
@@ -988,7 +997,7 @@ A fashion creator''s "snap" transitions between 3 outfits got her first 100k-vie
 - [ ] Cutout edges look clean
 - [ ] Text-behind-person works
 - [ ] One snap transition lands on the beat'),
-  ('video-editing-capcut', 'Module 3: Audio & Text', 2, 'Music, Beats & Sound Design', 0, 'video', '16 min', '[{"title":"Mixkit — free music & sound effects","url":"https://mixkit.co/","type":"resource"},{"title":"Pixabay — free footage & music","url":"https://pixabay.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=qfHX2cNA4MY', '## 🎯 What you will learn
+  ('video-editing-with-capcut', 'Module 3: Audio & Text', 2, 'Music, Beats & Sound Design', 0, 'video', '16 min', '[{"title":"Mixkit — free music & sound effects","url":"https://mixkit.co/","type":"resource"},{"title":"Pixabay — free footage & music","url":"https://pixabay.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=qfHX2cNA4MY', '## 🎯 What you will learn
 - Finding safe, free music
 - Beat marking: cutting visuals to the rhythm
 - Layering sound effects like a pro
@@ -1017,7 +1026,7 @@ The same travel montage with random cuts: 900 views. Re-cut to the beat with who
 - [ ] Music is licensed/free
 - [ ] Cuts land on beats
 - [ ] Voice stays loudest'),
-  ('video-editing-capcut', 'Module 3: Audio & Text', 2, 'Auto-Captions & Text Animation', 1, 'video', '15 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=qfHX2cNA4MY', '## 🎯 What you will learn
+  ('video-editing-with-capcut', 'Module 3: Audio & Text', 2, 'Auto-Captions & Text Animation', 1, 'video', '15 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=qfHX2cNA4MY', '## 🎯 What you will learn
 - Generating and cleaning auto-captions
 - The caption style used by viral creators
 - Text animations that add energy, not noise
@@ -1047,7 +1056,7 @@ A finance creator switched from paragraphs of small text to 3-word bold captions
 - [ ] Captions proofread
 - [ ] 2–4 words per line
 - [ ] Keywords highlighted'),
-  ('video-editing-capcut', 'Module 3: Audio & Text', 2, 'Voiceovers, TTS & Audio Cleanup', 2, 'video', '14 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=JsulvGcoEWU', '## 🎯 What you will learn
+  ('video-editing-with-capcut', 'Module 3: Audio & Text', 2, 'Voiceovers, TTS & Audio Cleanup', 2, 'video', '14 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=JsulvGcoEWU', '## 🎯 What you will learn
 - Recording clean voiceovers on a phone
 - Using CapCut text-to-speech well
 - Noise reduction, fades and voice clarity tools
@@ -1075,7 +1084,7 @@ A tutorial creator recorded voiceovers under a blanket with a ₦5k earpiece mic
 - [ ] Voiceover recorded cleanly
 - [ ] Cleanup tools applied
 - [ ] Music fades in/out smoothly'),
-  ('video-editing-capcut', 'Module 3: Audio & Text', 2, 'Stickers, Emojis & Engagement Layers', 3, 'video', '12 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=JsulvGcoEWU', '## 🎯 What you will learn
+  ('video-editing-with-capcut', 'Module 3: Audio & Text', 2, 'Stickers, Emojis & Engagement Layers', 3, 'video', '12 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=JsulvGcoEWU', '## 🎯 What you will learn
 - Using stickers/emojis to hold attention
 - Engagement overlays (polls, arrows, highlights)
 - Keeping decoration from killing professionalism
@@ -1103,7 +1112,7 @@ A tech tutorial added a red circle + arrow every time a setting appeared on scre
 - [ ] Stickers match the tone
 - [ ] Nothing important is covered
 - [ ] Attention anchors every few seconds'),
-  ('video-editing-capcut', 'Module 4: Color, Viral Styles & Real Projects', 3, 'Color Grading & Filters for a Cinematic Look', 0, 'video', '15 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=qfHX2cNA4MY', '## 🎯 What you will learn
+  ('video-editing-with-capcut', 'Module 4: Color, Viral Styles & Real Projects', 3, 'Color Grading & Filters for a Cinematic Look', 0, 'video', '15 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=qfHX2cNA4MY', '## 🎯 What you will learn
 - Adjustments: brightness, contrast, saturation, sharpen
 - The 5-slider recipe for a clean look
 - Keeping skin tones natural
@@ -1132,7 +1141,7 @@ Two creators film the same café. Raw footage looks flat; the graded version (re
 - [ ] Recipe applied consistently
 - [ ] Skin tones still natural
 - [ ] Footage looks sharper and warmer'),
-  ('video-editing-capcut', 'Module 4: Color, Viral Styles & Real Projects', 3, 'Trending Edit Styles: Reels, TikTok & Transitions', 1, 'video', '16 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=JsulvGcoEWU', '## 🎯 What you will learn
+  ('video-editing-with-capcut', 'Module 4: Color, Viral Styles & Real Projects', 3, 'Trending Edit Styles: Reels, TikTok & Transitions', 1, 'video', '16 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=JsulvGcoEWU', '## 🎯 What you will learn
 - The 5 edit styles that keep going viral
 - How to reverse-engineer any trend
 - Building your own template from a trend
@@ -1161,7 +1170,7 @@ A creator saw a 5-scene "outfit glow-up" trend, wrote its structure down (0.8s s
 - [ ] I can break down any trend
 - [ ] I recreated one trend structure
 - [ ] Template saved for reuse'),
-  ('video-editing-capcut', 'Module 4: Color, Viral Styles & Real Projects', 3, 'Export Settings, Codecs & Quality Control', 2, 'video', '12 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=JsulvGcoEWU', '## 🎯 What you will learn
+  ('video-editing-with-capcut', 'Module 4: Color, Viral Styles & Real Projects', 3, 'Export Settings, Codecs & Quality Control', 2, 'video', '12 min', '[{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=JsulvGcoEWU', '## 🎯 What you will learn
 - Resolution, frame rate, bitrate — what actually matters
 - Export presets per platform
 - A 60-second QC checklist before publishing
@@ -1194,7 +1203,7 @@ An editor found a 1-frame black flash at the start of a client ad during QC. The
 - [ ] Full watch-through done
 - [ ] Audio balanced
 - [ ] Exported with platform preset'),
-  ('video-editing-capcut', 'Module 4: Color, Viral Styles & Real Projects', 3, 'Capstone: Produce a Complete 30-Second Viral Edit', 3, 'project', '22 min', '[{"title":"Pexels — free stock video & photos","url":"https://www.pexels.com/","type":"resource"},{"title":"Mixkit — free music & sound effects","url":"https://mixkit.co/","type":"resource"},{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=qfHX2cNA4MY', '## 🎯 What you will learn
+  ('video-editing-with-capcut', 'Module 4: Color, Viral Styles & Real Projects', 3, 'Capstone: Produce a Complete 30-Second Viral Edit', 3, 'project', '22 min', '[{"title":"Pexels — free stock video & photos","url":"https://www.pexels.com/","type":"resource"},{"title":"Mixkit — free music & sound effects","url":"https://mixkit.co/","type":"resource"},{"title":"CapCut — official app & web editor","url":"https://www.capcut.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=qfHX2cNA4MY', '## 🎯 What you will learn
 - Running a full professional workflow end-to-end
 - Delivering a portfolio-ready video
 - What to learn next as an editor
@@ -1223,7 +1232,7 @@ Past students posted their capstone on WhatsApp status first. Three got freelanc
 - [ ] 30s video planned, edited, QC''d, exported
 - [ ] Rubric scored 4+/5 in every area
 - [ ] Published and saved to portfolio'),
-  ('graphic-design-canva', 'Module 1: Design Foundations & Canva Mastery', 0, 'How Designers Think: Hierarchy, Balance, Space', 0, 'video', '14 min', '[{"title":"Canva Design School — free official lessons","url":"https://www.canva.com/learn/","type":"course"},{"title":"Canva — graphic design basics hub","url":"https://www.canva.com/learn/graphic-design-tips/","type":"article"}]'::jsonb, 'https://www.youtube.com/watch?v=yWJp7gQqCQ8', '## 🎯 What you will learn
+  ('graphic-design-with-canva', 'Module 1: Design Foundations & Canva Mastery', 0, 'How Designers Think: Hierarchy, Balance, Space', 0, 'video', '14 min', '[{"title":"Canva Design School — free official lessons","url":"https://www.canva.com/learn/","type":"course"},{"title":"Canva — graphic design basics hub","url":"https://www.canva.com/learn/graphic-design-tips/","type":"article"}]'::jsonb, 'https://www.youtube.com/watch?v=yWJp7gQqCQ8', '## 🎯 What you will learn
 - The 4 invisible rules behind every good design
 - Why "simple" beats "busy" every time
 - How to train your design eye in 10 minutes a day
@@ -1250,7 +1259,7 @@ Two flyers for the same event: one crams in 6 fonts and 9 colors; the other uses
 - [ ] I can name the 4 rules
 - [ ] I analyzed 3 real designs
 - [ ] I know why white space matters'),
-  ('graphic-design-canva', 'Module 1: Design Foundations & Canva Mastery', 0, 'Canva Interface, Templates & Smart Tools', 1, 'video', '15 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"},{"title":"Canva Design School — free official lessons","url":"https://www.canva.com/learn/","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=yWJp7gQqCQ8', '## 🎯 What you will learn
+  ('graphic-design-with-canva', 'Module 1: Design Foundations & Canva Mastery', 0, 'Canva Interface, Templates & Smart Tools', 1, 'video', '15 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"},{"title":"Canva Design School — free official lessons","url":"https://www.canva.com/learn/","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=yWJp7gQqCQ8', '## 🎯 What you will learn
 - Navigating Canva like a pro (web & mobile)
 - Using templates without looking like a template
 - Magic tools: resize, background remover, Magic Write
@@ -1279,7 +1288,7 @@ A student used a template unchanged — viewers recognized it instantly from Can
 - [ ] I know the workspace panels
 - [ ] I customized a template ≥60%
 - [ ] I used one Magic tool'),
-  ('graphic-design-canva', 'Module 1: Design Foundations & Canva Mastery', 0, 'Typography & Color: The Two Fastest Upgrades', 2, 'video', '16 min', '[{"title":"Google Fonts — free commercial fonts","url":"https://fonts.google.com/","type":"resource"},{"title":"Coolors — color palette generator","url":"https://coolors.co/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=rXLvN1FEkOE', '## 🎯 What you will learn
+  ('graphic-design-with-canva', 'Module 1: Design Foundations & Canva Mastery', 0, 'Typography & Color: The Two Fastest Upgrades', 2, 'video', '16 min', '[{"title":"Google Fonts — free commercial fonts","url":"https://fonts.google.com/","type":"resource"},{"title":"Coolors — color palette generator","url":"https://coolors.co/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=rXLvN1FEkOE', '## 🎯 What you will learn
 - Pairing fonts that look expensive
 - Choosing a palette in 60 seconds
 - The 60-30-10 color rule
@@ -1306,7 +1315,7 @@ A brand kit redesign changed nothing but fonts (2 fonts) and palette (60-30-10).
 - [ ] Max 2 fonts per design
 - [ ] Palette follows 60-30-10
 - [ ] Text passes the squint test'),
-  ('graphic-design-canva', 'Module 1: Design Foundations & Canva Mastery', 0, 'Working with Images, Icons & Brand Assets', 3, 'video', '14 min', '[{"title":"Pexels — free stock photos","url":"https://www.pexels.com/","type":"resource"},{"title":"Unsplash — free high-quality photos","url":"https://unsplash.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=UkzVLHeSf7c', '## 🎯 What you will learn
+  ('graphic-design-with-canva', 'Module 1: Design Foundations & Canva Mastery', 0, 'Working with Images, Icons & Brand Assets', 3, 'video', '14 min', '[{"title":"Pexels — free stock photos","url":"https://www.pexels.com/","type":"resource"},{"title":"Unsplash — free high-quality photos","url":"https://unsplash.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=UkzVLHeSf7c', '## 🎯 What you will learn
 - Where to get free, legal, high-quality images
 - Frames, grids and photo composition tricks
 - Building a reusable brand kit
@@ -1334,7 +1343,7 @@ A small restaurant''s posts used random clip-art for months. Switching to consis
 - [ ] All images legally sourced
 - [ ] Text readable over photos
 - [ ] Brand fonts/colors saved'),
-  ('graphic-design-canva', 'Module 2: Social Media Design Pack', 1, 'Instagram Post & Carousel Design', 0, 'video', '16 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"},{"title":"HubSpot — social media image sizes","url":"https://blog.hubspot.com/marketing/social-media-image-dimensions","type":"article"}]'::jsonb, 'https://www.youtube.com/watch?v=rXLvN1FEkOE', '## 🎯 What you will learn
+  ('graphic-design-with-canva', 'Module 2: Social Media Design Pack', 1, 'Instagram Post & Carousel Design', 0, 'video', '16 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"},{"title":"HubSpot — social media image sizes","url":"https://blog.hubspot.com/marketing/social-media-image-dimensions","type":"article"}]'::jsonb, 'https://www.youtube.com/watch?v=rXLvN1FEkOE', '## 🎯 What you will learn
 - Designing scroll-stopping single posts
 - Carousels that get swiped to the end
 - Sizes and safe zones that never crop badly
@@ -1362,7 +1371,7 @@ A creator''s carousel "5 Canva shortcuts" kept one yellow arrow continuing acros
 - [ ] Single post = one message
 - [ ] Carousel: hook → 1 idea/slide → CTA
 - [ ] Correct sizes used'),
-  ('graphic-design-canva', 'Module 2: Social Media Design Pack', 1, 'Story, Reel Cover & Status Graphics', 1, 'video', '13 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=UkzVLHeSf7c', '## 🎯 What you will learn
+  ('graphic-design-with-canva', 'Module 2: Social Media Design Pack', 1, 'Story, Reel Cover & Status Graphics', 1, 'video', '13 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=UkzVLHeSf7c', '## 🎯 What you will learn
 - Designing for 9:16 safely
 - Reel covers that make profiles look premium
 - WhatsApp status graphics for business
@@ -1386,7 +1395,7 @@ A hair vendor posts one clean WhatsApp status card daily: product photo + price 
 - [ ] Key content in 9:16 safe band
 - [ ] Reel cover template created
 - [ ] WhatsApp card readable at a glance'),
-  ('graphic-design-canva', 'Module 2: Social Media Design Pack', 1, 'YouTube Thumbnails & Banners', 2, 'video', '15 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"},{"title":"YouTube — thumbnail best practices","url":"https://support.google.com/youtube/answer/141805","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=rXLvN1FEkOE', '## 🎯 What you will learn
+  ('graphic-design-with-canva', 'Module 2: Social Media Design Pack', 1, 'YouTube Thumbnails & Banners', 2, 'video', '15 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"},{"title":"YouTube — thumbnail best practices","url":"https://support.google.com/youtube/answer/141805","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=rXLvN1FEkOE', '## 🎯 What you will learn
 - Thumbnail formulas that earn clicks
 - Faces, contrast and the 3-word rule
 - Channel banner sizing done right
@@ -1414,7 +1423,7 @@ A channel swapped busy screenshots for face + 3-word thumbnails ("STOP Doing Thi
 - [ ] Thumbnail readable at phone size
 - [ ] Max 4 words, huge contrast
 - [ ] Banner safe center used'),
-  ('graphic-design-canva', 'Module 2: Social Media Design Pack', 1, 'Ad Creative That Converts', 3, 'video', '15 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"},{"title":"Meta — ad design guides","url":"https://www.facebook.com/business/ads-guide","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=UkzVLHeSf7c', '## 🎯 What you will learn
+  ('graphic-design-with-canva', 'Module 2: Social Media Design Pack', 1, 'Ad Creative That Converts', 3, 'video', '15 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"},{"title":"Meta — ad design guides","url":"https://www.facebook.com/business/ads-guide","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=UkzVLHeSf7c', '## 🎯 What you will learn
 - The layout of a converting static ad
 - Designing offers people act on
 - Making 3 ad variants fast
@@ -1442,7 +1451,7 @@ A skincare seller ran 3 variants changing only the headline. "Glow in 7 days" be
 - [ ] Anatomy complete (interrupt→offer→proof→CTA)
 - [ ] Accent color only on CTA
 - [ ] 3 variants ready'),
-  ('graphic-design-canva', 'Module 3: Flyers, Logos & Brand Kits', 2, 'Flyer & Poster Design (Events, Churches, Business)', 0, 'video', '16 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"},{"title":"Pexels — free stock photos","url":"https://www.pexels.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=yWJp7gQqCQ8', '## 🎯 What you will learn
+  ('graphic-design-with-canva', 'Module 3: Flyers, Logos & Brand Kits', 2, 'Flyer & Poster Design (Events, Churches, Business)', 0, 'video', '16 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"},{"title":"Pexels — free stock photos","url":"https://www.pexels.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=yWJp7gQqCQ8', '## 🎯 What you will learn
 - The flyer layout that always works
 - Typography for events: drama without mess
 - Print vs digital export settings
@@ -1469,7 +1478,7 @@ A church flyer redesign kept the same photo but moved the date 3× bigger under 
 - [ ] Title biggest, details findable
 - [ ] Two fonts max
 - [ ] Both exports correct'),
-  ('graphic-design-canva', 'Module 3: Flyers, Logos & Brand Kits', 2, 'Logo Design & Brand Identity Basics', 1, 'video', '17 min', '[{"title":"Canva Design School — free official lessons","url":"https://www.canva.com/learn/","type":"course"},{"title":"Google Fonts — free commercial fonts","url":"https://fonts.google.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=rXLvN1FEkOE', '## 🎯 What you will learn
+  ('graphic-design-with-canva', 'Module 3: Flyers, Logos & Brand Kits', 2, 'Logo Design & Brand Identity Basics', 1, 'video', '17 min', '[{"title":"Canva Design School — free official lessons","url":"https://www.canva.com/learn/","type":"course"},{"title":"Google Fonts — free commercial fonts","url":"https://fonts.google.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=rXLvN1FEkOE', '## 🎯 What you will learn
 - What makes a logo work (and what kills it)
 - Designing a simple, ownable logo in Canva
 - Delivering a mini brand kit to clients
@@ -1497,7 +1506,7 @@ A student designed a simple lettermark (single letter in a bold shape) for a bar
 - [ ] Logo readable at 32px
 - [ ] 3 color versions made
 - [ ] Mini brand kit assembled'),
-  ('graphic-design-canva', 'Module 3: Flyers, Logos & Brand Kits', 2, 'Business Cards, Letterheads & Stationery', 2, 'video', '13 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=UkzVLHeSf7c', '## 🎯 What you will learn
+  ('graphic-design-with-canva', 'Module 3: Flyers, Logos & Brand Kits', 2, 'Business Cards, Letterheads & Stationery', 2, 'video', '13 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=UkzVLHeSf7c', '## 🎯 What you will learn
 - Clean stationery layouts
 - What belongs on a business card in 2025
 - Matching everything to the brand kit
@@ -1521,7 +1530,7 @@ A caterer sent proposals on branded letterhead with matching invoice templates. 
 - [ ] Card: front identity, back contact + QR
 - [ ] Letterhead matches brand kit
 - [ ] Print margins respected'),
-  ('graphic-design-canva', 'Module 3: Flyers, Logos & Brand Kits', 2, 'Menus, Price Lists & Product Catalogs', 3, 'video', '14 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"},{"title":"Pexels — free stock photos","url":"https://www.pexels.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=yWJp7gQqCQ8', '## 🎯 What you will learn
+  ('graphic-design-with-canva', 'Module 3: Flyers, Logos & Brand Kits', 2, 'Menus, Price Lists & Product Catalogs', 3, 'video', '14 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"},{"title":"Pexels — free stock photos","url":"https://www.pexels.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=yWJp7gQqCQ8', '## 🎯 What you will learn
 - Layouts that make prices easy to scan
 - Product catalog pages that sell
 - Updating designs fast when prices change
@@ -1547,7 +1556,7 @@ A designer charges a salon a small monthly fee to update their price list and po
 - [ ] Prices aligned and scannable
 - [ ] Product photos consistent
 - [ ] Template reusable for updates'),
-  ('graphic-design-canva', 'Module 4: Presentations, Clients & Income', 3, 'Presentation Design (Slides People Remember)', 0, 'video', '16 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"},{"title":"Canva presentations hub","url":"https://www.canva.com/presentations/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=rXLvN1FEkOE', '## 🎯 What you will learn
+  ('graphic-design-with-canva', 'Module 4: Presentations, Clients & Income', 3, 'Presentation Design (Slides People Remember)', 0, 'video', '16 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"},{"title":"Canva presentations hub","url":"https://www.canva.com/presentations/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=rXLvN1FEkOE', '## 🎯 What you will learn
 - The 1-idea-per-slide rule
 - Visual slides vs text walls
 - Presenting straight from Canva
@@ -1575,7 +1584,7 @@ A student pitch changed headlines from labels ("Marketing") to claims ("Instagra
 - [ ] One idea per slide
 - [ ] Headlines are claims
 - [ ] ≤20 words per slide'),
-  ('graphic-design-canva', 'Module 4: Presentations, Clients & Income', 3, 'Client Workflow: Brief → Draft → Delivery', 1, 'video', '15 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=UkzVLHeSf7c', '## 🎯 What you will learn
+  ('graphic-design-with-canva', 'Module 4: Presentations, Clients & Income', 3, 'Client Workflow: Brief → Draft → Delivery', 1, 'video', '15 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=UkzVLHeSf7c', '## 🎯 What you will learn
 - Running a professional design project A to Z
 - The brief questions that prevent rework
 - Delivering files clients can actually use
@@ -1603,7 +1612,7 @@ A designer skipped the brief once: the client "hated blue" — revealed after th
 - [ ] Brief template ready
 - [ ] Direction approved before finals
 - [ ] Files delivered, named professionally'),
-  ('graphic-design-canva', 'Module 4: Presentations, Clients & Income', 3, 'Selling Design Services Online', 2, 'video', '16 min', '[{"title":"Fiverr — sell design gigs","url":"https://www.fiverr.com/","type":"tool"},{"title":"Behance — free design portfolio","url":"https://www.behance.net/","type":"tool"},{"title":"Upwork — freelance marketplace","url":"https://www.upwork.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=yWJp7gQqCQ8', '## 🎯 What you will learn
+  ('graphic-design-with-canva', 'Module 4: Presentations, Clients & Income', 3, 'Selling Design Services Online', 2, 'video', '16 min', '[{"title":"Fiverr — sell design gigs","url":"https://www.fiverr.com/","type":"tool"},{"title":"Behance — free design portfolio","url":"https://www.behance.net/","type":"tool"},{"title":"Upwork — freelance marketplace","url":"https://www.upwork.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=yWJp7gQqCQ8', '## 🎯 What you will learn
 - Packaging skills into sellable offers
 - Where to find clients (locally & globally)
 - Pricing that grows with your skill
@@ -1630,7 +1639,7 @@ A Canva designer made 3 mock restaurant menus, posted them, and tagged local res
 - [ ] 3 clear offers written
 - [ ] Portfolio live somewhere
 - [ ] First announcement posted'),
-  ('graphic-design-canva', 'Module 4: Presentations, Clients & Income', 3, 'Capstone: Complete Brand Package for a Real Business', 3, 'project', '22 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"},{"title":"Google Fonts — free commercial fonts","url":"https://fonts.google.com/","type":"resource"},{"title":"Coolors — color palette generator","url":"https://coolors.co/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=rXLvN1FEkOE', '## 🎯 What you will learn
+  ('graphic-design-with-canva', 'Module 4: Presentations, Clients & Income', 3, 'Capstone: Complete Brand Package for a Real Business', 3, 'project', '22 min', '[{"title":"Canva — free design tool","url":"https://www.canva.com/","type":"tool"},{"title":"Google Fonts — free commercial fonts","url":"https://fonts.google.com/","type":"resource"},{"title":"Coolors — color palette generator","url":"https://coolors.co/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=rXLvN1FEkOE', '## 🎯 What you will learn
 - Delivering a full professional brand package
 - Presenting work so clients say yes
 - Adding a flagship piece to your portfolio
@@ -2131,7 +2140,7 @@ Students presented this capstone to real businesses; several were hired on the s
 - [ ] All 7 sections complete
 - [ ] Plan presented
 - [ ] One free certification started'),
-  ('mobile-app-development', 'Module 1: Dart & Environment Setup', 0, 'The Mobile Landscape & Why Flutter', 0, 'video', '14 min', '[{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=92h2XcvZ-vM', '## 🎯 What you will learn
+  ('mobile-application-development', 'Module 1: Dart & Environment Setup', 0, 'The Mobile Landscape & Why Flutter', 0, 'video', '14 min', '[{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=92h2XcvZ-vM', '## 🎯 What you will learn
 - Native vs cross-platform development
 - What Flutter is and who uses it
 - Setting career goals for this course
@@ -2161,7 +2170,7 @@ A two-person team in Lagos built a dispatch-tracking app in Flutter in 3 months.
 - [ ] Flutter SDK installed, doctor green
 - [ ] First app running on emulator
 - [ ] Hot reload witnessed'),
-  ('mobile-app-development', 'Module 1: Dart & Environment Setup', 0, 'Dart 1: Variables, Types & Control Flow', 1, 'video', '18 min', '[{"title":"Dart language tour (official)","url":"https://dart.dev/language","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=CzRQ9mnmh44', '## 🎯 What you will learn
+  ('mobile-application-development', 'Module 1: Dart & Environment Setup', 0, 'Dart 1: Variables, Types & Control Flow', 1, 'video', '18 min', '[{"title":"Dart language tour (official)","url":"https://dart.dev/language","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=CzRQ9mnmh44', '## 🎯 What you will learn
 - Variables: var, final, const
 - Types: String, int, double, bool, List, Map
 - if/else, loops and switch
@@ -2204,7 +2213,7 @@ Most early app bugs are logic bugs, not Flutter bugs: an if-condition that never
 - [ ] Variables/final/const fluent
 - [ ] List + Map operations done
 - [ ] if/for/switch solved exercises'),
-  ('mobile-app-development', 'Module 1: Dart & Environment Setup', 0, 'Dart 2: Functions, Classes & Null Safety', 2, 'video', '19 min', '[{"title":"Dart language tour (official)","url":"https://dart.dev/language","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=CzRQ9mnmh44', '## 🎯 What you will learn
+  ('mobile-application-development', 'Module 1: Dart & Environment Setup', 0, 'Dart 2: Functions, Classes & Null Safety', 2, 'video', '19 min', '[{"title":"Dart language tour (official)","url":"https://dart.dev/language","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=CzRQ9mnmh44', '## 🎯 What you will learn
 - Functions, arrow syntax & named parameters
 - Classes: fields, constructors, methods
 - Null safety — Dart''s superpower
@@ -2246,7 +2255,7 @@ An e-commerce app crashed for every user whose address was empty — null reachi
 - [ ] Named parameters fluent
 - [ ] Two classes built
 - [ ] Null-safety operators automatic'),
-  ('mobile-app-development', 'Module 1: Dart & Environment Setup', 0, 'Flutter Setup & Your First Widget Tree', 3, 'video', '17 min', '[{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"},{"title":"Flutter codelabs — guided practice (official)","url":"https://docs.flutter.dev/codelabs","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=92h2XcvZ-vM', '## 🎯 What you will learn
+  ('mobile-application-development', 'Module 1: Dart & Environment Setup', 0, 'Flutter Setup & Your First Widget Tree', 3, 'video', '17 min', '[{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"},{"title":"Flutter codelabs — guided practice (official)","url":"https://docs.flutter.dev/codelabs","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=92h2XcvZ-vM', '## 🎯 What you will learn
 - Anatomy of a Flutter project
 - StatelessWidget: UI as code
 - Reading the widget tree without fear
@@ -2286,7 +2295,7 @@ New developers stare at nested parentheses, scared. After one week of tracing tr
 - [ ] Project anatomy known
 - [ ] First widget edits live
 - [ ] Tree-tracing habit formed'),
-  ('mobile-app-development', 'Module 2: Building Real UIs', 1, 'Layout: Row, Column & Stack', 0, 'video', '18 min', '[{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"},{"title":"Flutter codelabs — guided practice (official)","url":"https://docs.flutter.dev/codelabs","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=92h2XcvZ-vM', '## 🎯 What you will learn
+  ('mobile-application-development', 'Module 2: Building Real UIs', 1, 'Layout: Row, Column & Stack', 0, 'video', '18 min', '[{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"},{"title":"Flutter codelabs — guided practice (official)","url":"https://docs.flutter.dev/codelabs","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=92h2XcvZ-vM', '## 🎯 What you will learn
 - The three layout widgets that build everything
 - mainAxisAlignment vs crossAxisAlignment
 - Composing complex screens from simple rows/columns
@@ -2318,7 +2327,7 @@ A student asked why her product card looked wrong — image above text instead o
 - [ ] Row/Column/Stack purposes clear
 - [ ] Both axis alignments used
 - [ ] One real screen reproduced'),
-  ('mobile-app-development', 'Module 2: Building Real UIs', 1, 'Styling: Text, Containers, Colors & Themes', 1, 'video', '17 min', '[{"title":"Material Design components (Google)","url":"https://m3.material.io/","type":"docs"},{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=1bQwDO88Gyw', '## 🎯 What you will learn
+  ('mobile-application-development', 'Module 2: Building Real UIs', 1, 'Styling: Text, Containers, Colors & Themes', 1, 'video', '17 min', '[{"title":"Material Design components (Google)","url":"https://m3.material.io/","type":"docs"},{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=1bQwDO88Gyw', '## 🎯 What you will learn
 - TextStyle, colors, fonts & spacing scale
 - Theme: styling the whole app at once
 - Using ThemeData for consistency
@@ -2355,7 +2364,7 @@ An app with 7 different greens and 4 button styles got a 60-line ThemeData refac
 - [ ] ThemeData defined
 - [ ] Widgets read from theme
 - [ ] One-swap restyle proven'),
-  ('mobile-app-development', 'Module 2: Building Real UIs', 1, 'ScrollView, Lists & Images', 2, 'video', '18 min', '[{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"},{"title":"Pexels — free images for testing","url":"https://www.pexels.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=1bQwDO88Gyw', '## 🎯 What you will learn
+  ('mobile-application-development', 'Module 2: Building Real UIs', 1, 'ScrollView, Lists & Images', 2, 'video', '18 min', '[{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"},{"title":"Pexels — free images for testing","url":"https://www.pexels.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=1bQwDO88Gyw', '## 🎯 What you will learn
 - SingleScrollView vs ListView.builder (performance)
 - Displaying network & asset images
 - Building scrollable feeds like real apps
@@ -2391,7 +2400,7 @@ An early version of a news app built all 2,000 articles with a plain ListView �
 - [ ] ListView.builder used
 - [ ] Loading/error states on images
 - [ ] Asset pipeline working'),
-  ('mobile-app-development', 'Module 2: Building Real UIs', 1, 'Navigation: Moving Between Screens', 3, 'video', '17 min', '[{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=1bQwDO88Gyw', '## 🎯 What you will learn
+  ('mobile-application-development', 'Module 2: Building Real UIs', 1, 'Navigation: Moving Between Screens', 3, 'video', '17 min', '[{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=1bQwDO88Gyw', '## 🎯 What you will learn
 - Navigator.push / pop and the route stack
 - Passing data between screens
 - Named routes for real apps
@@ -2429,7 +2438,7 @@ A shopping app''s "back from detail to list" kept losing scroll position — the
 - [ ] push/pop with data working
 - [ ] Return value received
 - [ ] Named routes map in place'),
-  ('mobile-app-development', 'Module 3: State, Data & Real Apps', 2, 'StatefulWidget: Making UI Respond', 0, 'video', '18 min', '[{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=1bQwDO88Gyw', '## 🎯 What you will learn
+  ('mobile-application-development', 'Module 3: State, Data & Real Apps', 2, 'StatefulWidget: Making UI Respond', 0, 'video', '18 min', '[{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=1bQwDO88Gyw', '## 🎯 What you will learn
 - Stateless vs Stateful widgets
 - setState and the rebuild cycle
 - Building a working counter, toggle & cart
@@ -2466,7 +2475,7 @@ The classic bug: a list updates but the screen doesn''t — the developer change
 - [ ] setState reflex built
 - [ ] Counter + toggle working
 - [ ] List grows from TextField'),
-  ('mobile-app-development', 'Module 3: State, Data & Real Apps', 2, 'Forms & Validation: Collecting User Input', 1, 'video', '17 min', '[{"title":"Material Design components (Google)","url":"https://m3.material.io/","type":"docs"},{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=CzRQ9mnmh44', '## 🎯 What you will learn
+  ('mobile-application-development', 'Module 3: State, Data & Real Apps', 2, 'Forms & Validation: Collecting User Input', 1, 'video', '17 min', '[{"title":"Material Design components (Google)","url":"https://m3.material.io/","type":"docs"},{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=CzRQ9mnmh44', '## 🎯 What you will learn
 - TextField, controllers & Form validation
 - Keyboard types, decoration & error messages
 - Building a real registration form
@@ -2503,7 +2512,7 @@ A fintech signup had no validation — users typed phone numbers into the email 
 - [ ] Controllers wired
 - [ ] Validators firing inline
 - [ ] Success path handled'),
-  ('mobile-app-development', 'Module 3: State, Data & Real Apps', 2, 'APIs & JSON: Your App Talks to the World', 2, 'video', '20 min', '[{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"},{"title":"pub.dev — Flutter package registry","url":"https://pub.dev/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=CzRQ9mnmh44', '## 🎯 What you will learn
+  ('mobile-application-development', 'Module 3: State, Data & Real Apps', 2, 'APIs & JSON: Your App Talks to the World', 2, 'video', '20 min', '[{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"},{"title":"pub.dev — Flutter package registry","url":"https://pub.dev/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=CzRQ9mnmh44', '## 🎯 What you will learn
 - HTTP GET with the http package
 - Parsing JSON into Dart models
 - Loading/error states for real-world data
@@ -2544,7 +2553,7 @@ A weather app crashed whenever the API was slow — it assumed instant success. 
 - [ ] GET + jsonDecode working
 - [ ] fromJson model pattern used
 - [ ] Loading/error/retry complete'),
-  ('mobile-app-development', 'Module 3: State, Data & Real Apps', 2, 'Local Storage: Saving Data on the Device', 3, 'video', '17 min', '[{"title":"pub.dev — Flutter package registry","url":"https://pub.dev/","type":"docs"},{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=CzRQ9mnmh44', '## 🎯 What you will learn
+  ('mobile-application-development', 'Module 3: State, Data & Real Apps', 2, 'Local Storage: Saving Data on the Device', 3, 'video', '17 min', '[{"title":"pub.dev — Flutter package registry","url":"https://pub.dev/","type":"docs"},{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=CzRQ9mnmh44', '## 🎯 What you will learn
 - shared_preferences for small data
 - Persisting lists as JSON
 - Designing offline-first habits
@@ -2578,7 +2587,7 @@ A market-prices app showed blank screens without network. After caching the last
 - [ ] Prefs read/write fluent
 - [ ] List persisted & restored
 - [ ] Cache-first pattern applied'),
-  ('mobile-app-development', 'Module 4: Advanced State & Publishing', 3, 'Provider: State Management That Scales', 0, 'video', '19 min', '[{"title":"pub.dev — Flutter package registry","url":"https://pub.dev/","type":"docs"},{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=1bQwDO88Gyw', '## 🎯 What you will learn
+  ('mobile-application-development', 'Module 4: Advanced State & Publishing', 3, 'Provider: State Management That Scales', 0, 'video', '19 min', '[{"title":"pub.dev — Flutter package registry","url":"https://pub.dev/","type":"docs"},{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=1bQwDO88Gyw', '## 🎯 What you will learn
 - Why setState alone doesn''t scale
 - ChangeNotifier + Provider pattern
 - Sharing cart/auth state across screens
@@ -2613,7 +2622,7 @@ A shopping app''s cart badge (app bar) only updated when the cart screen was ope
 - [ ] ChangeNotifier model working
 - [ ] watch vs read distinguished
 - [ ] Cross-screen state live'),
-  ('mobile-app-development', 'Module 4: Advanced State & Publishing', 3, 'Firebase: Auth, Firestore & Real Backends', 1, 'video', '21 min', '[{"title":"Firebase docs (Google)","url":"https://firebase.google.com/docs","type":"docs"},{"title":"pub.dev — Flutter package registry","url":"https://pub.dev/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=1bQwDO88Gyw', '## 🎯 What you will learn
+  ('mobile-application-development', 'Module 4: Advanced State & Publishing', 3, 'Firebase: Auth, Firestore & Real Backends', 1, 'video', '21 min', '[{"title":"Firebase docs (Google)","url":"https://firebase.google.com/docs","type":"docs"},{"title":"pub.dev — Flutter package registry","url":"https://pub.dev/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=1bQwDO88Gyw', '## 🎯 What you will learn
 - Firebase Authentication (email + Google)
 - Firestore: cloud database in minutes
 - Real-time reads for live features
@@ -2652,7 +2661,7 @@ A student''s food-ordering MVP: Flutter + Firebase Auth + Firestore, live in 3 w
 - [ ] Auth flow working
 - [ ] Firestore read + write
 - [ ] Security rules scoped per user'),
-  ('mobile-app-development', 'Module 4: Advanced State & Publishing', 3, 'Polish: Themes, Icons, Splash & App Identity', 2, 'video', '16 min', '[{"title":"Material Design components (Google)","url":"https://m3.material.io/","type":"docs"},{"title":"Figma — design the app before coding","url":"https://www.figma.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=92h2XcvZ-vM', '## 🎯 What you will learn
+  ('mobile-application-development', 'Module 4: Advanced State & Publishing', 3, 'Polish: Themes, Icons, Splash & App Identity', 2, 'video', '16 min', '[{"title":"Material Design components (Google)","url":"https://m3.material.io/","type":"docs"},{"title":"Figma — design the app before coding","url":"https://www.figma.com/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=92h2XcvZ-vM', '## 🎯 What you will learn
 - Complete theme + custom fonts
 - Launch (splash) screens and app icons
 - The polish checklist before showing anyone
@@ -2684,7 +2693,7 @@ Two identical apps functionally: one had the default Flutter icon and grey splas
 - [ ] Icon + splash branded
 - [ ] Fonts + theme consistent
 - [ ] Empty/loading states everywhere'),
-  ('mobile-app-development', 'Module 4: Advanced State & Publishing', 3, 'Capstone: Build & Publish Your App', 3, 'project', '26 min', '[{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"},{"title":"Google Play Console","url":"https://play.google.com/console/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=1bQwDO88Gyw', '## 🎯 What you will learn
+  ('mobile-application-development', 'Module 4: Advanced State & Publishing', 3, 'Capstone: Build & Publish Your App', 3, 'project', '26 min', '[{"title":"Flutter official docs","url":"https://docs.flutter.dev/","type":"docs"},{"title":"Google Play Console","url":"https://play.google.com/console/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=1bQwDO88Gyw', '## 🎯 What you will learn
 - Building a complete app end-to-end
 - Release builds and APK/AAB generation
 - Publishing to Play Store & distributing
@@ -3755,7 +3764,7 @@ A graduate built free websites for two local businesses, documented them on GitH
 - [ ] Portfolio live at a real URL
 - [ ] Code on GitHub
 - [ ] Certification roadmap started'),
-  ('web-design-wordpress', 'Module 1: WordPress Foundations', 0, 'Why WordPress Powers 40%+ of the Web', 0, 'video', '13 min', '[{"title":"Learn WordPress — official free courses","url":"https://learn.wordpress.org/","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=jhu0c6BdmjI', '## 🎯 What you will learn
+  ('web-design-with-wordpress', 'Module 1: WordPress Foundations', 0, 'Why WordPress Powers 40%+ of the Web', 0, 'video', '13 min', '[{"title":"Learn WordPress — official free courses","url":"https://learn.wordpress.org/","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=jhu0c6BdmjI', '## 🎯 What you will learn
 - What WordPress is and why businesses choose it
 - WordPress.org vs WordPress.com
 - The skills that make you money with it
@@ -3783,7 +3792,7 @@ Most Nigerian SME websites you''ve visited — schools, churches, event brands �
 - [ ] I know .org vs .com difference
 - [ ] I checked 5 real sites
 - [ ] I can name 5 WordPress money skills'),
-  ('web-design-wordpress', 'Module 1: WordPress Foundations', 0, 'Domains, Hosting & Installing WordPress', 1, 'video', '15 min', '[{"title":"WordPress official documentation","url":"https://wordpress.org/support/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=jhu0c6BdmjI', '## 🎯 What you will learn
+  ('web-design-with-wordpress', 'Module 1: WordPress Foundations', 0, 'Domains, Hosting & Installing WordPress', 1, 'video', '15 min', '[{"title":"WordPress official documentation","url":"https://wordpress.org/support/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=jhu0c6BdmjI', '## 🎯 What you will learn
 - Choosing a domain name clients keep
 - Hosting options and what matters
 - One-click install + first settings
@@ -3811,7 +3820,7 @@ A client''s site ranked poorly with URLs like /?p=413. Switching permalinks to /
 - [ ] Domain naming rules known
 - [ ] Install flow understood
 - [ ] First 4 settings applied'),
-  ('web-design-wordpress', 'Module 1: WordPress Foundations', 0, 'The Dashboard Deep Tour', 2, 'video', '14 min', '[{"title":"WordPress official documentation","url":"https://wordpress.org/support/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=jhu0c6BdmjI', '## 🎯 What you will learn
+  ('web-design-with-wordpress', 'Module 1: WordPress Foundations', 0, 'The Dashboard Deep Tour', 2, 'video', '14 min', '[{"title":"WordPress official documentation","url":"https://wordpress.org/support/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=jhu0c6BdmjI', '## 🎯 What you will learn
 - Every main dashboard area and its job
 - Posts vs Pages (the #1 beginner confusion)
 - Media library habits that scale
@@ -3841,7 +3850,7 @@ A blogger uploaded 4MB phone photos for months — the site crawled. One afterno
 - [ ] Posts vs pages clear
 - [ ] Static homepage set
 - [ ] Images compressed & named'),
-  ('web-design-wordpress', 'Module 1: WordPress Foundations', 0, 'Gutenberg Editor: Building Content Beautifully', 3, 'video', '15 min', '[{"title":"Learn WordPress — official free courses","url":"https://learn.wordpress.org/","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=09gj5gM4V98', '## 🎯 What you will learn
+  ('web-design-with-wordpress', 'Module 1: WordPress Foundations', 0, 'Gutenberg Editor: Building Content Beautifully', 3, 'video', '15 min', '[{"title":"Learn WordPress — official free courses","url":"https://learn.wordpress.org/","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=09gj5gM4V98', '## 🎯 What you will learn
 - Block-based editing mastery
 - Columns, buttons, covers & reusable blocks
 - Layouts that read well on every screen
@@ -3869,7 +3878,7 @@ A consultant built her signature "Book a call" banner as a reusable block. When 
 - [ ] Hero + columns + CTA built
 - [ ] Reusable block working
 - [ ] Mobile preview checked'),
-  ('web-design-wordpress', 'Module 2: Themes & Page Builders', 1, 'Choosing & Customizing Themes', 0, 'video', '15 min', '[{"title":"Learn WordPress — official free courses","url":"https://learn.wordpress.org/","type":"course"},{"title":"WordPress official documentation","url":"https://wordpress.org/support/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=09gj5gM4V98', '## 🎯 What you will learn
+  ('web-design-with-wordpress', 'Module 2: Themes & Page Builders', 1, 'Choosing & Customizing Themes', 0, 'video', '15 min', '[{"title":"Learn WordPress — official free courses","url":"https://learn.wordpress.org/","type":"course"},{"title":"WordPress official documentation","url":"https://wordpress.org/support/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=09gj5gM4V98', '## 🎯 What you will learn
 - What a theme really controls
 - Evaluating themes like a professional
 - The Customizer + child theme concept
@@ -3897,7 +3906,7 @@ A designer customized a theme''s code directly. The next update wiped every chan
 - [ ] Lightweight theme active
 - [ ] Branding customized
 - [ ] Child theme purpose understood'),
-  ('web-design-wordpress', 'Module 2: Themes & Page Builders', 1, 'Page Builders: Elementor Essentials', 1, 'video', '17 min', '[{"title":"Elementor — page builder academy","url":"https://elementor.com/academy/","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=JNwTkewgRls', '## 🎯 What you will learn
+  ('web-design-with-wordpress', 'Module 2: Themes & Page Builders', 1, 'Page Builders: Elementor Essentials', 1, 'video', '17 min', '[{"title":"Elementor — page builder academy","url":"https://elementor.com/academy/","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=JNwTkewgRls', '## 🎯 What you will learn
 - When a page builder beats the default editor
 - Elementor sections, columns & widgets
 - Designing without creating slow pages
@@ -3927,7 +3936,7 @@ An agency delivers all brochure sites in Elementor: clients edit text themselves
 - [ ] Section→column→widget fluent
 - [ ] 3-section page built
 - [ ] Mobile view clean'),
-  ('web-design-wordpress', 'Module 2: Themes & Page Builders', 1, 'Menus, Navigation & Site Structure', 2, 'video', '13 min', '[{"title":"WordPress official documentation","url":"https://wordpress.org/support/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=jhu0c6BdmjI', '## 🎯 What you will learn
+  ('web-design-with-wordpress', 'Module 2: Themes & Page Builders', 1, 'Menus, Navigation & Site Structure', 2, 'video', '13 min', '[{"title":"WordPress official documentation","url":"https://wordpress.org/support/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=jhu0c6BdmjI', '## 🎯 What you will learn
 - Designing navigation visitors actually use
 - Building menus and dropdowns
 - Footers that convert
@@ -3955,7 +3964,7 @@ A law firm reduced menu items from 11 to 5 and added a "Free Consultation" butto
 - [ ] ≤7 menu items
 - [ ] One-level dropdown max
 - [ ] Footer CTA added'),
-  ('web-design-wordpress', 'Module 2: Themes & Page Builders', 1, 'Essential Plugins (and What NOT to Install)', 3, 'video', '15 min', '[{"title":"WordPress official documentation","url":"https://wordpress.org/support/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=09gj5gM4V98', '## 🎯 What you will learn
+  ('web-design-with-wordpress', 'Module 2: Themes & Page Builders', 1, 'Essential Plugins (and What NOT to Install)', 3, 'video', '15 min', '[{"title":"WordPress official documentation","url":"https://wordpress.org/support/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=09gj5gM4V98', '## 🎯 What you will learn
 - The 6 plugins every site needs
 - Plugin safety rules
 - Keeping the site lean and fast
@@ -3985,7 +3994,7 @@ A site with 42 plugins crawled and crashed monthly. Slimmed to 9, it loads in un
 - [ ] 6 essentials installed
 - [ ] Backups scheduled off-site
 - [ ] Contact form live'),
-  ('web-design-wordpress', 'Module 3: Content, Commerce & Forms', 2, 'Blogging for Business: Categories, Tags & SEO Posts', 0, 'video', '15 min', '[{"title":"Learn WordPress — official free courses","url":"https://learn.wordpress.org/","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=09gj5gM4V98', '## 🎯 What you will learn
+  ('web-design-with-wordpress', 'Module 3: Content, Commerce & Forms', 2, 'Blogging for Business: Categories, Tags & SEO Posts', 0, 'video', '15 min', '[{"title":"Learn WordPress — official free courses","url":"https://learn.wordpress.org/","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=09gj5gM4V98', '## 🎯 What you will learn
 - Structuring a blog that attracts customers
 - Categories vs tags done right
 - Writing one SEO-friendly post end-to-end
@@ -4012,7 +4021,7 @@ A plumber published "How much does bathroom plumbing cost in Lagos?" — a real 
 - [ ] 3–5 categories set
 - [ ] Post follows the formula
 - [ ] SEO checklist green'),
-  ('web-design-wordpress', 'Module 3: Content, Commerce & Forms', 2, 'Forms, Bookings & Lead Capture', 1, 'video', '14 min', '[{"title":"WordPress official documentation","url":"https://wordpress.org/support/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=JNwTkewgRls', '## 🎯 What you will learn
+  ('web-design-with-wordpress', 'Module 3: Content, Commerce & Forms', 2, 'Forms, Bookings & Lead Capture', 1, 'video', '14 min', '[{"title":"WordPress official documentation","url":"https://wordpress.org/support/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=JNwTkewgRls', '## 🎯 What you will learn
 - Building forms that get completed
 - Anti-spam protection
 - Where leads actually go (email/WhatsApp)
@@ -4040,7 +4049,7 @@ A studio cut its form from 9 fields to 3 and added "We reply within 24 hours". E
 - [ ] ≤3–4 fields
 - [ ] Anti-spam active
 - [ ] WhatsApp path added'),
-  ('web-design-wordpress', 'Module 3: Content, Commerce & Forms', 2, 'WooCommerce: Turning WordPress into a Store', 2, 'video', '18 min', '[{"title":"WooCommerce docs","url":"https://woocommerce.com/documentation/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=09gj5gM4V98', '## 🎯 What you will learn
+  ('web-design-with-wordpress', 'Module 3: Content, Commerce & Forms', 2, 'WooCommerce: Turning WordPress into a Store', 2, 'video', '18 min', '[{"title":"WooCommerce docs","url":"https://woocommerce.com/documentation/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=09gj5gM4V98', '## 🎯 What you will learn
 - Store setup: products, payments, shipping
 - Product pages that sell
 - Nigerian payment options
@@ -4071,7 +4080,7 @@ A fashion brand moved from Instagram-only sales to WooCommerce + Paystack: custo
 - [ ] Wizard completed
 - [ ] 3 products live
 - [ ] Payment methods configured'),
-  ('web-design-wordpress', 'Module 3: Content, Commerce & Forms', 2, 'Users, Roles & Content Updates Workflow', 3, 'video', '13 min', '[{"title":"WordPress official documentation","url":"https://wordpress.org/support/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=jhu0c6BdmjI', '## 🎯 What you will learn
+  ('web-design-with-wordpress', 'Module 3: Content, Commerce & Forms', 2, 'Users, Roles & Content Updates Workflow', 3, 'video', '13 min', '[{"title":"WordPress official documentation","url":"https://wordpress.org/support/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=jhu0c6BdmjI', '## 🎯 What you will learn
 - Roles and least-privilege security
 - Handing a site to a client safely
 - Update routines that never break sites
@@ -4102,7 +4111,7 @@ A site went 2 years without updates and was defaced. The cleanup cost 10× what 
 - [ ] Roles understood & applied
 - [ ] Update checklist written
 - [ ] Maintenance offer drafted'),
-  ('web-design-wordpress', 'Module 4: Launch, SEO & Client Websites', 3, 'Speed, Security & Launch Checklist', 0, 'video', '16 min', '[{"title":"Google PageSpeed Insights","url":"https://pagespeed.web.dev/","type":"tool"},{"title":"WordPress official documentation","url":"https://wordpress.org/support/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=JNwTkewgRls', '## 🎯 What you will learn
+  ('web-design-with-wordpress', 'Module 4: Launch, SEO & Client Websites', 3, 'Speed, Security & Launch Checklist', 0, 'video', '16 min', '[{"title":"Google PageSpeed Insights","url":"https://pagespeed.web.dev/","type":"tool"},{"title":"WordPress official documentation","url":"https://wordpress.org/support/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=JNwTkewgRls', '## 🎯 What you will learn
 - Making sites load in under 3 seconds
 - Security hardening basics
 - The complete pre-launch checklist
@@ -4134,7 +4143,7 @@ A launched store got its first real order — to a broken email address. The con
 - [ ] Speed: green targets
 - [ ] Security: 4 hardening steps done
 - [ ] Launch checklist complete'),
-  ('web-design-wordpress', 'Module 4: Launch, SEO & Client Websites', 3, 'WordPress SEO: Rank Math/Yoast in Practice', 1, 'video', '16 min', '[{"title":"Google SEO Starter Guide","url":"https://developers.google.com/search/docs/fundamentals/seo-starter-guide","type":"pdf"}]'::jsonb, 'https://www.youtube.com/watch?v=09gj5gM4V98', '## 🎯 What you will learn
+  ('web-design-with-wordpress', 'Module 4: Launch, SEO & Client Websites', 3, 'WordPress SEO: Rank Math/Yoast in Practice', 1, 'video', '16 min', '[{"title":"Google SEO Starter Guide","url":"https://developers.google.com/search/docs/fundamentals/seo-starter-guide","type":"pdf"}]'::jsonb, 'https://www.youtube.com/watch?v=09gj5gM4V98', '## 🎯 What you will learn
 - On-page SEO inside WordPress
 - Search Console: your free ranking dashboard
 - Local SEO for Nigerian businesses
@@ -4163,7 +4172,7 @@ A photographer ranked #3 for "wedding photographer abuja" after 3 months of focu
 - [ ] 2 pages optimized green
 - [ ] Search Console verified
 - [ ] Local profile created'),
-  ('web-design-wordpress', 'Module 4: Launch, SEO & Client Websites', 3, 'Client Projects: Brief to Handover', 2, 'video', '17 min', '[{"title":"Learn WordPress — official free courses","url":"https://learn.wordpress.org/","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=JNwTkewgRls', '## 🎯 What you will learn
+  ('web-design-with-wordpress', 'Module 4: Launch, SEO & Client Websites', 3, 'Client Projects: Brief to Handover', 2, 'video', '17 min', '[{"title":"Learn WordPress — official free courses","url":"https://learn.wordpress.org/","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=JNwTkewgRls', '## 🎯 What you will learn
 - Running WordPress client projects professionally
 - Pricing website projects in Nigeria
 - Contracts, deposits and handover packs
@@ -4189,7 +4198,7 @@ A designer who records a handover video for every client gets referred constantl
 - [ ] Quote template ready
 - [ ] 3 packages priced
 - [ ] Handover checklist drafted'),
-  ('web-design-wordpress', 'Module 4: Launch, SEO & Client Websites', 3, 'Capstone: Build & Launch a Complete Business Website', 3, 'project', '24 min', '[{"title":"Learn WordPress — official free courses","url":"https://learn.wordpress.org/","type":"course"},{"title":"Elementor — page builder academy","url":"https://elementor.com/academy/","type":"course"},{"title":"WordPress official documentation","url":"https://wordpress.org/support/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=JNwTkewgRls', '## 🎯 What you will learn
+  ('web-design-with-wordpress', 'Module 4: Launch, SEO & Client Websites', 3, 'Capstone: Build & Launch a Complete Business Website', 3, 'project', '24 min', '[{"title":"Learn WordPress — official free courses","url":"https://learn.wordpress.org/","type":"course"},{"title":"Elementor — page builder academy","url":"https://elementor.com/academy/","type":"course"},{"title":"WordPress official documentation","url":"https://wordpress.org/support/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=JNwTkewgRls', '## 🎯 What you will learn
 - Delivering a full professional website
 - Quality standards that separate pros
 - Turning the capstone into paid work
@@ -4220,7 +4229,7 @@ Capstone sites built for real businesses became students'' first portfolio AND f
 - [ ] 5+ pages live and fast
 - [ ] Launch checklist passed
 - [ ] Case study + pitches sent'),
-  ('ui-ux-design-figma', 'Module 1: UX Thinking & Figma Foundations', 0, 'UX vs UI: The Difference That Pays', 0, 'video', '14 min', '[{"title":"Laws of UX — psychology of design (free book)","url":"https://lawsofux.com/","type":"pdf"},{"title":"Figma Learn — official free training","url":"https://help.figma.com/hc/en-us","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=xWSCAD7xcpw', '## 🎯 What you will learn
+  ('ui-ux-design-with-figma', 'Module 1: UX Thinking & Figma Foundations', 0, 'UX vs UI: The Difference That Pays', 0, 'video', '14 min', '[{"title":"Laws of UX — psychology of design (free book)","url":"https://lawsofux.com/","type":"pdf"},{"title":"Figma Learn — official free training","url":"https://help.figma.com/hc/en-us","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=xWSCAD7xcpw', '## 🎯 What you will learn
 - What UX and UI actually mean (with examples)
 - The design process professionals follow
 - Why research beats decoration
@@ -4250,7 +4259,7 @@ A bank app redesigned buttons with gradients (UI) but kept the transfer flow at 
 - [ ] UX vs UI difference clear
 - [ ] 5-step process memorized
 - [ ] First problem defined'),
-  ('ui-ux-design-figma', 'Module 1: UX Thinking & Figma Foundations', 0, 'User Research: Asking Questions That Reveal Truth', 1, 'video', '15 min', '[{"title":"Laws of UX — psychology of design (free book)","url":"https://lawsofux.com/","type":"pdf"},{"title":"IDEO — design thinking resources","url":"https://designthinkingforinnovation.com/","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=xWSCAD7xcpw', '## 🎯 What you will learn
+  ('ui-ux-design-with-figma', 'Module 1: UX Thinking & Figma Foundations', 0, 'User Research: Asking Questions That Reveal Truth', 1, 'video', '15 min', '[{"title":"Laws of UX — psychology of design (free book)","url":"https://lawsofux.com/","type":"pdf"},{"title":"IDEO — design thinking resources","url":"https://designthinkingforinnovation.com/","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=xWSCAD7xcpw', '## 🎯 What you will learn
 - Lightweight research without a budget
 - Interview questions that don''t mislead
 - Turning complaints into design requirements
@@ -4281,7 +4290,7 @@ Reading 1-star reviews of food delivery apps, a student found the top complaint:
 - [ ] 3 interviews done
 - [ ] 5 frustrations captured
 - [ ] 3 requirements written'),
-  ('ui-ux-design-figma', 'Module 1: UX Thinking & Figma Foundations', 0, 'Figma Basics: Frames, Shapes & Text', 2, 'video', '16 min', '[{"title":"Figma — free design tool","url":"https://www.figma.com/","type":"tool"},{"title":"Figma Learn — official free training","url":"https://help.figma.com/hc/en-us","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=xWSCAD7xcpw', '## 🎯 What you will learn
+  ('ui-ux-design-with-figma', 'Module 1: UX Thinking & Figma Foundations', 0, 'Figma Basics: Frames, Shapes & Text', 2, 'video', '16 min', '[{"title":"Figma — free design tool","url":"https://www.figma.com/","type":"tool"},{"title":"Figma Learn — official free training","url":"https://help.figma.com/hc/en-us","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=xWSCAD7xcpw', '## 🎯 What you will learn
 - The Figma workspace in 10 minutes
 - Frames vs groups (the core concept)
 - Device frames and precise alignment
@@ -4309,7 +4318,7 @@ Hiring managers open a candidate''s Figma file first. Neat named frames and tidy
 - [ ] Frames (not groups) understood
 - [ ] Device frame created
 - [ ] Basic shortcuts working'),
-  ('ui-ux-design-figma', 'Module 1: UX Thinking & Figma Foundations', 0, 'Auto Layout: The Skill Employers Test For', 3, 'video', '17 min', '[{"title":"Figma Learn — official free training","url":"https://help.figma.com/hc/en-us","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=ZWYyiPwCi54', '## 🎯 What you will learn
+  ('ui-ux-design-with-figma', 'Module 1: UX Thinking & Figma Foundations', 0, 'Auto Layout: The Skill Employers Test For', 3, 'video', '17 min', '[{"title":"Figma Learn — official free training","url":"https://help.figma.com/hc/en-us","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=ZWYyiPwCi54', '## 🎯 What you will learn
 - Auto layout: frames that resize themselves
 - Padding, gaps and alignment inside auto layout
 - Building responsive buttons and cards
@@ -4340,7 +4349,7 @@ A junior designer''s button "broke" when the text changed from "Log in" to "Sign
 - [ ] Buttons grow with text
 - [ ] Card uses nested auto layout
 - [ ] List spacing consistent'),
-  ('ui-ux-design-figma', 'Module 2: Design Systems & Components', 1, 'Colors, Typography & Spacing Systems', 0, 'video', '16 min', '[{"title":"Material Design guidelines (Google)","url":"https://m3.material.io/","type":"docs"},{"title":"Contrast checker (WCAG)","url":"https://webaim.org/resources/contrastchecker/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=ZWYyiPwCi54', '## 🎯 What you will learn
+  ('ui-ux-design-with-figma', 'Module 2: Design Systems & Components', 1, 'Colors, Typography & Spacing Systems', 0, 'video', '16 min', '[{"title":"Material Design guidelines (Google)","url":"https://m3.material.io/","type":"docs"},{"title":"Contrast checker (WCAG)","url":"https://webaim.org/resources/contrastchecker/","type":"tool"}]'::jsonb, 'https://www.youtube.com/watch?v=ZWYyiPwCi54', '## 🎯 What you will learn
 - Building a palette with purpose
 - Type scales that create hierarchy
 - The 8pt spacing grid professionals use
@@ -4366,7 +4375,7 @@ Two portfolios with equal visual talent: the one with documented color/type/spac
 - [ ] Palette with semantics saved
 - [ ] 5 text styles created
 - [ ] 8pt grid applied'),
-  ('ui-ux-design-figma', 'Module 2: Design Systems & Components', 1, 'Components & Variants: Build Once, Use Everywhere', 1, 'video', '17 min', '[{"title":"Figma Learn — official free training","url":"https://help.figma.com/hc/en-us","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=ZWYyiPwCi54', '## 🎯 What you will learn
+  ('ui-ux-design-with-figma', 'Module 2: Design Systems & Components', 1, 'Components & Variants: Build Once, Use Everywhere', 1, 'video', '17 min', '[{"title":"Figma Learn — official free training","url":"https://help.figma.com/hc/en-us","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=ZWYyiPwCi54', '## 🎯 What you will learn
 - Components: master + instances
 - Variants for states (default/hover/pressed)
 - Publishing and using component libraries
@@ -4392,7 +4401,7 @@ A team changed their primary brand blue once — in the master component. 300+ s
 - [ ] Master + instances working
 - [ ] Variants switchable
 - [ ] Screen built from instances only'),
-  ('ui-ux-design-figma', 'Module 2: Design Systems & Components', 1, 'Navigation Patterns & Information Architecture', 2, 'video', '15 min', '[{"title":"Laws of UX — psychology of design (free book)","url":"https://lawsofux.com/","type":"pdf"},{"title":"Material Design guidelines (Google)","url":"https://m3.material.io/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=3qLX9IaGZO0', '## 🎯 What you will learn
+  ('ui-ux-design-with-figma', 'Module 2: Design Systems & Components', 1, 'Navigation Patterns & Information Architecture', 2, 'video', '15 min', '[{"title":"Laws of UX — psychology of design (free book)","url":"https://lawsofux.com/","type":"pdf"},{"title":"Material Design guidelines (Google)","url":"https://m3.material.io/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=3qLX9IaGZO0', '## 🎯 What you will learn
 - Tabs, stacks, drawers: when to use each
 - Structuring screens so users never get lost
 - Common UX laws worth memorizing
@@ -4423,7 +4432,7 @@ An e-commerce app moved "Orders" from a buried drawer to the tab bar after card 
 - [ ] Navigation pattern chosen with reason
 - [ ] 4 UX laws applied
 - [ ] Menu simplified'),
-  ('ui-ux-design-figma', 'Module 2: Design Systems & Components', 1, 'Wireframes First: Speed Beats Polish', 3, 'video', '14 min', '[{"title":"Figma Learn — official free training","url":"https://help.figma.com/hc/en-us","type":"course"},{"title":"Laws of UX — psychology of design (free book)","url":"https://lawsofux.com/","type":"pdf"}]'::jsonb, 'https://www.youtube.com/watch?v=3qLX9IaGZO0', '## 🎯 What you will learn
+  ('ui-ux-design-with-figma', 'Module 2: Design Systems & Components', 1, 'Wireframes First: Speed Beats Polish', 3, 'video', '14 min', '[{"title":"Figma Learn — official free training","url":"https://help.figma.com/hc/en-us","type":"course"},{"title":"Laws of UX — psychology of design (free book)","url":"https://lawsofux.com/","type":"pdf"}]'::jsonb, 'https://www.youtube.com/watch?v=3qLX9IaGZO0', '## 🎯 What you will learn
 - Low-fi vs hi-fi: when each is right
 - Wireframing fast in Figma
 - Getting feedback before you fall in love
@@ -4449,7 +4458,7 @@ A designer presented polished screens to a client, who asked to move the entire 
 - [ ] Flow mapped before screens
 - [ ] 4 grayscale wireframes done
 - [ ] Outsider understood them'),
-  ('ui-ux-design-figma', 'Module 3: Designing a Mobile App UI', 2, 'Designing Onboarding & Auth Screens', 0, 'video', '16 min', '[{"title":"Material Design guidelines (Google)","url":"https://m3.material.io/","type":"docs"},{"title":"Figma Learn — official free training","url":"https://help.figma.com/hc/en-us","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=3qLX9IaGZO0', '## 🎯 What you will learn
+  ('ui-ux-design-with-figma', 'Module 3: Designing a Mobile App UI', 2, 'Designing Onboarding & Auth Screens', 0, 'video', '16 min', '[{"title":"Material Design guidelines (Google)","url":"https://m3.material.io/","type":"docs"},{"title":"Figma Learn — official free training","url":"https://help.figma.com/hc/en-us","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=3qLX9IaGZO0', '## 🎯 What you will learn
 - Onboarding that earns the signup
 - Login/register UX best practices
 - Error and empty states (the pro differentiator)
@@ -4482,7 +4491,7 @@ An app redesigned its empty cart from a blank white screen to "Your cart misses 
 - [ ] Onboarding ≤3 slides
 - [ ] Inline validation designed
 - [ ] Empty/loading/error states exist'),
-  ('ui-ux-design-figma', 'Module 3: Designing a Mobile App UI', 2, 'Home Feeds, Lists & Cards That Scan', 1, 'video', '15 min', '[{"title":"Material Design guidelines (Google)","url":"https://m3.material.io/","type":"docs"},{"title":"Dribbble — design inspiration","url":"https://dribbble.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=ZWYyiPwCi54', '## 🎯 What you will learn
+  ('ui-ux-design-with-figma', 'Module 3: Designing a Mobile App UI', 2, 'Home Feeds, Lists & Cards That Scan', 1, 'video', '15 min', '[{"title":"Material Design guidelines (Google)","url":"https://m3.material.io/","type":"docs"},{"title":"Dribbble — design inspiration","url":"https://dribbble.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=ZWYyiPwCi54', '## 🎯 What you will learn
 - Card anatomy for scannable feeds
 - Visual hierarchy inside lists
 - Search, filters and sorting UX
@@ -4510,7 +4519,7 @@ Two listing apps, same data. One crams 6 fields per row; the other: image, title
 - [ ] Cards use consistent anatomy
 - [ ] Filters show result counts
 - [ ] Primary actions thumb-reachable'),
-  ('ui-ux-design-figma', 'Module 3: Designing a Mobile App UI', 2, 'Forms, Checkouts & Critical Flows', 2, 'video', '17 min', '[{"title":"Laws of UX — psychology of design (free book)","url":"https://lawsofux.com/","type":"pdf"},{"title":"Material Design guidelines (Google)","url":"https://m3.material.io/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=3qLX9IaGZO0', '## 🎯 What you will learn
+  ('ui-ux-design-with-figma', 'Module 3: Designing a Mobile App UI', 2, 'Forms, Checkouts & Critical Flows', 2, 'video', '17 min', '[{"title":"Laws of UX — psychology of design (free book)","url":"https://lawsofux.com/","type":"pdf"},{"title":"Material Design guidelines (Google)","url":"https://m3.material.io/","type":"docs"}]'::jsonb, 'https://www.youtube.com/watch?v=3qLX9IaGZO0', '## 🎯 What you will learn
 - Forms users actually finish
 - Checkout: the highest-stakes screens
 - Trust signals that lift conversion
@@ -4536,7 +4545,7 @@ A store cut checkout from 6 screens to 3 and added a visible "Free returns" line
 - [ ] One-column form, minimal fields
 - [ ] Progress indicator present
 - [ ] Error path designed'),
-  ('ui-ux-design-figma', 'Module 3: Designing a Mobile App UI', 2, 'Polish: Icons, Illustrations & Dark Mode', 3, 'video', '15 min', '[{"title":"Lucide — free consistent icons","url":"https://lucide.dev/","type":"resource"},{"title":"unDraw — free illustrations","url":"https://undraw.co/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=ZWYyiPwCi54', '## 🎯 What you will learn
+  ('ui-ux-design-with-figma', 'Module 3: Designing a Mobile App UI', 2, 'Polish: Icons, Illustrations & Dark Mode', 3, 'video', '15 min', '[{"title":"Lucide — free consistent icons","url":"https://lucide.dev/","type":"resource"},{"title":"unDraw — free illustrations","url":"https://undraw.co/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=ZWYyiPwCi54', '## 🎯 What you will learn
 - Icon systems: consistent, not collected
 - Illustration & empty-state art
 - Designing dark mode properly
@@ -4564,7 +4573,7 @@ An app shipped dark mode by simply inverting colors — text glowed, logos vibra
 - [ ] Single icon system used
 - [ ] Illustration style consistent
 - [ ] Dark mode on 3 screens'),
-  ('ui-ux-design-figma', 'Module 4: Prototype, Test & Get Hired', 3, 'Interactive Prototypes in Figma', 0, 'video', '16 min', '[{"title":"Figma Learn — official free training","url":"https://help.figma.com/hc/en-us","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=ZWYyiPwCi54', '## 🎯 What you will learn
+  ('ui-ux-design-with-figma', 'Module 4: Prototype, Test & Get Hired', 3, 'Interactive Prototypes in Figma', 0, 'video', '16 min', '[{"title":"Figma Learn — official free training","url":"https://help.figma.com/hc/en-us","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=ZWYyiPwCi54', '## 🎯 What you will learn
 - Connecting screens: flows and triggers
 - Smart animate for magic transitions
 - Presenting prototypes on a real phone
@@ -4593,7 +4602,7 @@ A student showed a static portfolio for months: few replies. After making every 
 - [ ] Full flow navigable
 - [ ] Smart animate + overlay used
 - [ ] Prototype runs on phone'),
-  ('ui-ux-design-figma', 'Module 4: Prototype, Test & Get Hired', 3, 'Usability Testing: Watch, Learn, Fix', 1, 'video', '15 min', '[{"title":"Laws of UX — psychology of design (free book)","url":"https://lawsofux.com/","type":"pdf"}]'::jsonb, 'https://www.youtube.com/watch?v=3qLX9IaGZO0', '## 🎯 What you will learn
+  ('ui-ux-design-with-figma', 'Module 4: Prototype, Test & Get Hired', 3, 'Usability Testing: Watch, Learn, Fix', 1, 'video', '15 min', '[{"title":"Laws of UX — psychology of design (free book)","url":"https://lawsofux.com/","type":"pdf"}]'::jsonb, 'https://www.youtube.com/watch?v=3qLX9IaGZO0', '## 🎯 What you will learn
 - Running a 20-minute usability test
 - What to say (and never say) while testing
 - Prioritizing fixes by severity
@@ -4627,7 +4636,7 @@ During a test, a user tapped the logo expecting to go home — it didn''t. Three
 - [ ] 3 tasks written
 - [ ] 3 tests conducted
 - [ ] Criticals fixed & re-tested'),
-  ('ui-ux-design-figma', 'Module 4: Prototype, Test & Get Hired', 3, 'Handoff to Developers & Design Tokens', 2, 'video', '14 min', '[{"title":"Figma Learn — official free training","url":"https://help.figma.com/hc/en-us","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=ZWYyiPwCi54', '## 🎯 What you will learn
+  ('ui-ux-design-with-figma', 'Module 4: Prototype, Test & Get Hired', 3, 'Handoff to Developers & Design Tokens', 2, 'video', '14 min', '[{"title":"Figma Learn — official free training","url":"https://help.figma.com/hc/en-us","type":"course"}]'::jsonb, 'https://www.youtube.com/watch?v=ZWYyiPwCi54', '## 🎯 What you will learn
 - Dev Mode: specs developers actually use
 - Naming and organizing files for handoff
 - Speaking developer language
@@ -4656,7 +4665,7 @@ A developer said of one designer: "Her files take me zero questions." She got ev
 - [ ] Layers named meaningfully
 - [ ] States + notes attached
 - [ ] Dev Mode inspected'),
-  ('ui-ux-design-figma', 'Module 4: Prototype, Test & Get Hired', 3, 'Capstone: Case Study Portfolio & First Design Job', 3, 'project', '22 min', '[{"title":"Behance — global design portfolios","url":"https://www.behance.net/","type":"resource"},{"title":"Dribbble — design inspiration","url":"https://dribbble.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=ZWYyiPwCi54', '## 🎯 What you will learn
+  ('ui-ux-design-with-figma', 'Module 4: Prototype, Test & Get Hired', 3, 'Capstone: Case Study Portfolio & First Design Job', 3, 'project', '22 min', '[{"title":"Behance — global design portfolios","url":"https://www.behance.net/","type":"resource"},{"title":"Dribbble — design inspiration","url":"https://dribbble.com/","type":"resource"}]'::jsonb, 'https://www.youtube.com/watch?v=ZWYyiPwCi54', '## 🎯 What you will learn
 - Structuring a UX case study that gets interviews
 - Portfolio presentation standards
 - Landing your first UI/UX role or client
@@ -6142,14 +6151,14 @@ create temp table _seed_quiz (
 
 insert into _seed_quiz (course_slug, title, description, passing_score, lesson_title, questions) values
   ('ai-video-content-creation', 'Final Assessment — AI Video Content Creation', 'Final assessment — pass to move toward your certificate.', 70, 'Monetization: Clients, Rates & Getting Paid', '[{"type":"multiple_choice","question":"What is the FIRST step of a professional AI video workflow?","options":["Generate the video immediately","Write a clear script and shot plan","Pick background music","Add captions"],"answer":1,"why":"AI tools follow your instructions — a clear script and shot list is what makes the output usable."},{"type":"multiple_choice","question":"Which prompt element most improves AI video output quality?","options":["All-caps text","Specific subject, style, camera and lighting details","Asking for 10 variations at once","Using only one-word prompts"],"answer":1,"why":"Specificity (subject, style, camera angle, lighting, mood) is the core prompting skill."},{"type":"true_false","question":"You should always review AI-generated content for errors before publishing.","options":["True","False"],"answer":0,"why":"AI output can contain mistakes and odd artifacts — human review is mandatory for professional work."},{"type":"multiple_choice","question":"ElevenLabs is primarily used for…","options":["Video upscaling","AI voice generation","Color grading","Thumbnail design"],"answer":1,"why":"ElevenLabs is a leading AI voice/text-to-speech platform used for narration and voiceovers."},{"type":"multiple_answer","question":"Which of these are legitimate ways to monetize AI video skills? (Select all that apply)","options":["Creating ads for local businesses","Faceless content channels","Selling social media content packages","Publishing unedited AI output as your own original film"],"answers":[0,1,2],"why":"Client ads, content channels and packages are real income streams; misrepresenting raw AI output is not a sustainable business."},{"type":"multiple_choice","question":"What does \"image-to-video\" mean in AI tools like Runway?","options":["Printing video frames","Animating a still image into motion","Converting file formats","Compressing video size"],"answer":1,"why":"Image-to-video models take a still frame and generate believable motion from it."},{"type":"multiple_choice","question":"The best hook for a short-form video appears…","options":["After 30 seconds","In the first 1–3 seconds","Only in the caption","At the end"],"answer":1,"why":"Viewers decide in seconds — the hook must land immediately."},{"type":"true_false","question":"Captions/subtitles improve watch time on social video, especially for sound-off viewing.","options":["True","False"],"answer":0,"why":"A large share of social video is watched muted; captions keep those viewers."},{"type":"multiple_choice","question":"Before using AI-generated voices or faces commercially, you should…","options":["Assume everything is allowed","Check the tool’s license and any likeness/consent rules","Credit the AI in the video title","Nothing — AI content has no rules"],"answer":1,"why":"Commercial use, likeness and consent rules vary by tool and jurisdiction — check before publishing."},{"type":"multiple_choice","question":"A content calendar helps creators mainly by…","options":["Replacing creativity","Keeping publishing consistent and planned","Increasing video file size","Automating client payments"],"answer":1,"why":"Consistency wins on every platform; a calendar turns ideas into a reliable pipeline."}]'::jsonb),
-  ('video-editing-capcut', 'Final Assessment — Video Editing with CapCut', 'Final assessment — pass to move toward your certificate.', 70, 'Capstone: Produce a Complete 30-Second Viral Edit', '[{"type":"multiple_choice","question":"What is a \"cut\" in video editing?","options":["A color filter","The point where one clip changes to the next","A music track","A caption style"],"answer":1,"why":"Cuts are the fundamental building blocks of every edit."},{"type":"multiple_choice","question":"Why do editors trim clip beginnings and endings?","options":["To add effects","To remove dead space and keep pacing tight","To reduce file names","To change aspect ratio"],"answer":1,"why":"Tight trims remove hesitations and keep viewer attention."},{"type":"true_false","question":"J-cuts and L-cuts let audio and video transition at different moments for smoother edits.","options":["True","False"],"answer":0,"why":"J/L cuts overlap audio across edits — a core professional technique."},{"type":"multiple_choice","question":"Auto-captions in CapCut should always be…","options":["Left exactly as generated","Proofread and corrected","Deleted before export","Set to the largest font"],"answer":1,"why":"Auto-caption engines make mistakes; wrong words look unprofessional."},{"type":"multiple_answer","question":"Which export settings matter for platform delivery? (Select all that apply)","options":["Resolution (e.g. 1080p)","Frame rate","Aspect ratio (9:16 vs 16:9)","The camera brand used to film"],"answers":[0,1,2],"why":"Resolution, frame rate and aspect ratio must match the target platform; camera brand is irrelevant to export."},{"type":"multiple_choice","question":"Keyframes are used to…","options":["Lock the timeline","Animate properties (position, scale, opacity) over time","Save project backups","Sync audio"],"answer":1,"why":"Keyframes record values at moments so the software interpolates motion between them."},{"type":"multiple_choice","question":"The safest place for important on-screen text is…","options":["Touching the very edge","Inside the platform-safe center area","Behind the subject","At 5% opacity"],"answer":1,"why":"Platforms crop edges and overlay UI; safe areas keep text visible."},{"type":"multiple_choice","question":"Sound design (SFX + music) mainly improves…","options":["File compression","Emotional impact and perceived quality","Storage space","Upload speed"],"answer":1,"why":"Audio is half the experience — well-chosen sound sells the edit."},{"type":"true_false","question":"You should organize footage into folders/bins before starting a big edit.","options":["True","False"],"answer":0,"why":"Organization saves hours on any project with many clips."},{"type":"multiple_choice","question":"A viral short-form edit typically changes something visually every…","options":["30 seconds","1–3 seconds","2 minutes","It never changes"],"answer":1,"why":"Frequent visual changes (cuts, zooms, text) hold attention in short-form."}]'::jsonb),
-  ('graphic-design-canva', 'Final Assessment — Graphic Design with Canva', 'Final assessment — pass to move toward your certificate.', 70, 'Capstone: Complete Brand Package for a Real Business', '[{"type":"multiple_choice","question":"Visual hierarchy means…","options":["Using as many fonts as possible","Guiding the viewer’s eye to what matters first","Centering everything","Using only photos"],"answer":1,"why":"Hierarchy (size, weight, color, position) controls what the viewer sees first."},{"type":"multiple_choice","question":"A professional design should usually use at most…","options":["1–2 font families","5–6 fonts","Any number","Only images, never text"],"answer":0,"why":"One or two consistent font families keep designs clean and professional."},{"type":"true_false","question":"Contrast between text and background is both a design and an accessibility requirement.","options":["True","False"],"answer":0,"why":"Low contrast text is unreadable for many people and looks unprofessional to everyone."},{"type":"multiple_choice","question":"Which file format is best for a logo that must scale without quality loss?","options":["JPG","SVG","TXT","MP4"],"answer":1,"why":"SVG is vector — it scales infinitely without pixelation."},{"type":"multiple_answer","question":"Which elements make a business flyer effective? (Select all that apply)","options":["One clear call to action","Readable contact details","Strong visual focus","Ten different messages competing for attention"],"answers":[0,1,2],"why":"Focus, readability and a single CTA convert; competing messages confuse."},{"type":"multiple_choice","question":"White space (empty space) in a design is…","options":["Wasted space","A tool that improves focus and elegance","A printing error","Only for luxury brands"],"answer":1,"why":"White space lets content breathe and directs attention."},{"type":"multiple_choice","question":"A brand kit typically contains…","options":["Server passwords","Colors, fonts and logo variations","Client invoices","Stock subscriptions"],"answer":1,"why":"Brand kits enforce visual consistency across every design."},{"type":"multiple_choice","question":"Before delivering client designs you should…","options":["Export in the formats the client needs","Watermark them permanently","Keep the source hidden forever","Only send screenshots"],"answer":0,"why":"Professional delivery means the right formats (print PDF, PNG, SVG…) for the use case."},{"type":"true_false","question":"Alignment of elements is one of the fastest ways to make a design look professional.","options":["True","False"],"answer":0,"why":"Misalignment is the most common amateur tell; alignment instantly adds polish."},{"type":"multiple_choice","question":"Color psychology in branding means…","options":["Picking your favorite color","Choosing colors that support the brand’s message and feelings","Using rainbow gradients always","Avoiding color entirely"],"answer":1,"why":"Colors carry associations (trust, energy, luxury) that support brand messaging."}]'::jsonb),
+  ('video-editing-with-capcut', 'Final Assessment — Video Editing with CapCut', 'Final assessment — pass to move toward your certificate.', 70, 'Capstone: Produce a Complete 30-Second Viral Edit', '[{"type":"multiple_choice","question":"What is a \"cut\" in video editing?","options":["A color filter","The point where one clip changes to the next","A music track","A caption style"],"answer":1,"why":"Cuts are the fundamental building blocks of every edit."},{"type":"multiple_choice","question":"Why do editors trim clip beginnings and endings?","options":["To add effects","To remove dead space and keep pacing tight","To reduce file names","To change aspect ratio"],"answer":1,"why":"Tight trims remove hesitations and keep viewer attention."},{"type":"true_false","question":"J-cuts and L-cuts let audio and video transition at different moments for smoother edits.","options":["True","False"],"answer":0,"why":"J/L cuts overlap audio across edits — a core professional technique."},{"type":"multiple_choice","question":"Auto-captions in CapCut should always be…","options":["Left exactly as generated","Proofread and corrected","Deleted before export","Set to the largest font"],"answer":1,"why":"Auto-caption engines make mistakes; wrong words look unprofessional."},{"type":"multiple_answer","question":"Which export settings matter for platform delivery? (Select all that apply)","options":["Resolution (e.g. 1080p)","Frame rate","Aspect ratio (9:16 vs 16:9)","The camera brand used to film"],"answers":[0,1,2],"why":"Resolution, frame rate and aspect ratio must match the target platform; camera brand is irrelevant to export."},{"type":"multiple_choice","question":"Keyframes are used to…","options":["Lock the timeline","Animate properties (position, scale, opacity) over time","Save project backups","Sync audio"],"answer":1,"why":"Keyframes record values at moments so the software interpolates motion between them."},{"type":"multiple_choice","question":"The safest place for important on-screen text is…","options":["Touching the very edge","Inside the platform-safe center area","Behind the subject","At 5% opacity"],"answer":1,"why":"Platforms crop edges and overlay UI; safe areas keep text visible."},{"type":"multiple_choice","question":"Sound design (SFX + music) mainly improves…","options":["File compression","Emotional impact and perceived quality","Storage space","Upload speed"],"answer":1,"why":"Audio is half the experience — well-chosen sound sells the edit."},{"type":"true_false","question":"You should organize footage into folders/bins before starting a big edit.","options":["True","False"],"answer":0,"why":"Organization saves hours on any project with many clips."},{"type":"multiple_choice","question":"A viral short-form edit typically changes something visually every…","options":["30 seconds","1–3 seconds","2 minutes","It never changes"],"answer":1,"why":"Frequent visual changes (cuts, zooms, text) hold attention in short-form."}]'::jsonb),
+  ('graphic-design-with-canva', 'Final Assessment — Graphic Design with Canva', 'Final assessment — pass to move toward your certificate.', 70, 'Capstone: Complete Brand Package for a Real Business', '[{"type":"multiple_choice","question":"Visual hierarchy means…","options":["Using as many fonts as possible","Guiding the viewer’s eye to what matters first","Centering everything","Using only photos"],"answer":1,"why":"Hierarchy (size, weight, color, position) controls what the viewer sees first."},{"type":"multiple_choice","question":"A professional design should usually use at most…","options":["1–2 font families","5–6 fonts","Any number","Only images, never text"],"answer":0,"why":"One or two consistent font families keep designs clean and professional."},{"type":"true_false","question":"Contrast between text and background is both a design and an accessibility requirement.","options":["True","False"],"answer":0,"why":"Low contrast text is unreadable for many people and looks unprofessional to everyone."},{"type":"multiple_choice","question":"Which file format is best for a logo that must scale without quality loss?","options":["JPG","SVG","TXT","MP4"],"answer":1,"why":"SVG is vector — it scales infinitely without pixelation."},{"type":"multiple_answer","question":"Which elements make a business flyer effective? (Select all that apply)","options":["One clear call to action","Readable contact details","Strong visual focus","Ten different messages competing for attention"],"answers":[0,1,2],"why":"Focus, readability and a single CTA convert; competing messages confuse."},{"type":"multiple_choice","question":"White space (empty space) in a design is…","options":["Wasted space","A tool that improves focus and elegance","A printing error","Only for luxury brands"],"answer":1,"why":"White space lets content breathe and directs attention."},{"type":"multiple_choice","question":"A brand kit typically contains…","options":["Server passwords","Colors, fonts and logo variations","Client invoices","Stock subscriptions"],"answer":1,"why":"Brand kits enforce visual consistency across every design."},{"type":"multiple_choice","question":"Before delivering client designs you should…","options":["Export in the formats the client needs","Watermark them permanently","Keep the source hidden forever","Only send screenshots"],"answer":0,"why":"Professional delivery means the right formats (print PDF, PNG, SVG…) for the use case."},{"type":"true_false","question":"Alignment of elements is one of the fastest ways to make a design look professional.","options":["True","False"],"answer":0,"why":"Misalignment is the most common amateur tell; alignment instantly adds polish."},{"type":"multiple_choice","question":"Color psychology in branding means…","options":["Picking your favorite color","Choosing colors that support the brand’s message and feelings","Using rainbow gradients always","Avoiding color entirely"],"answer":1,"why":"Colors carry associations (trust, energy, luxury) that support brand messaging."}]'::jsonb),
   ('digital-marketing', 'Final Assessment — Digital Marketing', 'Final assessment — pass to move toward your certificate.', 70, 'Capstone: Full Marketing Plan for a Real Business', '[{"type":"multiple_choice","question":"SEO stands for…","options":["Social Engagement Optimization","Search Engine Optimization","Sales Email Operations","Site Editing Online"],"answer":1,"why":"SEO = optimizing content so search engines rank it for relevant queries."},{"type":"multiple_choice","question":"A marketing funnel describes…","options":["The journey from stranger to customer","A type of advertisement","A pricing table","Email software"],"answer":0,"why":"Funnels model awareness → interest → decision → purchase."},{"type":"true_false","question":"Organic reach means getting visibility without paying for ads.","options":["True","False"],"answer":0,"why":"Organic = earned through content and engagement; paid = ads."},{"type":"multiple_choice","question":"Which metric best measures ad profitability?","options":["Likes","ROAS (return on ad spend)","Follower count","Impressions alone"],"answer":1,"why":"ROAS compares revenue generated to money spent — the business metric that matters."},{"type":"multiple_answer","question":"Which are valid lead-generation methods? (Select all that apply)","options":["Lead magnet downloads","WhatsApp click-to-chat","Landing page forms","Deleting negative reviews"],"answers":[0,1,2],"why":"Magnets, chat and forms capture leads; deleting reviews is neither lead-gen nor wise."},{"type":"multiple_choice","question":"A content calendar primarily helps with…","options":["Consistency and planning","Increasing ad budgets","Designing logos","Accounting"],"answer":0,"why":"Calendars turn strategy into a sustainable publishing habit."},{"type":"multiple_choice","question":"CTR measures…","options":["Clicks divided by impressions","Total followers","Video length","Bounce time"],"answer":0,"why":"Click-through rate = clicks ÷ impressions; it signals how compelling your message is."},{"type":"multiple_choice","question":"The best first audience for a local business’s ads is usually…","options":["Everyone on earth","A defined local audience matching the ideal customer","Competitors’ employees","Random users"],"answer":1,"why":"Targeting the real ideal customer in the real service area maximizes limited budgets."},{"type":"true_false","question":"Email marketing remains one of the highest-ROI digital channels.","options":["True","False"],"answer":0,"why":"Owned audiences (email/WhatsApp lists) convert without paying per reach."},{"type":"multiple_choice","question":"A/B testing means…","options":["Comparing two versions to see which performs better","Running two businesses","Testing website speed","Grading customers"],"answer":0,"why":"A/B tests replace opinions with evidence — one variable at a time."}]'::jsonb),
-  ('mobile-app-development', 'Final Assessment — Mobile App Development', 'Final assessment — pass to move toward your certificate.', 70, 'Capstone: Build & Publish Your App', '[{"type":"multiple_choice","question":"Flutter’s main advantage is…","options":["One codebase for Android and iOS","It only runs on the web","It requires two codebases","It cannot use APIs"],"answer":0,"why":"Cross-platform from one Dart codebase is Flutter’s core value."},{"type":"multiple_choice","question":"In Flutter, user interfaces are built from…","options":["Widgets","Spreadsheets","SQL tables","PDFs"],"answer":0,"why":"Everything on screen is a widget, nested into a tree."},{"type":"true_false","question":"setState tells Flutter to rebuild the widget with new data.","options":["True","False"],"answer":0,"why":"State changes + setState = rebuild — the foundation of interactive UI."},{"type":"multiple_choice","question":"ListView.builder differs from a plain ListView because it…","options":["Builds items on demand as they scroll into view","Only shows 5 items","Cannot scroll","Loads everything into memory at once"],"answer":0,"why":"On-demand building keeps huge lists fast and memory-light."},{"type":"multiple_choice","question":"In Dart, a String? type means…","options":["The value may be null and must be handled","It is always empty","It is a number","It cannot be printed"],"answer":0,"why":"Null safety forces you to handle missing values — preventing a whole class of crashes."},{"type":"multiple_answer","question":"Which are valid ways to share state across screens? (Select all that apply)","options":["Provider","Constructor parameters + navigation arguments","Riverpod/Bloc","Printing to console"],"answers":[0,1,2],"why":"State management patterns and navigation arguments carry data; console printing does not."},{"type":"multiple_choice","question":"FutureBuilder is used to…","options":["Render loading/error/data states of async work","Compile the app","Style buttons","Create databases"],"answer":0,"why":"It watches a Future and rebuilds the UI through its states."},{"type":"multiple_choice","question":"A release build for the Play Store is distributed as…","options":["An Android App Bundle (.aab)","A .docx file","A website zip","An .apk.exe"],"answer":0,"why":"The Play Store expects .aab; direct installs can use .apk."},{"type":"true_false","question":"Hot reload shows code changes in a running app within about a second.","options":["True","False"],"answer":0,"why":"Hot reload is Flutter’s famous speed feature — state is preserved."},{"type":"multiple_choice","question":"Firebase Firestore’s snapshots() method gives you…","options":["A realtime stream that updates when data changes","A one-time screenshot","A PDF export","A compiled binary"],"answer":0,"why":"Streams power live UIs — pair them with StreamBuilder."}]'::jsonb),
+  ('mobile-application-development', 'Final Assessment — Mobile App Development', 'Final assessment — pass to move toward your certificate.', 70, 'Capstone: Build & Publish Your App', '[{"type":"multiple_choice","question":"Flutter’s main advantage is…","options":["One codebase for Android and iOS","It only runs on the web","It requires two codebases","It cannot use APIs"],"answer":0,"why":"Cross-platform from one Dart codebase is Flutter’s core value."},{"type":"multiple_choice","question":"In Flutter, user interfaces are built from…","options":["Widgets","Spreadsheets","SQL tables","PDFs"],"answer":0,"why":"Everything on screen is a widget, nested into a tree."},{"type":"true_false","question":"setState tells Flutter to rebuild the widget with new data.","options":["True","False"],"answer":0,"why":"State changes + setState = rebuild — the foundation of interactive UI."},{"type":"multiple_choice","question":"ListView.builder differs from a plain ListView because it…","options":["Builds items on demand as they scroll into view","Only shows 5 items","Cannot scroll","Loads everything into memory at once"],"answer":0,"why":"On-demand building keeps huge lists fast and memory-light."},{"type":"multiple_choice","question":"In Dart, a String? type means…","options":["The value may be null and must be handled","It is always empty","It is a number","It cannot be printed"],"answer":0,"why":"Null safety forces you to handle missing values — preventing a whole class of crashes."},{"type":"multiple_answer","question":"Which are valid ways to share state across screens? (Select all that apply)","options":["Provider","Constructor parameters + navigation arguments","Riverpod/Bloc","Printing to console"],"answers":[0,1,2],"why":"State management patterns and navigation arguments carry data; console printing does not."},{"type":"multiple_choice","question":"FutureBuilder is used to…","options":["Render loading/error/data states of async work","Compile the app","Style buttons","Create databases"],"answer":0,"why":"It watches a Future and rebuilds the UI through its states."},{"type":"multiple_choice","question":"A release build for the Play Store is distributed as…","options":["An Android App Bundle (.aab)","A .docx file","A website zip","An .apk.exe"],"answer":0,"why":"The Play Store expects .aab; direct installs can use .apk."},{"type":"true_false","question":"Hot reload shows code changes in a running app within about a second.","options":["True","False"],"answer":0,"why":"Hot reload is Flutter’s famous speed feature — state is preserved."},{"type":"multiple_choice","question":"Firebase Firestore’s snapshots() method gives you…","options":["A realtime stream that updates when data changes","A one-time screenshot","A PDF export","A compiled binary"],"answer":0,"why":"Streams power live UIs — pair them with StreamBuilder."}]'::jsonb),
   ('portfolio-creation', 'Final Assessment — Portfolio Creation & Freelance Success', 'Final assessment — pass to move toward your certificate.', 70, 'Capstone: Launch Your Portfolio & 30-Day Client Plan', '[{"type":"multiple_choice","question":"A portfolio’s primary job is to…","options":["Prove you can solve real problems","List every project ever made","Show your hobbies","Replace contracts"],"answer":0,"why":"Buyers hire evidence — curated proof beats volume."},{"type":"multiple_choice","question":"A strong case study follows which structure?","options":["Problem → approach → work → outcome","Only final screenshots","Only pricing tables","Random image dumps"],"answer":0,"why":"The story of a solved problem is what convinces clients."},{"type":"true_false","question":"Specializing in one clear offer usually beats listing ten unrelated skills.","options":["True","False"],"answer":0,"why":"Specialists are remembered and paid more; generalists compete on price."},{"type":"multiple_choice","question":"On Fiverr, the first reviews are typically earned by…","options":["Low introductory pricing with overdelivery","Charging the highest rate immediately","Buying fake reviews","Waiting passively"],"answer":0,"why":"Early reviews are the asset — price to win them, then raise rates."},{"type":"multiple_answer","question":"Which belong in a freelance proposal? (Select all that apply)","options":["The client’s problem in their words","Deliverables, timeline and price","Relevant proof links","Your entire life story"],"answers":[0,1,2],"why":"Proposals answer: what, for whom, when, how much, why you."},{"type":"multiple_choice","question":"A deposit before starting work protects you by…","options":["Confirming commitment and covering initial effort","Replacing contracts entirely","Guaranteeing 5-star reviews","Avoiding all communication"],"answer":0,"why":"Deposits (30–60%) filter serious clients and de-risk your time."},{"type":"multiple_choice","question":"The fastest way to make a designer’s portfolio convincing is…","options":["Before/after comparisons","Long biographies","Stock photos","Unfinished projects"],"answer":0,"why":"Before/after demonstrates value in one glance."},{"type":"multiple_choice","question":"A retainer is best described as…","options":["Recurring monthly work for a fixed fee","A one-time gig","A type of invoice","A legal penalty"],"answer":0,"why":"Retainers turn freelance chaos into predictable income."},{"type":"true_false","question":"Most work in many markets is filled through relationships and referrals rather than public job ads.","options":["True","False"],"answer":0,"why":"Tell your circles what you do — the hidden market runs on trust."},{"type":"multiple_choice","question":"When a client says \"too expensive\", the professional response is to…","options":["Offer a smaller scope or clarify value","Disappear","Work for free","Argue aggressively"],"answer":0,"why":"Reframing scope preserves the relationship and your rates."}]'::jsonb),
   ('frontend-web-development', 'Final Assessment — Frontend Web Development', 'Final assessment — pass to move toward your certificate.', 70, 'Capstone: Deploy a Portfolio Site & Get Hired', '[{"type":"multiple_choice","question":"HTML is responsible for…","options":["Page structure and meaning","Styling","Server databases","Animations only"],"answer":0,"why":"HTML provides the semantic structure; CSS styles; JavaScript adds behavior."},{"type":"multiple_choice","question":"Which CSS property creates space INSIDE an element’s border?","options":["margin","padding","gap","outline"],"answer":1,"why":"Padding is inner space; margin is outer space."},{"type":"multiple_choice","question":"display: flex primarily helps with…","options":["One-dimensional layout along a row or column","Databases","HTTP requests","Fonts"],"answer":0,"why":"Flexbox distributes items along one axis — the workhorse of UI layout."},{"type":"true_false","question":"JavaScript can change page content without reloading the page.","options":["True","False"],"answer":0,"why":"DOM manipulation is the core of interactive frontends."},{"type":"multiple_answer","question":"Which are semantic HTML elements? (Select all that apply)","options":["<nav>","<article>","<div>","<footer>"],"answers":[0,1,3],"why":"nav/article/footer describe meaning; div is a generic container."},{"type":"multiple_choice","question":"In React, useState is used to…","options":["Store and update component state","Fetch images","Style components","Define routes"],"answer":0,"why":"useState gives a component memory that triggers re-renders when it changes."},{"type":"multiple_choice","question":"A responsive website is one that…","options":["Loads fast only on desktop","Adapts its layout to different screen sizes","Uses only images","Has no CSS"],"answer":1,"why":"Media queries, fluid layouts and flexible images adapt design to any device."},{"type":"multiple_choice","question":"Which HTTP status code means \"Not Found\"?","options":["200","404","500","301"],"answer":1,"why":"404 = resource not found; 200 = OK; 500 = server error; 301 = redirect."},{"type":"multiple_choice","question":"Git is used by developers mainly for…","options":["Version control and collaboration","Designing logos","Email","Compiling images"],"answer":0,"why":"Git tracks history and enables team collaboration on code."},{"type":"true_false","question":"Alt text on images improves accessibility and SEO.","options":["True","False"],"answer":0,"why":"Alt text serves screen readers and search engines — always include it."}]'::jsonb),
-  ('web-design-wordpress', 'Final Assessment — Web Design with WordPress', 'Final assessment — pass to move toward your certificate.', 70, 'Capstone: Build & Launch a Complete Business Website', '[{"type":"multiple_choice","question":"WordPress.org differs from WordPress.com because WordPress.org…","options":["Is the free software you host yourself","Only works on phones","Is a paid-only service","Cannot use plugins"],"answer":0,"why":"WordPress.org = self-hosted software with full control; WordPress.com is a hosted service."},{"type":"multiple_choice","question":"In WordPress, \"pages\" are best for…","options":["Timeless content like About and Contact","Daily news posts","Photos only","Plugins"],"answer":0,"why":"Pages are structural/timeless; posts are dated stream content."},{"type":"true_false","question":"You should back up a WordPress site before updating plugins.","options":["True","False"],"answer":0,"why":"Updates occasionally break things — a backup makes recovery trivial."},{"type":"multiple_choice","question":"A child theme is used to…","options":["Customize safely without losing changes on parent updates","Make the site load slower","Replace hosting","Add a blog"],"answer":0,"why":"Child themes inherit the parent but keep your custom code safe from updates."},{"type":"multiple_choice","question":"Which plugin type adds an online store to WordPress?","options":["WooCommerce","SEO plugin","Backup plugin","Form plugin"],"answer":0,"why":"WooCommerce is the standard WordPress e-commerce plugin."},{"type":"multiple_answer","question":"Which practices improve WordPress speed? (Select all that apply)","options":["Compressing images","Using caching","Removing unused plugins","Installing 40 plugins"],"answers":[0,1,2],"why":"Lighter sites load faster; plugin bloat slows everything down."},{"type":"multiple_choice","question":"Permalinks set to \"Post name\" give URLs like…","options":["/?p=123","/about-us","wp-admin","index.php?id=9"],"answer":1,"why":"Readable URLs help humans and search engines."},{"type":"multiple_choice","question":"The safest source for plugins is…","options":["The official WordPress plugin directory","Random file-sharing sites","Email attachments","Social media links"],"answer":0,"why":"The official directory vets plugins; unknown sources risk malware."},{"type":"true_false","question":"An SSL certificate enables https and is expected by browsers and Google.","options":["True","False"],"answer":0,"why":"https protects visitors and is a ranking/trust signal."},{"type":"multiple_choice","question":"Before handing a site to a client you should…","options":["Test forms, links and mobile view","Delete the admin account permanently","Disable all plugins","Remove the theme"],"answer":0,"why":"A launch checklist (forms, links, mobile, analytics) prevents embarrassing handovers."}]'::jsonb),
-  ('ui-ux-design-figma', 'Final Assessment — UI/UX Design with Figma', 'Final assessment — pass to move toward your certificate.', 70, 'Capstone: Case Study Portfolio & First Design Job', '[{"type":"multiple_choice","question":"UX design is primarily concerned with…","options":["How a product works and feels to use","Only colors","Logo animation","Printing"],"answer":0,"why":"UX = the full experience of achieving goals; UI is the visual layer."},{"type":"multiple_choice","question":"Auto layout in Figma is best described as…","options":["Frames that resize and space their content automatically","Automatic color picking","Auto-export","A plugin store"],"answer":0,"why":"Auto layout behaves like flexbox — content-driven, consistent spacing."},{"type":"true_false","question":"Testing with about 5 users uncovers most usability problems.","options":["True","False"],"answer":0,"why":"Small, frequent tests reveal the majority of issues cheaply."},{"type":"multiple_choice","question":"A component in Figma allows…","options":["One master design reused as instances everywhere","Only text editing","Video playback","Database access"],"answer":0,"why":"Edit the master, update every instance — the foundation of design systems."},{"type":"multiple_answer","question":"Which are established UX principles? (Select all that apply)","options":["Hick’s law — more choices slow decisions","Jakob’s law — users expect familiar patterns","Fitts’s law — bigger/closer targets are faster to hit","The rule of more menus"],"answers":[0,1,2],"why":"These classic laws guide real design decisions; more menus is not a principle."},{"type":"multiple_choice","question":"Wireframes are used early because…","options":["Structure changes are cheap before visual polish","They are the final deliverable","Clients prefer gray screens","They replace research"],"answer":0,"why":"Fixing structure in grayscale costs minutes; fixing polished screens costs days."},{"type":"multiple_choice","question":"A design token/system helps teams by…","options":["Centralizing colors, type and spacing decisions","Replacing designers","Increasing file sizes","Hiding components"],"answer":0,"why":"Systems keep many screens and many designers consistent."},{"type":"multiple_choice","question":"The minimum comfortable touch target size on mobile is about…","options":["12px","48px","100px","2px"],"answer":1,"why":"Fingers need roughly 48px targets to tap reliably."},{"type":"true_false","question":"Dark mode should simply invert all colors of the light design.","options":["True","False"],"answer":1,"why":"Naive inversion causes glare and broken contrast — dark themes need desaturated colors and layered surfaces."},{"type":"multiple_choice","question":"The best artifact to hand developers is…","options":["Named layers, states and behavior notes in Dev Mode","A screenshot","A verbal description","A printed page"],"answer":0,"why":"Clean files with specs prevent questions and rework."}]'::jsonb),
+  ('web-design-with-wordpress', 'Final Assessment — Web Design with WordPress', 'Final assessment — pass to move toward your certificate.', 70, 'Capstone: Build & Launch a Complete Business Website', '[{"type":"multiple_choice","question":"WordPress.org differs from WordPress.com because WordPress.org…","options":["Is the free software you host yourself","Only works on phones","Is a paid-only service","Cannot use plugins"],"answer":0,"why":"WordPress.org = self-hosted software with full control; WordPress.com is a hosted service."},{"type":"multiple_choice","question":"In WordPress, \"pages\" are best for…","options":["Timeless content like About and Contact","Daily news posts","Photos only","Plugins"],"answer":0,"why":"Pages are structural/timeless; posts are dated stream content."},{"type":"true_false","question":"You should back up a WordPress site before updating plugins.","options":["True","False"],"answer":0,"why":"Updates occasionally break things — a backup makes recovery trivial."},{"type":"multiple_choice","question":"A child theme is used to…","options":["Customize safely without losing changes on parent updates","Make the site load slower","Replace hosting","Add a blog"],"answer":0,"why":"Child themes inherit the parent but keep your custom code safe from updates."},{"type":"multiple_choice","question":"Which plugin type adds an online store to WordPress?","options":["WooCommerce","SEO plugin","Backup plugin","Form plugin"],"answer":0,"why":"WooCommerce is the standard WordPress e-commerce plugin."},{"type":"multiple_answer","question":"Which practices improve WordPress speed? (Select all that apply)","options":["Compressing images","Using caching","Removing unused plugins","Installing 40 plugins"],"answers":[0,1,2],"why":"Lighter sites load faster; plugin bloat slows everything down."},{"type":"multiple_choice","question":"Permalinks set to \"Post name\" give URLs like…","options":["/?p=123","/about-us","wp-admin","index.php?id=9"],"answer":1,"why":"Readable URLs help humans and search engines."},{"type":"multiple_choice","question":"The safest source for plugins is…","options":["The official WordPress plugin directory","Random file-sharing sites","Email attachments","Social media links"],"answer":0,"why":"The official directory vets plugins; unknown sources risk malware."},{"type":"true_false","question":"An SSL certificate enables https and is expected by browsers and Google.","options":["True","False"],"answer":0,"why":"https protects visitors and is a ranking/trust signal."},{"type":"multiple_choice","question":"Before handing a site to a client you should…","options":["Test forms, links and mobile view","Delete the admin account permanently","Disable all plugins","Remove the theme"],"answer":0,"why":"A launch checklist (forms, links, mobile, analytics) prevents embarrassing handovers."}]'::jsonb),
+  ('ui-ux-design-with-figma', 'Final Assessment — UI/UX Design with Figma', 'Final assessment — pass to move toward your certificate.', 70, 'Capstone: Case Study Portfolio & First Design Job', '[{"type":"multiple_choice","question":"UX design is primarily concerned with…","options":["How a product works and feels to use","Only colors","Logo animation","Printing"],"answer":0,"why":"UX = the full experience of achieving goals; UI is the visual layer."},{"type":"multiple_choice","question":"Auto layout in Figma is best described as…","options":["Frames that resize and space their content automatically","Automatic color picking","Auto-export","A plugin store"],"answer":0,"why":"Auto layout behaves like flexbox — content-driven, consistent spacing."},{"type":"true_false","question":"Testing with about 5 users uncovers most usability problems.","options":["True","False"],"answer":0,"why":"Small, frequent tests reveal the majority of issues cheaply."},{"type":"multiple_choice","question":"A component in Figma allows…","options":["One master design reused as instances everywhere","Only text editing","Video playback","Database access"],"answer":0,"why":"Edit the master, update every instance — the foundation of design systems."},{"type":"multiple_answer","question":"Which are established UX principles? (Select all that apply)","options":["Hick’s law — more choices slow decisions","Jakob’s law — users expect familiar patterns","Fitts’s law — bigger/closer targets are faster to hit","The rule of more menus"],"answers":[0,1,2],"why":"These classic laws guide real design decisions; more menus is not a principle."},{"type":"multiple_choice","question":"Wireframes are used early because…","options":["Structure changes are cheap before visual polish","They are the final deliverable","Clients prefer gray screens","They replace research"],"answer":0,"why":"Fixing structure in grayscale costs minutes; fixing polished screens costs days."},{"type":"multiple_choice","question":"A design token/system helps teams by…","options":["Centralizing colors, type and spacing decisions","Replacing designers","Increasing file sizes","Hiding components"],"answer":0,"why":"Systems keep many screens and many designers consistent."},{"type":"multiple_choice","question":"The minimum comfortable touch target size on mobile is about…","options":["12px","48px","100px","2px"],"answer":1,"why":"Fingers need roughly 48px targets to tap reliably."},{"type":"true_false","question":"Dark mode should simply invert all colors of the light design.","options":["True","False"],"answer":1,"why":"Naive inversion causes glare and broken contrast — dark themes need desaturated colors and layered surfaces."},{"type":"multiple_choice","question":"The best artifact to hand developers is…","options":["Named layers, states and behavior notes in Dev Mode","A screenshot","A verbal description","A printed page"],"answer":0,"why":"Clean files with specs prevent questions and rework."}]'::jsonb),
   ('microsoft-excel', 'Final Assessment — Microsoft Excel', 'Final assessment — pass to move toward your certificate.', 70, 'Automation Basics: Macros, Shortcuts & Next Steps', '[{"type":"multiple_choice","question":"Every Excel formula starts with which character?","options":["=","#","@","$"],"answer":0,"why":"= tells Excel you are entering a formula, not text."},{"type":"multiple_choice","question":"Pressing F4 on a cell reference toggles…","options":["Absolute/relative reference ($ signs)","Spell check","Print preview","Font color"],"answer":0,"why":"F4 cycles $A$1 → A$1 → $A1 → A1 — essential for copied formulas."},{"type":"multiple_choice","question":"VLOOKUP’s final argument FALSE means…","options":["Require an exact match","Allow approximate match","Hide errors","Sort the data"],"answer":0,"why":"FALSE = exact match — almost always what lookups need."},{"type":"true_false","question":"Ctrl+T converts a data range into a Table that auto-expands with new rows.","options":["True","False"],"answer":0,"why":"Tables absorb new rows automatically, keeping formulas and charts correct."},{"type":"multiple_answer","question":"Which functions summarize data by condition? (Select all that apply)","options":["SUMIF","COUNTIF","IF","TRIM"],"answers":[0,1],"why":"SUMIF/COUNTIF aggregate by condition; IF decides per cell, TRIM cleans text."},{"type":"multiple_choice","question":"A Pivot Table is the fastest tool for…","options":["Summarizing large datasets by categories","Drawing pictures","Writing emails","Formatting fonts"],"answer":0,"why":"Drag fields into rows/columns/values and huge data summarizes instantly."},{"type":"multiple_choice","question":"The error #REF! usually means…","options":["A formula refers to deleted/invalid cells","Division by zero","The file is saved","The cell is text"],"answer":0,"why":"#REF! = broken reference; #DIV/0! and #VALUE! are different errors."},{"type":"multiple_choice","question":"Conditional formatting is ideal for…","options":["Making exceptions and patterns visible instantly","Renaming sheets","Protecting passwords","Sending emails"],"answer":0,"why":"Color rules flag outliers (low stock, high spend) at a glance."},{"type":"true_false","question":"Formatting a cell as Currency changes how the number displays, not its value.","options":["True","False"],"answer":0,"why":"Formats are display-only — formulas still see the raw number."},{"type":"multiple_choice","question":"Which shortcut turns filters on/off for a data range?","options":["Ctrl+Shift+L","Ctrl+P","Alt+F4","Ctrl+K"],"answer":0,"why":"Ctrl+Shift+L toggles AutoFilter dropdowns on the header row."}]'::jsonb),
   ('microsoft-word', 'Final Assessment — Microsoft Word', 'Final assessment — pass to move toward your certificate.', 70, 'Getting Hired: Word Skills That Pay', '[{"type":"multiple_choice","question":"Styles in Word are important because they…","options":["Enable instant reformatting, navigation and automatic TOCs","Only change font color","Slow down typing","Replace spell check"],"answer":0,"why":"Real styles (Heading 1/2/3, Normal) power consistency and automatic tables of contents."},{"type":"multiple_choice","question":"The ¶ button reveals…","options":["Hidden formatting marks","Word count","Page numbers","Comments"],"answer":0,"why":"Showing marks exposes stray Enters, tabs and spaces that cause layout problems."},{"type":"true_false","question":"Mail merge can personalize hundreds of letters from one Excel list.","options":["True","False"],"answer":0,"why":"Merge fields pull each row into the template — bulk personalization."},{"type":"multiple_choice","question":"To move to a new page correctly you should use…","options":["Ctrl+Enter (page break)","Press Enter many times","Ctrl+P","Space bar"],"answer":0,"why":"Page breaks survive edits; repeated Enters break layout later."},{"type":"multiple_choice","question":"Which format should you send a final, uneditable document as?","options":["PDF",".txt","XML",".dotx"],"answer":0,"why":"PDF preserves layout everywhere and resists casual edits."},{"type":"multiple_answer","question":"Which features protect a document’s structure while others fill it? (Select all that apply)","options":["Restrict Editing","Content controls (Developer tab)","Templates (.dotx)","Track Changes"],"answers":[0,1,2],"why":"Restriction, controls and templates enforce fill-only behavior; Track Changes records edits but does not restrict them."},{"type":"multiple_choice","question":"Track Changes is the professional way to…","options":["Review edits from multiple people","Compress files","Add images","Print envelopes"],"answer":0,"why":"Every insertion/deletion stays visible until accepted or rejected."},{"type":"multiple_choice","question":"A table of contents in Word is generated from…","options":["Heading styles","Bold text","Underlined text","Page colors"],"answer":0,"why":"The TOC reads Heading 1/2/3 styles — another reason styles matter."},{"type":"true_false","question":"Document Inspector can remove hidden comments and metadata before sharing.","options":["True","False"],"answer":0,"why":"Always run it before sending files externally."},{"type":"multiple_choice","question":"Professional letter spacing between paragraphs should come from…","options":["Space Before/After paragraph settings","Multiple Enter keys","Blank text boxes","Manual dashes"],"answer":0,"why":"Paragraph spacing survives edits and looks identical across pages."}]'::jsonb),
   ('microsoft-powerpoint', 'Final Assessment — Microsoft PowerPoint', 'Final assessment — pass to move toward your certificate.', 70, 'The Full Office Pro: Word + Excel + PowerPoint Careers', '[{"type":"multiple_choice","question":"The golden rule of slide design is…","options":["One idea per slide","As much text as possible","Ten fonts per deck","No images"],"answer":0,"why":"Slides support the speaker; one idea each keeps the audience listening."},{"type":"multiple_choice","question":"The Slide Master controls…","options":["The theme for every slide at once","Slide transitions only","Speaker notes","File saving"],"answer":0,"why":"Edit the master once — fonts, logos and colors update deck-wide."},{"type":"true_false","question":"The Morph transition animates objects between duplicated slides.","options":["True","False"],"answer":0,"why":"Move/resize objects on the copy, apply Morph, and PowerPoint animates the change."},{"type":"multiple_choice","question":"Body text on projected slides should be at least about…","options":["18pt","8pt","10pt","6pt"],"answer":0,"why":"Audiences at the back need ~18pt minimum to read comfortably."},{"type":"multiple_answer","question":"Which make charts more persuasive? (Select all that apply)","options":["A title stating the insight","Highlighting the key data point","Removing clutter like extra gridlines","Rainbow colors for every bar"],"answers":[0,1,2],"why":"Insight titles, focus and decluttering persuade; rainbow noise distracts."},{"type":"multiple_choice","question":"Presenter View shows the presenter…","options":["Current slide, next slide, notes and timer","Only the slides","The audience’s faces","Email"],"answer":0,"why":"The audience sees slides; you see everything else."},{"type":"multiple_choice","question":"Pressing B during a slideshow…","options":["Blanks the screen to refocus attention on you","Deletes a slide","Ends the show","Starts music"],"answer":0,"why":"B/W blanks the screen — a classic speaker trick."},{"type":"multiple_choice","question":"A deck’s opening should…","options":["State the pain or opportunity in one line","List the agenda for 5 minutes","Thank sponsors first","Define every term"],"answer":0,"why":"Hooks earn attention; agendas can follow."},{"type":"true_false","question":"Multiple different transitions per deck looks more professional than one consistent transition.","options":["True","False"],"answer":1,"why":"One subtle transition deck-wide looks professional; mixing many looks chaotic."},{"type":"multiple_choice","question":"Before emailing a deck with custom fonts you should…","options":["Embed fonts (File → Options → Save)","Convert it to .txt","Remove all images","Increase slide count"],"answer":0,"why":"Embedded fonts keep your typography on any machine."}]'::jsonb)
@@ -6171,12 +6180,12 @@ insert into _seed_project (course_slug, title, description, instructions, requir
 3) Add an AI voiceover, captions and music.
 4) Edit everything into a finished vertical (9:16) video.
 5) Write a short reflection: what prompts worked, what you would improve.', 'One exported vertical video (MP4 or link), the script document, and your 1-page reflection. Submit the video file or a hosted link with a note describing your tools and process.', 'Monetization: Clients, Rates & Getting Paid'),
-  ('video-editing-capcut', 'Final Project: 60-Second Client-Style Edit', 'Edit a 45–60 second video for a real or realistic client brief (product promo, event recap, or creator reel).', '1) Gather or shoot 8–15 clips (phone footage is fine).
+  ('video-editing-with-capcut', 'Final Project: 60-Second Client-Style Edit', 'Edit a 45–60 second video for a real or realistic client brief (product promo, event recap, or creator reel).', '1) Gather or shoot 8–15 clips (phone footage is fine).
 2) Edit with tight cuts, at least 2 transitions used intentionally, background music and sound effects.
 3) Add auto-captions and CORRECT every mistake.
 4) Apply one consistent color style.
 5) Export twice: 9:16 for TikTok/Reels and 16:9 for YouTube, both 1080p.', 'Both exported files (or links), plus a short note listing the techniques used (J/L cuts, keyframes, captions, sound design).', 'Capstone: Produce a Complete 30-Second Viral Edit'),
-  ('graphic-design-canva', 'Final Project: Complete Brand Mini-Kit', 'Design a brand mini-kit for a real or invented business: logo, social media set and one flyer.', '1) Define the brand: name, audience, 2 fonts, 3–4 colors (document why).
+  ('graphic-design-with-canva', 'Final Project: Complete Brand Mini-Kit', 'Design a brand mini-kit for a real or invented business: logo, social media set and one flyer.', '1) Define the brand: name, audience, 2 fonts, 3–4 colors (document why).
 2) Design a primary logo + one variation (e.g. icon-only).
 3) Create a social pack: 1 profile frame, 2 post templates, 1 story template.
 4) Design one A5 flyer with a clear single CTA.
@@ -6186,7 +6195,7 @@ insert into _seed_project (course_slug, title, description, instructions, requir
 3) Create a 30-day content calendar (platforms, pillars, post types).
 4) Design one lead magnet or offer + landing message.
 5) Draft one paid ad (audience, budget, creative, expected result) and list the KPIs you will track.', 'Submit the plan as a PDF or slide deck: audit, customer definition, calendar, lead magnet, ad draft, KPI table.', 'Capstone: Full Marketing Plan for a Real Business'),
-  ('mobile-app-development', 'Final Project: Ship a Real Flutter App', 'Build, polish and distribute a complete Flutter application solving a real need.', '1) Choose a brief: marketplace, learning app, or an app for a real local business.
+  ('mobile-application-development', 'Final Project: Ship a Real Flutter App', 'Build, polish and distribute a complete Flutter application solving a real need.', '1) Choose a brief: marketplace, learning app, or an app for a real local business.
 2) Implement: 4+ screens with navigation, a list built with ListView.builder, forms with validation, state via Provider, and data from an API or Firebase.
 3) Polish: branded icon + splash, themed fonts/colors, loading/empty/error states everywhere.
 4) Build a signed release (APK and/or App Bundle).
@@ -6200,12 +6209,12 @@ insert into _seed_project (course_slug, title, description, instructions, requir
 2) Include: header/nav, hero, services/features section, about, contact form (validated with JS), footer.
 3) Use Flexbox or Grid deliberately; test at 3 screen widths.
 4) Deploy the site (GitHub Pages, Netlify or similar).', 'Deployed site URL + repository link + a short README explaining your structure and the interactive feature.', 'Capstone: Deploy a Portfolio Site & Get Hired'),
-  ('web-design-wordpress', 'Final Project: Complete Business Website on WordPress', 'Build a complete 5+ page WordPress website for a real or practice business and pass a professional launch checklist.', '1) Pages: Home, Services (or Products), About, Blog (2 posts with categories), Contact.
+  ('web-design-with-wordpress', 'Final Project: Complete Business Website on WordPress', 'Build a complete 5+ page WordPress website for a real or practice business and pass a professional launch checklist.', '1) Pages: Home, Services (or Products), About, Blog (2 posts with categories), Contact.
 2) Use a lightweight theme; customize branding via the Customizer or a page builder.
 3) Add a working contact form, WhatsApp button, menu (≤7 items) and footer CTA.
 4) Apply speed (compressed images, caching) and SEO basics (titles, meta, alt text).
 5) Complete the launch checklist: mobile pass, links tested, form tested, analytics installed.', 'The live site URL (or staging URL) + screenshots of each page + your completed launch checklist.', 'Capstone: Build & Launch a Complete Business Website'),
-  ('ui-ux-design-figma', 'Final Project: Mobile App Case Study', 'Design a complete mobile app experience in Figma and publish it as a professional case study.', '1) Research: interview 2–3 users or analyze reviews of a similar app; write the core problem statement.
+  ('ui-ux-design-with-figma', 'Final Project: Mobile App Case Study', 'Design a complete mobile app experience in Figma and publish it as a professional case study.', '1) Research: interview 2–3 users or analyze reviews of a similar app; write the core problem statement.
 2) Map the user flow, then wireframe 4+ key screens in grayscale.
 3) Build a mini design system (colors, type scale, 2–3 components with variants).
 4) Produce the final UI for all screens including one empty state and one error state.
@@ -6379,7 +6388,7 @@ update public.assignments a set lesson_id = w.lesson_id
 -- ---------- 9. completion rules (the certificate gate) ----------
 with want as (
   select c.id as course_id from public.courses c
-  where c.slug = any (array['ai-video-content-creation', 'video-editing-capcut', 'graphic-design-canva', 'digital-marketing', 'mobile-app-development', 'portfolio-creation', 'frontend-web-development', 'web-design-wordpress', 'ui-ux-design-figma', 'microsoft-excel', 'microsoft-word', 'microsoft-powerpoint']::text[])
+  where c.slug = any (array['ai-video-content-creation', 'video-editing-with-capcut', 'graphic-design-with-canva', 'digital-marketing', 'mobile-application-development', 'portfolio-creation', 'frontend-web-development', 'web-design-with-wordpress', 'ui-ux-design-with-figma', 'microsoft-excel', 'microsoft-word', 'microsoft-powerpoint']::text[])
 )
 insert into public.course_completion_rules
   (course_id, require_lessons_pct, require_quiz_avg, require_assignments_approved, require_final_project)
@@ -6476,21 +6485,18 @@ order by c.slug;
 -- ============================================================
 -- Guided step-by-step routes through the REAL published catalog.
 --
--- STEPS RESOLVE BY SLUG CANDIDATES, IN PREFERENCE ORDER.
--- The catalog was consolidated on the live project: five launch slugs are now
--- archived duplicates whose curriculum lives on under a custom twin slug
--- (web-design-wordpress -> web-design-with-wordpress, ui-ux-design-figma ->
--- ui-ux-design-with-figma, mobile-app-development ->
--- mobile-application-development, video-editing-capcut ->
--- video-editing-with-capcut, graphic-design-canva ->
--- graphic-design-with-canva). A path must point at whichever row students can
--- actually open, so every step lists its slugs "twin first, original as the
--- fallback" and takes the first one that is published and not archived. One
--- file therefore stays correct for a fresh project (only the originals exist)
--- and for the live one (only the twins are visible).
+-- EVERY STEP REFERENCES THE LIVE TWIN SLUGS. The catalog was consolidated on
+-- the live project: five launch courses are archived duplicates whose
+-- curriculum lives on under custom twin slugs. Every step in this file names
+-- the twin a student can actually open (e.g. web-design-with-wordpress,
+-- ui-ux-design-with-figma, mobile-application-development,
+-- video-editing-with-capcut, graphic-design-with-canva) and never the
+-- archived launch slug it replaced. seed_12_courses.sql seeds those same twin
+-- slugs, so the paths resolve on a fresh project AND on the live one.
 --
--- If NO candidate for a step resolves, this file aborts loudly instead of
--- silently seeding a path with a missing step (no fake paths, ever).
+-- If ANY step resolves to no published, unarchived course, this file aborts
+-- loudly instead of silently seeding a path with a missing step (no fake
+-- paths, ever).
 --
 -- IDEMPOTENT: keyed on exact title — re-running never duplicates and
 -- never overwrites paths an admin has deliberately edited. Repointing paths
@@ -6504,8 +6510,8 @@ order by c.slug;
 
 do $learning_paths$
 declare
-  -- Each path: title, description, icon, level_range, and steps as an array of
-  -- candidate-slug arrays, in the order a student should take them.
+  -- Each path: title, description, icon, level_range, and steps as the exact
+  -- course slugs a student should take, in order.
   defs jsonb := $paths$[
     {
       "title": "Web & Mobile Developer",
@@ -6513,11 +6519,11 @@ declare
       "icon": "🚀",
       "level_range": "Beginner → Advanced",
       "steps": [
-        ["frontend-web-development"],
-        ["web-design-with-wordpress", "web-design-wordpress"],
-        ["ui-ux-design-with-figma", "ui-ux-design-figma"],
-        ["mobile-application-development", "mobile-app-development"],
-        ["portfolio-creation"]
+        "frontend-web-development",
+        "web-design-with-wordpress",
+        "ui-ux-design-with-figma",
+        "mobile-application-development",
+        "portfolio-creation"
       ]
     },
     {
@@ -6526,11 +6532,11 @@ declare
       "icon": "🎬",
       "level_range": "Beginner → Intermediate",
       "steps": [
-        ["ai-video-content-creation"],
-        ["video-editing-with-capcut", "video-editing-capcut"],
-        ["graphic-design-with-canva", "graphic-design-canva"],
-        ["digital-marketing"],
-        ["portfolio-creation"]
+        "ai-video-content-creation",
+        "video-editing-with-capcut",
+        "graphic-design-with-canva",
+        "digital-marketing",
+        "portfolio-creation"
       ]
     },
     {
@@ -6539,9 +6545,9 @@ declare
       "icon": "📊",
       "level_range": "Beginner → Intermediate",
       "steps": [
-        ["microsoft-word"],
-        ["microsoft-excel"],
-        ["microsoft-powerpoint"]
+        "microsoft-word",
+        "microsoft-excel",
+        "microsoft-powerpoint"
       ]
     },
     {
@@ -6550,10 +6556,10 @@ declare
       "icon": "📈",
       "level_range": "Beginner → Intermediate",
       "steps": [
-        ["digital-marketing"],
-        ["graphic-design-with-canva", "graphic-design-canva"],
-        ["ai-video-content-creation"],
-        ["portfolio-creation"]
+        "digital-marketing",
+        "graphic-design-with-canva",
+        "ai-video-content-creation",
+        "portfolio-creation"
       ]
     }
   ]$paths$;
@@ -6562,9 +6568,7 @@ declare
   lp_title   text;
   lp_steps   uuid[];
   lp_picked  uuid;
-  lp_tried   text;
-  lp_cand    text;
-  step       jsonb;
+  lp_slug    text;
   step_no    int;
 begin
   for lp in select d from jsonb_array_elements(defs) as d loop
@@ -6579,23 +6583,16 @@ begin
     lp_steps := '{}'::uuid[];
     step_no  := 0;
 
-    for step in select s from jsonb_array_elements(lp->'steps') as s loop
-      step_no   := step_no + 1;
-      lp_picked := null;
-      lp_tried  := '';
+    for lp_slug in select s from jsonb_array_elements_text(lp->'steps') as s loop
+      step_no := step_no + 1;
 
-      for lp_cand in select c from jsonb_array_elements_text(step) as c loop
-        lp_tried := case when lp_tried = '' then lp_cand else lp_tried || ' or ' || lp_cand end;
-        if lp_picked is null then
-          select c.id into lp_picked
-            from public.courses c
-           where c.slug = lp_cand and c.published and not c.archived;
-        end if;
-      end loop;
+      select c.id into lp_picked
+        from public.courses c
+       where c.slug = lp_slug and c.published and not c.archived;
 
       if lp_picked is null then
         raise exception 'seed_learning_paths: path "%" step % matches no published, unarchived course [%]',
-          lp_title, step_no, lp_tried;
+          lp_title, step_no, lp_slug;
       end if;
       lp_steps := lp_steps || lp_picked;
     end loop;
@@ -6649,9 +6646,9 @@ end
 $learning_paths_guard$;
 
 -- ---------- Verify ----------
--- Expected on a fresh project: the 7 original slugs plus 5 originals (no twins
--- exist). Expected on the consolidated live project: the 5 twin slugs instead.
--- Every row must be published = true / archived = false.
+-- Every step of the four launch paths, with its course's visibility flags.
+-- Every row must be published = true / archived = false; the five remapped
+-- steps appear under their live twin slugs.
 select lp.title, cid.i as step, c.slug, c.published, c.archived
 from public.learning_paths lp
 cross join lateral unnest(lp.course_ids) with ordinality as cid(id, i)

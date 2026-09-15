@@ -39,9 +39,9 @@ export default function Certificates() {
             {certs.map(cert => {
               const course = getCourseById(cert.courseId);
               return (
-                <div key={cert.id} className="group relative rounded-[24px] glass-strong p-[1px] hover:shadow-[0_0_40px_rgba(14,165,233,0.2)] transition-all">
+                <div key={cert.id} className="group relative rounded-[24px] glass-strong p-[1px] hover:shadow-[0_0_40px_rgba(201,162,39,0.25)] transition-all">
                   <div className="rounded-[23px] bg-gradient-to-br from-[#0a1a4a] to-[#020a1f] p-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 h-40 w-40 bg-gradient-to-br from-cyan-500/10 to-blue-600/10 blur-[40px] rounded-full" />
+                    <div className="absolute top-0 right-0 h-40 w-40 bg-gradient-to-br from-[#c9a227]/15 to-transparent blur-[40px] rounded-full" />
                     <div className="relative">
                       <div className="flex items-start justify-between mb-6">
                         <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center"><Award className="h-6 w-6 text-black" /></div>
@@ -49,16 +49,20 @@ export default function Certificates() {
                       </div>
 
                       <div className="space-y-1">
-                        <div className="text-[11px] tracking-[0.2em] text-white/40 font-bold">WOLI DAN TECH HUB</div>
+                        <div className="text-[11px] tracking-[0.2em] text-[#e9cf8b]/70 font-bold">WOLI DAN TECH HUB</div>
                         <div className="font-display font-black text-xl leading-tight">{cert.courseName}</div>
-                        <div className="text-sm text-white/60">Certificate of Completion</div>
+                        <div className="text-sm text-white/60">Certificate of Achievement</div>
                       </div>
 
                       <div className="mt-6 space-y-3 text-sm">
-                        <div className="flex justify-between"><span className="text-white/40">Student</span><span className="font-bold">{user.fullName}</span></div>
-                        <div className="flex justify-between"><span className="text-white/40">Certificate ID</span><span className="font-mono font-bold text-cyan-300">{cert.certificateId}</span></div>
-                        <div className="flex justify-between"><span className="text-white/40">Date</span><span className="font-bold flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {formatDate(cert.issueDate)}</span></div>
+                        <div className="flex justify-between gap-3"><span className="text-white/40 shrink-0">Student</span><span className="font-bold text-right">{user.fullName}</span></div>
+                        <div className="flex justify-between gap-3"><span className="text-white/40 shrink-0">Certificate ID</span><span className="font-mono font-bold text-cyan-300 text-right break-all">{cert.certificateId}</span></div>
+                        {cert.verificationCode && (
+                          <div className="flex justify-between gap-3"><span className="text-white/40 shrink-0">Verification Code</span><span className="font-mono font-bold text-[#e9cf8b] text-right break-all">{cert.verificationCode}</span></div>
+                        )}
+                        <div className="flex justify-between gap-3"><span className="text-white/40 shrink-0">Date</span><span className="font-bold flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {formatDate(cert.issueDate)}</span></div>
                       </div>
+                      <div className="mt-3 text-[11px] text-white/40">Signed by Olowoake Daniel Ayomide — Director, Woli Dan Tech Hub</div>
 
                       <div className="mt-6 grid grid-cols-2 gap-2">
                         <Link to={`/certificate/${cert.certificateId}`} className="h-11 rounded-full glass flex items-center justify-center gap-2 font-bold text-xs hover:bg-white/10 transition"><Eye className="h-4 w-4" /> VIEW</Link>

@@ -272,3 +272,30 @@ a, button, summary, label, select, [role="button"] {
     scroll-behavior: auto !important;
   }
 }
+
+/* ============================================================
+   CERTIFICATES — navy & gold luxury theme + A4 landscape print
+   The certificate sheet is a fixed-size canvas scaled to fit its
+   container, so it renders identically from 360px phones to desktop
+   and prints as one full-bleed A4 landscape page.
+   ============================================================ */
+.cert-serif { font-family: Georgia, 'Times New Roman', 'Palatino Linotype', serif; }
+.cert-script { font-family: 'Snell Roundhand', 'Segoe Script', 'Apple Chancery', 'Brush Script MT', Georgia, serif; font-style: italic; }
+/* Metallic gold text without any external asset. */
+.cert-gold-text {
+  background: linear-gradient(135deg, #f5e2a2 0%, #c9a227 38%, #9a7b20 55%, #e9cf8b 78%, #c9a227 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media print {
+  @page { size: A4 landscape; margin: 0; }
+  html, body { background: #0a1a4a !important; }
+  nav, footer, .no-print { display: none !important; }
+  .cert-page { padding: 0 !important; margin: 0 !important; max-width: none !important; background: #0a1a4a !important; }
+  .cert-fit-wrap { height: auto !important; }
+  .cert-scaler { transform: none !important; }
+  .cert-sheet { box-shadow: none !important; border-radius: 0 !important; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}

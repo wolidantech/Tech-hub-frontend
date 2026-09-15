@@ -36,6 +36,12 @@ describe('Classroom regression coverage', () => {
     expect(await screen.findByText('Backend supplied theory text')).toBeTruthy();
     expect(mocks.lms.refreshCourseAssessments).toHaveBeenCalledWith('course');
   });
+  it('keeps archived courses out of the classroom', async () => {
+    course.archived = true;
+    render(app());
+    expect(await screen.findByText('This course is not available.')).toBeTruthy();
+    expect(screen.queryByText('Backend supplied theory text')).toBeNull();
+  });
   it('does not announce a certificate without a backend certificate record', async () => {
     mocks.courses.getProgress = () => ({ progress: 100, completedLessons: ['lesson'] });
     render(app());

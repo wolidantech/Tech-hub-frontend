@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import QuizTaker from '../components/learn/QuizTaker';
 import AssignmentPanel from '../components/learn/AssignmentPanel';
 import Discussions from '../components/learn/Discussions';
-import { evaluateCompletion, getCourseCompletionRules } from '../lib/lms';
+import { evaluateCompletion, getCourseCompletionRules, isCatalogCourse } from '../lib/lms';
 import { signedUrl } from '../lib/supabase';
 import { toast, Toaster } from 'sonner';
 
@@ -257,6 +257,10 @@ export default function Learn() {
   if (coursesLoading || dataLoading) return <div role="status" className="min-h-[60vh] grid place-content-center p-6 text-center text-white/60">Loading course and enrollment…</div>;
   if (coursesError || dataError) return <div role="alert" className="min-h-[60vh] grid place-content-center gap-4 p-6 text-center"><p>{coursesError || dataError}</p><button className="btn-primary min-h-11 mx-auto" onClick={() => { refreshCourses(); refreshMine(); }}>Try again</button></div>;
   if (!course) return <div className="min-h-[60vh] grid place-content-center gap-4 p-6 text-center"><p>Course not found.</p><Link className="btn-secondary min-h-11" to="/courses">Browse courses</Link></div>;
+  // Archived/draft courses are never a classroom. The one exception is an admin
+  // walking the explicit ?preview=1 route from the dashboard — even there RLS
+  // decides what content actually exists.
+  if (!isCatalogCourse(course) && !preview) return <div className="min-h-[60vh] grid place-content-center gap-4 p-6 text-center"><p>This course is not available.</p><Link className="btn-secondary min-h-11" to="/courses">Browse courses</Link></div>;
   if (!user) return <Navigate to="/login" replace />;
   if (!preview && !isEnrolled(user.id, course.id)) return <Navigate to={`/course/${slug}`} replace />;
   if (detailLoading) return <div role="status" className="min-h-[60vh] grid place-content-center p-6 text-center text-white/60">Loading modules, lessons and resources…</div>;

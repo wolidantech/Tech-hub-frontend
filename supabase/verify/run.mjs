@@ -1,4 +1,4 @@
-// PGlite behavioral verification for migrations 001-009.
+// PGlite behavioral verification for migrations 001-010.
 // Most fixtures run as the database owner; H26 creates and switches to genuine
 // non-owner anon/authenticated roles so PostgreSQL enforces the catalog/content
 // RLS policies and catches is_admin() recursion on a fresh database.
@@ -18,12 +18,12 @@ const migrations = [
   '001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql',
   '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql',
   '007_classroom_upgrade.sql', '008_cv_builder_and_study_tools.sql',
-  '009_fix_is_admin_recursion.sql',
+  '009_fix_is_admin_recursion.sql', '010_certificate_fullname.sql',
 ];
 for (const f of migrations) {
   await db.exec(readFileSync(`${MIG}/${f}`, 'utf8'));
 }
-console.log('migrations 001-009 applied clean');
+console.log('migrations 001-010 applied clean');
 
 const ADMIN = '11111111-1111-1111-1111-111111111111';
 const STU = '22222222-2222-2222-2222-222222222222';
@@ -268,7 +268,7 @@ await t('H10 approve/reject payments atomically', async () => {
 });
 
 // ---------- H11: cert auto-issue (lessons-only) ----------
-await t('H11 auto-issue on 100% lessons + revoke + masked verify', async () => {
+await t('H11 auto-issue on 100% lessons + revoke + full-name verify', async () => {
   await as(STU);
   for (const L of lessons) await q(`insert into lesson_progress (user_id, course_id, lesson_id) values ('${STU}','${COURSE}','${L}')`);
   const certs = (await q(`select certificate_id, verification_code, status from certificate_issues where user_id='${STU}' and status='valid'`)).rows;
@@ -287,7 +287,10 @@ await t('H11 auto-issue on 100% lessons + revoke + masked verify', async () => {
   await anon();
   const vf = await one(`select verify_certificate('${certs[0].verification_code}') r`);
   assert(vf.r.found === true && vf.r.status === 'revoked', 'verify wrong: ' + JSON.stringify(vf.r));
-  assert(vf.r.studentName === 'A***' && vf.r.studentName !== 'Ada Lovelace', 'name not masked: ' + vf.r.studentName);
+  // Migration 010: the owner requires the FULL holder name on certificates and
+  // the public verifier — no masking (certificate IDs/codes are unguessable).
+  assert(vf.r.studentName === 'Ada Lovelace', 'verify no longer returns the full holder name: ' + vf.r.studentName);
+  assert(vf.r.verificationCode === certs[0].verification_code, 'verify no longer exposes the verification code');
   return certs[0];
 });
 
@@ -637,6 +640,30 @@ await t('H26 migration 009 is idempotent and RLS enforces catalog/content gates 
   } finally {
     await rlsDb.close();
   }
+});
+
+// ---------- H27: migration 010 — verification code backfill + full name ----------
+await t('H27 migration 010: backfills empty verification codes, keeps them stable, verify still finds by ID and code', async () => {
+  await as(ADMIN);
+  // Legacy row issued before codes were enforced ('' stands in for the live NULL rows).
+  await q(`insert into certificate_issues (certificate_id, verification_code, user_id, student_name, course_id, course_name, status)
+    values ('WDTH-2026-BACKFILL', '', '${STU}', 'Grace Hopper', '${COURSE}', 'Backfill Test Course', 'valid')`);
+  const before = await one(`select verification_code from certificate_issues where certificate_id='WDTH-2026-BACKFILL'`);
+  assert(!before.verification_code, 'fixture should start without a code');
+  // Re-applying 010 models the live backfill pass; the whole file must stay idempotent.
+  await db.exec(readFileSync(`${MIG}/010_certificate_fullname.sql`, 'utf8'));
+  const after = await one(`select verification_code from certificate_issues where certificate_id='WDTH-2026-BACKFILL'`);
+  assert(/^WDTH-[0-9A-F]{4}-[0-9A-F]{4}$/.test(after.verification_code || ''), 'code not backfilled in project format: ' + after.verification_code);
+  await db.exec(readFileSync(`${MIG}/010_certificate_fullname.sql`, 'utf8'));
+  const again = await one(`select verification_code from certificate_issues where certificate_id='WDTH-2026-BACKFILL'`);
+  assert(again.verification_code === after.verification_code, 're-running 010 shuffled an already-issued code');
+  await anon();
+  const byId = await one(`select verify_certificate('WDTH-2026-BACKFILL') r`);
+  assert(byId.r.found === true && byId.r.studentName === 'Grace Hopper' && byId.r.verificationCode === again.verification_code,
+    'verify by ID broken after backfill: ' + JSON.stringify(byId.r));
+  const byCode = await one(`select verify_certificate('${again.verification_code}') r`);
+  assert(byCode.r.found === true && byCode.r.certificateId === 'WDTH-2026-BACKFILL',
+    'verify by backfilled code broken: ' + JSON.stringify(byCode.r));
 });
 
 console.log(`\n==== RESULT: ${pass} passed, ${fail} failed ====`);

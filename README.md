@@ -110,8 +110,8 @@ catalog) with the fix for each. It also has a **Copy report** button.
 ```bash
 cd supabase/verify
 npm install
-npm run verify        # migrations 001-009 + backend/RLS behavior (46 assertions)
-npm run verify:seed   # exact 12-course curriculum seed chain (38 assertions)
+npm run verify        # migrations 001-010 + backend/RLS behavior (47 assertions)
+npm run verify:seed   # exact 12-course curriculum seed chain (43 assertions)
 ```
 
 Both run in throwaway Postgres (PGlite), so they need no Supabase project.
