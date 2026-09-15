@@ -71,12 +71,13 @@ async function tErr(name, fn, match) {
 }
 
 // ---------- 1. migrations ----------
-for (const f of [
+const MIGRATIONS = [
   '001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql',
   '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql',
   '007_classroom_upgrade.sql', '008_cv_builder_and_study_tools.sql',
   '009_fix_is_admin_recursion.sql',
-]) {
+];
+for (const f of MIGRATIONS) {
   await db.exec(read(join(here, '../migrations', f)));
 }
 console.log('migrations 001-009 applied clean');
@@ -390,14 +391,7 @@ await tErr('make_admin reports a missing profile clearly', async () => {
 // works standalone: fresh DB, migrations only, then the single combined file.
 const fresh = new PGlite();
 await fresh.exec(read(join(here, 'stubs.sql')));
-for (const f of [
-  '001_lms_core.sql', '002_phase2_community.sql', '003_production_backend.sql',
-  '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql',
-  '007_classroom_upgrade.sql', '008_cv_builder_and_study_tools.sql',
-  '009_fix_is_admin_recursion.sql',
-]) {
-  await fresh.exec(read(join(here, '../migrations', f)));
-}
+for (const f of MIGRATIONS) await fresh.exec(read(join(here, '../migrations', f)));
 await fresh.exec(read(join(here, '../seed/setup_full_catalog.sql')));
 
 const fcount = async (sql) => Number((await fresh.query(sql)).rows[0].n);
@@ -454,6 +448,115 @@ await t('one-step setup ships 4 learning paths wired to real courses', async () 
     cross join lateral unnest(lp.course_ids) as cid
     where not exists (select 1 from courses c where c.id = cid)`);
   assert(broken === 0, `${broken} path steps reference nonexistent courses`);
+});
+
+// ---------- 8. consolidated catalog (the live project's topology) ----------
+// On the live project five launch slugs are archived duplicates whose curriculum
+// now lives on under custom "twin" slugs. The paths seed must resolve every step
+// to whatever is actually visible, or /learning-paths renders short paths for
+// students (RLS hides the archived row) and dead links for admins.
+const CONSOLIDATED = {
+  'graphic-design-canva': 'graphic-design-with-canva',
+  'mobile-app-development': 'mobile-application-development',
+  'ui-ux-design-figma': 'ui-ux-design-with-figma',
+  'video-editing-capcut': 'video-editing-with-capcut',
+  'web-design-wordpress': 'web-design-with-wordpress',
+};
+const live = new PGlite();
+await live.exec(read(join(here, 'stubs.sql')));
+for (const f of MIGRATIONS) await live.exec(read(join(here, '../migrations', f)));
+await live.exec(read(join(here, '../seed/seed_12_courses.sql')));
+await live.exec(read(join(here, '../seed/seed_curriculum.sql')));
+await live.exec(read(join(here, '../seed/publish_courses.sql')));
+// Archive the duplicates and put the catalog copy on their twins, as on live.
+const archivedList = Object.keys(CONSOLIDATED).map((x) => `'${x}'`).join(', ');
+await live.exec(`update courses set archived = true, published = false
+                  where slug = any(array[${archivedList}]::text[])`);
+await live.exec(`
+  insert into courses (slug, title, short_description, description, category, instructor,
+                       instructor_role, duration, level, price, original_price, thumbnail_key,
+                       color, published, featured)
+  select t.twin, c.title, c.short_description, c.description, c.category, c.instructor,
+         c.instructor_role, c.duration, c.level, c.price, c.original_price, c.thumbnail_key,
+         c.color, true, false
+    from (values ${Object.entries(CONSOLIDATED).map(([o, t]) => `('${o}','${t}')`).join(', ')}) as t(orig, twin)
+    join courses c on c.slug = t.orig`);
+await live.exec(`
+  insert into course_modules (course_id, title, position)
+  select tc.id, m.title, m.position
+    from course_modules m
+    join courses oc on oc.id = m.course_id
+    join (values ${Object.entries(CONSOLIDATED).map(([o, t]) => `('${o}','${t}')`).join(', ')}) as t(orig, twin) on t.orig = oc.slug
+    join courses tc on tc.slug = t.twin;
+  insert into course_lessons (module_id, course_id, title, type, duration, position, resources)
+  select nm.id, tc.id, l.title, l.type, l.duration, l.position, l.resources
+    from course_lessons l
+    join courses oc on oc.id = l.course_id
+    join course_modules om on om.id = l.module_id
+    join (values ${Object.entries(CONSOLIDATED).map(([o, t]) => `('${o}','${t}')`).join(', ')}) as t(orig, twin) on t.orig = oc.slug
+    join courses tc on tc.slug = t.twin
+    join course_modules nm on nm.course_id = tc.id and nm.title = om.title`);
+
+const lcount = async (sql, p = []) => Number((await live.query(sql, p)).rows[0].n);
+
+await t('consolidated catalog keeps exactly the 12 live courses visible', async () => {
+  const visible = await lcount(`select count(*)::int as n from courses where published and not archived`);
+  assert(visible === 12, `expected 12 visible courses, got ${visible}`);
+});
+
+await live.exec(read(join(here, '../seed/seed_learning_paths.sql')));
+
+await t('learning paths resolve every step to the live twin, not the archived original', async () => {
+  const rows = (await live.query(`
+    select lp.title, cid.i, c.slug from learning_paths lp
+    cross join lateral unnest(lp.course_ids) with ordinality as cid(id, i)
+    join courses c on c.id = cid.id order by lp.title, cid.i`)).rows;
+  assert(rows.length === 17, `expected 17 steps across 4 paths, got ${rows.length}`);
+  for (const [orig, twin] of Object.entries(CONSOLIDATED)) {
+    const onTwin = rows.filter((r) => r.slug === twin).length;
+    const onOrig = rows.filter((r) => r.slug === orig).length;
+    assert(onOrig === 0, `a step still points at the archived ${orig}`);
+    assert(onTwin >= 1, `no path step resolved to the live twin ${twin}`);
+  }
+  const webMobile = rows.filter((r) => r.title === 'Web & Mobile Developer').map((r) => r.slug);
+  assert(JSON.stringify(webMobile) === JSON.stringify([
+    'frontend-web-development', 'web-design-with-wordpress', 'ui-ux-design-with-figma',
+    'mobile-application-development', 'portfolio-creation',
+  ]), `unexpected builder track: ${webMobile.join(' -> ')}`);
+});
+
+await t('no path step points at an archived or unpublished course', async () => {
+  const bad = await lcount(`
+    select count(*)::int as n from learning_paths lp
+    cross join lateral unnest(lp.course_ids) as cid
+    join courses c on c.id = cid
+    where c.archived or not c.published`);
+  assert(bad === 0, `${bad} path step(s) point at courses students cannot open`);
+});
+
+await t('re-running the paths seed on the consolidated catalog stays at 4 paths', async () => {
+  await live.exec(read(join(here, '../seed/seed_learning_paths.sql')));
+  const n = await lcount(`select count(*)::int as n from learning_paths`);
+  assert(n === 4, `expected 4 paths after re-run, got ${n}`);
+});
+
+await t('paths seed aborts loudly when a step matches no visible course', async () => {
+  const stranded = new PGlite();
+  await stranded.exec(read(join(here, 'stubs.sql')));
+  for (const f of MIGRATIONS) await stranded.exec(read(join(here, '../migrations', f)));
+  await stranded.exec(read(join(here, '../seed/seed_12_courses.sql')));
+  await stranded.exec(read(join(here, '../seed/publish_courses.sql')));
+  await stranded.exec(`update courses set archived = true where slug = 'video-editing-capcut'`);
+  let message = '';
+  try {
+    await stranded.exec(read(join(here, '../seed/seed_learning_paths.sql')));
+  } catch (e) {
+    message = String(e.message || e);
+  }
+  assert(message.includes('matches no published, unarchived course'),
+    `expected a loud abort naming the unresolvable step, got: ${message.split('\n')[0]}`);
+  const seeded = Number((await stranded.query(`select count(*)::int as n from learning_paths`)).rows[0].n);
+  assert(seeded === 0, `a broken path was written before the abort (${seeded} rows)`);
 });
 
 // ---------- summary ----------

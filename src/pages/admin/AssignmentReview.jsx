@@ -153,7 +153,7 @@ export default function AssignmentReview() {
       {/* File viewer */}
       {viewing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
-          <div className="w-full max-w-[700px] max-h-[90vh] overflow-auto glass-strong rounded-[24px] p-6 space-y-4">
+          <div className="w-full max-w-[700px] dialog-panel overflow-auto glass-strong rounded-[24px] p-6 space-y-4">
             <div className="flex justify-between items-center"><h3 className="font-bold">{(viewing.kind || 'file') === 'file' ? viewing.fileName : (viewing.kind === 'link' ? 'Link submission' : 'Text submission')} {(viewing.late) && <span className="ml-2 px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 text-[10px]">LATE</span>}</h3><button onClick={() => setViewing(null)}><X className="h-5 w-5" /></button></div>
             <div className="text-xs text-white/50">{nameOf(viewing.userId)} • {(viewing.kind || 'file').toUpperCase()} • {viewing.fileSize ? `${(viewing.fileSize / 1024).toFixed(0)} KB • ` : ''}{new Date(viewing.submittedAt).toLocaleString()}</div>
             {viewing.note && <div className="rounded-xl bg-white/[0.04] p-3 text-sm">"{viewing.note}"</div>}
@@ -177,7 +177,7 @@ export default function AssignmentReview() {
       {/* Review modal */}
       {reviewing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
-          <div className="w-full max-w-[520px] glass-strong rounded-[24px] p-6 space-y-4">
+          <div className="w-full max-w-[520px] dialog-panel glass-strong rounded-[24px] p-6 space-y-4">
             <div className="flex justify-between items-center"><h3 className="font-bold text-lg">Review Submission</h3><button onClick={() => setReviewing(null)}><X className="h-5 w-5" /></button></div>
             <div className="text-sm text-white/50">{nameOf(reviewing.userId)} • {reviewing.fileName}</div>
             <div>

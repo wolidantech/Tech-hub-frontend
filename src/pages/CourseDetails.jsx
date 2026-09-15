@@ -3,7 +3,7 @@ import { Clock, BookOpen, BarChart3, User, Star, CheckCircle2, Play, Award, Arro
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
-import { formatNaira, getCourseThumbnailGradient } from '../lib/utils';
+import { copyText, formatNaira, getCourseThumbnailGradient } from '../lib/utils';
 import CourseArt from '../components/course/CourseArt';
 import { useState, useEffect } from 'react';
 import { toast, Toaster } from 'sonner';
@@ -346,7 +346,16 @@ export default function CourseDetails() {
           <div className="rounded-[24px] glass p-6">
             <h4 className="font-bold mb-4">Share This Course</h4>
             <div className="flex gap-2">
-              <button onClick={() => navigator.clipboard.writeText(window.location.href)} className="flex-1 h-11 rounded-full glass text-sm font-bold hover:bg-white/10">Copy Link</button>
+              <button
+                onClick={async () => {
+                  const ok = await copyText(window.location.href);
+                  if (ok) toast.success('Course link copied!');
+                  else toast.error('Copy was blocked — long-press the address bar to copy.');
+                }}
+                className="flex-1 h-11 rounded-full glass text-sm font-bold hover:bg-white/10 active:scale-[0.98] transition"
+              >
+                Copy Link
+              </button>
               <a href={`https://wa.me/?text=Check out this course: ${course.title} ${window.location.href}`} target="_blank" rel="noreferrer" className="flex-1 h-11 rounded-full bg-[#25D366] text-white text-sm font-bold flex items-center justify-center">WhatsApp</a>
             </div>
           </div>

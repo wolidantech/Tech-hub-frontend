@@ -4,6 +4,7 @@ import { Search as SearchIcon, BookOpen, Map as MapIcon, MessagesSquare, Layers,
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { searchSubjects, coursesForSubject } from '../data/skillsLibrary';
+import { isCatalogCourse } from '../lib/lms';
 import { searchOccupations } from '../data/occupations';
 
 export default function Search() {
@@ -18,13 +19,13 @@ export default function Search() {
   useEffect(() => {
     if (!q || hydrated.current || !courses.length) return;
     hydrated.current = true;
-    courses.filter((c) => c.published !== false && !c.archived && !c.curriculum?.length)
+    courses.filter((c) => isCatalogCourse(c) && !c.curriculum?.length)
       .forEach((c) => ensureCourseDetail(c.id).catch(() => {}));
   }, [q, courses, ensureCourseDetail]);
 
   const results = useMemo(() => {
     if (!q) return null;
-    const pub = courses.filter((c) => c.published !== false && !c.archived);
+    const pub = courses.filter(isCatalogCourse);
     const matchCourses = pub.filter((c) => `${c.title} ${c.shortDescription} ${c.category} ${c.level || ''}`.toLowerCase().includes(q));
     const lessons = [];
     const resources = [];

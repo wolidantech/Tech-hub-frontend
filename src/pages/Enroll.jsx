@@ -4,7 +4,7 @@ import { Shield, Copy, CheckCircle2, Upload, AlertTriangle, ArrowLeft, FileText,
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
-import { formatNaira } from '../lib/utils';
+import { copyText, formatNaira } from '../lib/utils';
 import { toast, Toaster } from 'sonner';
 import CourseArt from '../components/course/CourseArt';
 import PaymentFlow from '../components/payment/PaymentFlow';
@@ -86,11 +86,16 @@ export default function Enroll() {
     );
   }
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(BANK_DETAILS.accountNumber);
-    setCopied(true);
-    toast.success('Account number copied!');
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    if (await copyText(BANK_DETAILS.accountNumber)) {
+      setCopied(true);
+      toast.success('Account number copied!');
+      setTimeout(() => setCopied(false), 2000);
+      return;
+    }
+    // Android WebView / iOS in-app browsers block the clipboard API. Tell the
+    // student what to do instead of failing silently on a payment step.
+    toast.error('Copy was blocked by your browser — long-press the account number to copy it.');
   };
 
   const handleApplyCoupon = async () => {
@@ -365,7 +370,7 @@ export default function Enroll() {
                   </div>
                 ) : (
                   <div className="flex gap-2">
-                    <input value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="ENTER COUPON" className="flex-1 h-11 rounded-full glass px-4 text-sm font-mono focus:outline-none focus:border-cyan-400/50" />
+                    <input value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="ENTER COUPON" autoComplete="off" autoCapitalize="characters" spellCheck={false} enterKeyHint="go" className="flex-1 h-11 rounded-full glass px-4 text-sm font-mono focus:outline-none focus:border-cyan-400/50" />
                     <button onClick={handleApplyCoupon} className="px-5 h-11 rounded-full bg-white text-black font-bold text-xs hover:bg-white/90">APPLY</button>
                   </div>
                 )}
@@ -443,19 +448,19 @@ export default function Enroll() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-[11px] font-bold tracking-widest text-white/40 mb-2 block">STUDENT NAME *</label>
-                      <input required value={form.studentName} onChange={(e) => setForm({ ...form, studentName: e.target.value })} placeholder="Full Name" className="w-full h-[48px] rounded-full glass px-5 text-sm focus:outline-none focus:border-cyan-400/50" />
+                      <input required value={form.studentName} onChange={(e) => setForm({ ...form, studentName: e.target.value })} placeholder="Full Name" autoComplete="name" autoCapitalize="words" enterKeyHint="next" className="w-full h-[48px] rounded-full glass px-5 text-sm focus:outline-none focus:border-cyan-400/50" />
                     </div>
                     <div>
                       <label className="text-[11px] font-bold tracking-widest text-white/40 mb-2 block">PHONE NUMBER *</label>
                       <div className="relative">
                         <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-                        <input required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="0815..." className="w-full h-[48px] rounded-full glass pl-11 pr-5 text-sm focus:outline-none focus:border-cyan-400/50" />
+                        <input required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="0815..." type="tel" autoComplete="tel" inputMode="tel" enterKeyHint="next" className="w-full h-[48px] rounded-full glass pl-11 pr-5 text-sm focus:outline-none focus:border-cyan-400/50" />
                       </div>
                     </div>
                   </div>
                   <div>
                     <label className="text-[11px] font-bold tracking-widest text-white/40 mb-2 block">EMAIL ADDRESS *</label>
-                    <input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@example.com" className="w-full h-[48px] rounded-full glass px-5 text-sm focus:outline-none focus:border-cyan-400/50" />
+                    <input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@example.com" autoComplete="email" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="next" className="w-full h-[48px] rounded-full glass px-5 text-sm focus:outline-none focus:border-cyan-400/50" />
                   </div>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
@@ -464,7 +469,7 @@ export default function Enroll() {
                     </div>
                     <div>
                       <label className="text-[11px] font-bold tracking-widest text-white/40 mb-2 block">AMOUNT (₦) *</label>
-                      <input required type="number" min="1" value={form.amount} onChange={(e) => { setForm({ ...form, amount: e.target.value }); setAmountError(''); }} className={`w-full h-[48px] rounded-full glass px-5 text-sm font-bold focus:outline-none focus:border-cyan-400/50 ${amountError ? 'border-red-400/60' : ''}`} />
+                      <input required type="number" min="1" value={form.amount} onChange={(e) => { setForm({ ...form, amount: e.target.value }); setAmountError(''); }} autoComplete="off" inputMode="numeric" enterKeyHint="next" className={`w-full h-[48px] rounded-full glass px-5 text-sm font-bold focus:outline-none focus:border-cyan-400/50 ${amountError ? 'border-red-400/60' : ''}`} />
                       {amountError && <div className="mt-2 text-xs text-red-300 flex gap-1.5"><AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" /> {amountError}</div>}
                     </div>
                   </div>
@@ -478,7 +483,7 @@ export default function Enroll() {
                     </div>
                     <div>
                       <label className="text-[11px] font-bold tracking-widest text-white/40 mb-2 block">PAYMENT / TRANSACTION REFERENCE *</label>
-                      <input required value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="e.g. TRF-123456789" className="w-full h-[48px] rounded-full glass px-5 text-sm focus:outline-none focus:border-cyan-400/50 font-mono" />
+                      <input required value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="e.g. TRF-123456789" autoComplete="off" autoCapitalize="characters" spellCheck={false} enterKeyHint="next" className="w-full h-[48px] rounded-full glass px-5 text-sm focus:outline-none focus:border-cyan-400/50 font-mono" />
                     </div>
                   </div>
 

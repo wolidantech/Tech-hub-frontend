@@ -231,7 +231,7 @@ export default function StudentControl() {
         <h2 className="font-bold text-xl flex items-center gap-2"><UserCheck className="h-5 w-5 text-cyan-300" /> Student Control ({students.length})</h2>
         <div className="relative w-full sm:w-auto">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search students..." className="h-11 w-full sm:w-[280px] rounded-full glass pl-10 pr-4 text-sm" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search students..." type="search" autoComplete="off" enterKeyHint="search" className="h-11 w-full sm:w-[280px] rounded-full glass pl-10 pr-4 text-sm" />
         </div>
       </div>
       <div className="glass rounded-[20px] overflow-hidden">

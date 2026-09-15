@@ -1,6 +1,6 @@
 /* WOLI DAN TECH HUB service worker — cache-first shell, network-first pages */
-const CACHE = 'wdth-v2';
-const SHELL = ['/', '/favicon.svg', '/manifest.webmanifest'];
+const CACHE = 'wdth-v3';
+const SHELL = ['/', '/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png', '/logo.svg', '/manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -22,7 +22,7 @@ self.addEventListener('fetch', (e) => {
   }
   // Never cache same-origin API responses, signed downloads, or dev modules.
   const path = new URL(request.url).pathname;
-  if (!path.startsWith('/assets/') && !['/favicon.svg', '/logo.svg', '/manifest.webmanifest'].includes(path)) return;
+  if (!path.startsWith('/assets/') && !['/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/logo.svg', '/manifest.webmanifest'].includes(path)) return;
   // Static assets: cache-first
   e.respondWith(
     caches.match(request).then((hit) => {

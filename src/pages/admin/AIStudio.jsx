@@ -38,7 +38,11 @@ export default function AIStudio() {
     try {
       const input = { ...form, topic: form.topic || form.courseName, voice: { gender: form.voiceGender, language: form.voiceLang, speed: Number(form.voiceSpeed), teachingStyle: form.teachingStyle } };
       const content = await runAIGeneration(kind, input, { actor: user });
-      toast.success(`Draft generated (${content.provider}) — review before publishing`);
+      if (content.degraded) {
+        toast.warning(`Draft generated on-device — the AI service did not answer (${content.gatewayError?.message || 'unavailable'}). Read it closely: it is a template, not model output.`, { duration: 9000 });
+      } else {
+        toast.success(`Draft generated (${content.provider}) — review before publishing`);
+      }
       setPreview(content.id);
     } catch (err) {
       toast.error(err.message);

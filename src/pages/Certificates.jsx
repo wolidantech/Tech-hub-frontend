@@ -23,7 +23,7 @@ export default function Certificates() {
           </div>
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search certificates..." className="h-11 w-[280px] rounded-full glass pl-11 pr-4 text-sm placeholder:text-white/40 focus:outline-none" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search certificates..." type="search" autoComplete="off" autoCapitalize="none" spellCheck={false} enterKeyHint="search" className="h-11 w-full sm:w-[280px] rounded-full glass pl-11 pr-4 text-base sm:text-sm placeholder:text-white/40 focus:outline-none" />
           </div>
         </div>
 

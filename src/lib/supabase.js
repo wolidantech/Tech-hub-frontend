@@ -31,6 +31,32 @@ export function requireSb() {
   return supabase;
 }
 
+// ---------- Authorization for our own AI gateway ----------
+// The AI endpoints (chat tutor + content studio) are separate from Supabase, but
+// the gateway needs to know WHO is asking: it rate-limits per student, keeps
+// lesson context scoped to courses the student is enrolled in, and must reject
+// anonymous traffic. The student's Supabase access token is the credential.
+//
+// This helper exists so every outbound AI call authenticates identically —
+// a forgotten header shows up as a mysterious 401 only for signed-in users,
+// which is one of the hardest things to debug from a phone.
+//
+// Contract: resolves to `{}` (never rejects) when Supabase is not configured or
+// there is no session, so the browser still sends an unauthenticated request and
+// the gateway's own 401 copy explains it, instead of the UI throwing "no client".
+export async function aiAuthHeaders() {
+  if (!supabase) return {};
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
+    // Anon key is public and already sits in the bundle; it adds nothing here,
+    // so only a real user token is attached.
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
+
 // ---------- User-safe errors (never leak DB internals/keys) ----------
 export function friendlyError(err, fallback = 'Something went wrong. Please try again.') {
   if (!err) return fallback;

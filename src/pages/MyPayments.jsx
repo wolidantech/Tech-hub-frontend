@@ -234,7 +234,7 @@ export default function MyPayments() {
         {/* Receipt Modal */}
         {selectedReceipt && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
-            <div className="w-full max-w-[600px] max-h-[90vh] overflow-auto glass-strong rounded-[24px] p-6 space-y-4">
+            <div className="w-full max-w-[600px] dialog-panel overflow-auto glass-strong rounded-[24px] p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-lg">Payment Receipt</h3>
                 <button onClick={() => setSelectedReceipt(null)} className="h-8 w-8 rounded-full glass flex items-center justify-center">✕</button>

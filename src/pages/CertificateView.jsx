@@ -2,7 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Award, Download, Verified, Calendar, User, BookOpen, ArrowLeft, Share2 } from 'lucide-react';
 import { useCourses } from '../context/CourseContext';
 import { useAuth } from '../context/AuthContext';
-import { formatDate } from '../lib/utils';
+import { formatDate, shareOrCopy } from '../lib/utils';
 import { useRef, useState, useEffect } from 'react';
 
 export default function CertificateView() {
@@ -11,6 +11,7 @@ export default function CertificateView() {
   const { user } = useAuth();
   const certRef = useRef(null);
   const [cert, setCert] = useState(undefined); // undefined = loading
+  const [shareState, setShareState] = useState('idle');
 
   useEffect(() => {
     let alive = true;
@@ -64,7 +65,23 @@ export default function CertificateView() {
         <Link to="/certificates" className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white mb-8"><ArrowLeft className="h-4 w-4" /> Back to Certificates</Link>
 
         <div className="flex flex-wrap gap-3 justify-end mb-6 print:hidden no-print">
-          <button onClick={() => navigator.clipboard.writeText(window.location.href)} className="px-5 py-2.5 rounded-full glass font-bold text-sm flex items-center gap-2"><Share2 className="h-4 w-4" /> Share</button>
+          <button
+            onClick={async () => {
+              const result = await shareOrCopy({
+                title: 'WOLI DAN TECH HUB certificate',
+                text: cert?.holderName ? `${cert.holderName} completed a WOLI DAN TECH HUB course` : '',
+                url: window.location.href,
+              });
+              if (result === 'copied' || result === 'failed') {
+                setShareState(result);
+                setTimeout(() => setShareState('idle'), 2200);
+              }
+            }}
+            className="px-5 py-2.5 rounded-full glass font-bold text-sm flex items-center gap-2 active:scale-[0.98] transition"
+          >
+            <Share2 className="h-4 w-4" />
+            {shareState === 'copied' ? 'Link copied' : shareState === 'failed' ? 'Long-press to copy' : 'Share'}
+          </button>
           <button onClick={handlePrint} className="px-5 py-2.5 rounded-full bg-white text-black font-bold text-sm flex items-center gap-2"><Download className="h-4 w-4" /> Download PDF</button>
         </div>
         <div className="text-xs text-white/40 mb-6 no-print">Tip: choose "Save as PDF" in the print dialog to download your certificate as a PDF.</div>

@@ -17,6 +17,8 @@
 // ALL AI output enters the system as DRAFT and requires admin review.
 // ============================================================
 
+import { aiAuthHeaders } from './supabase';
+
 const REMOTE_ENDPOINT = import.meta.env?.VITE_AI_ENDPOINT || '';
 
 // ---------------- Secure backend provider (no keys in frontend) ----------------
@@ -24,13 +26,30 @@ const SecureBackendProvider = {
   name: 'secure-backend',
   supports() { return Boolean(REMOTE_ENDPOINT); },
   async generate(kind, input, opts = {}) {
-    const res = await fetch(REMOTE_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
-      body: JSON.stringify({ kind, input, options: opts }),
-    });
-    if (!res.ok) throw new Error(`AI backend error (${res.status})`);
-    const data = await res.json();
+    // Same credential as the chat tutor: the gateway must know which signed-in
+    // admin is generating course content (it is rate limited and audited), and
+    // an anonymous POST to an admin-only route is what makes a Studio button
+    // appear to "hang" before it says 401.
+    const auth = await aiAuthHeaders();
+    let res;
+    try {
+      res = await fetch(REMOTE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...auth, ...(opts.headers || {}) },
+        body: JSON.stringify({ kind, input, options: opts }),
+      });
+    } catch {
+      throw new Error('The AI service is unreachable — the device may be offline. Content generation still works on this device if you switch the Studio to on-device mode.');
+    }
+    if (!res.ok) {
+      const wait = Math.min(600, Number(res.headers?.get?.('retry-after')) || 0);
+      if (res.status === 401 || res.status === 403) throw new Error('Sign in with an administrator account before using the AI service (the request was refused).');
+      if (res.status === 429) throw new Error(`The AI service is rate limiting us${wait ? ` — try again in ${wait}s` : ''}.`);
+      if (res.status === 501) throw new Error('The AI service has no model key configured on the server yet, so it cannot generate online. Use on-device mode, or add the provider key to the gateway.');
+      throw new Error(`The AI service returned an error (${res.status}). Try again; if it continues, check the gateway logs.`);
+    }
+    let data;
+    try { data = await res.json(); } catch { throw new Error('The AI service replied with an unreadable response. Try again.'); }
     return normalizeOutput(kind, data.output ?? data, input, 'secure-backend');
   },
 };
@@ -276,10 +295,21 @@ export async function generate(kind, input = {}, opts = {}) {
   try {
     return await provider.generate(kind, input, opts);
   } catch (err) {
-    // Graceful fallback to local templates if backend fails
+    // Graceful fallback to local templates if the backend fails. It is *marked*,
+    // because a template draft that looks like a model draft gets approved
+    // without being read: the Studio shows "on-device fallback" plus the gateway
+    // reason, so an admin knows exactly what they are reviewing.
     if (provider !== LocalTemplateProvider) {
       console.warn('[AI] backend failed, falling back to local templates:', err.message);
-      return LocalTemplateProvider.generate(kind, input);
+      const out = await LocalTemplateProvider.generate(kind, input);
+      return {
+        ...out,
+        degraded: true,
+        gatewayError: {
+          code: err?.status ? String(err.status) : 'gateway',
+          message: err?.message || 'The AI service is unavailable.',
+        },
+      };
     }
     throw err;
   }

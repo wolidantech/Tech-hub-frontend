@@ -210,7 +210,7 @@ export default function CourseManager() {
         {/* Lesson editor modal */}
         {lessonForm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
-            <div className="w-full max-w-[640px] max-h-[90vh] overflow-auto glass-strong rounded-[24px] p-6 space-y-4">
+            <div className="w-full max-w-[640px] dialog-panel overflow-auto glass-strong rounded-[24px] p-6 space-y-4">
               <div className="flex justify-between items-center"><h3 className="font-bold text-lg">{lessonForm.lessonId ? 'Edit Lesson' : 'Add Lesson'}</h3><button onClick={() => setLessonForm(null)}><X className="h-5 w-5" /></button></div>
               <input value={lessonData.title} onChange={(e) => setLessonData({ ...lessonData, title: e.target.value })} placeholder="Lesson title" className="w-full h-11 rounded-full glass px-4 text-sm" />
               <div className="grid sm:grid-cols-2 gap-3">
@@ -251,7 +251,7 @@ export default function CourseManager() {
         </div>
         {view === 'courses' && (
           <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search courses..." className="h-11 w-full sm:w-[220px] rounded-full glass px-4 text-sm" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search courses..." type="search" autoComplete="off" enterKeyHint="search" className="h-11 w-full sm:w-[220px] rounded-full glass px-4 text-sm" />
             <button onClick={() => setShowAdd(true)} className="btn-primary !py-2.5 !px-5 text-xs gap-2"><Plus className="h-4 w-4" /> ADD COURSE</button>
           </div>
         )}

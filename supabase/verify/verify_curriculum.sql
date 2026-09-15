@@ -66,23 +66,36 @@ order by c.featured desc, c.created_at, c.slug;
 
 -- 3) LAUNCH RELEASE BLOCKERS. This result must be EMPTY before release.
 --    Each row says exactly which contract item still differs from the seed.
-with expected(slug) as (
+-- The catalog was consolidated on the live project: five launch slugs are
+-- archived duplicates whose curriculum is served by a custom "twin" course.
+-- The contract below is therefore per SUBJECT: the live twin wins, and the
+-- archived original is reported in result 3b as superseded (not a blocker).
+-- On a fresh project no twin exists, so every subject resolves to its original
+-- exactly as before.
+with expected(slug, twin_slug) as (
   values
-    ('ai-video-content-creation'),
-    ('video-editing-capcut'),
-    ('graphic-design-canva'),
-    ('digital-marketing'),
-    ('mobile-app-development'),
-    ('portfolio-creation'),
-    ('frontend-web-development'),
-    ('web-design-wordpress'),
-    ('ui-ux-design-figma'),
-    ('microsoft-excel'),
-    ('microsoft-word'),
-    ('microsoft-powerpoint')
+    ('ai-video-content-creation',   null),
+    ('video-editing-capcut',        'video-editing-with-capcut'),
+    ('graphic-design-canva',        'graphic-design-with-canva'),
+    ('digital-marketing',           null),
+    ('mobile-app-development',      'mobile-application-development'),
+    ('portfolio-creation',          null),
+    ('web-design-wordpress',        'web-design-with-wordpress'),
+    ('frontend-web-development',    null),
+    ('ui-ux-design-figma',          'ui-ux-design-with-figma'),
+    ('microsoft-excel',             null),
+    ('microsoft-word',              null),
+    ('microsoft-powerpoint',       null)
+), resolved as (
+  select e.slug as subject_slug,
+         coalesce(t.id, o.id) as id,
+         coalesce(t.slug, o.slug) as slug
+  from expected e
+  left join public.courses t on t.slug = e.twin_slug and t.published and not coalesce(t.archived, false)
+  left join public.courses o on o.slug = e.slug
 ), inventory as (
-  select e.slug,
-         c.id,
+  select r.slug,
+         r.id,
          coalesce(c.published, false) as published,
          coalesce(c.archived, false) as archived,
          coalesce(c.lessons_count, 0) as cached_lessons,
@@ -109,12 +122,12 @@ with expected(slug) as (
          (select count(*)::int from public.assignments a
            where a.course_id = c.id and a.is_final_project and a.status = 'published') as final_projects,
          (select count(*)::int from public.course_completion_rules r where r.course_id = c.id) as completion_rules
-  from expected e
-  left join public.courses c on c.slug = e.slug
+  from resolved r
+  left join public.courses c on c.id = r.id
 ), diagnostics as (
   select i.*,
          concat_ws('; ',
-           case when id is null then 'course row missing' end,
+           case when id is null then 'no visible course row for this launch subject' end,
            case when id is not null and not published then 'not published' end,
            case when archived then 'archived' end,
            case when modules <> 4 then 'expected 4 modules, found ' || modules end,
@@ -137,12 +150,40 @@ from diagnostics
 where blockers <> ''
 order by slug;
 
+-- 3b) SUPERSEDED LAUNCH DUPLICATES — informational, never a release blocker.
+--     These are the archived originals whose subject is now taught by a live
+--     twin. They must stay archived with zero enrollments; a row here with
+--     enrollments/payments/certificates needs the reconciliation plan in
+--     README_RUNBOOK.md before anything is deleted.
+select o.slug as superseded_slug,
+       o.title,
+       coalesce(c.slug, '(no live twin found)') as superseded_by,
+       (select count(*)::int from public.enrollments e where e.course_id = o.id) as enrollments,
+       (select count(*)::int from public.manual_payments mp where mp.course_id = o.id) as payments,
+       (select count(*)::int from public.certificate_issues ci where ci.course_id = o.id) as certificates
+from public.courses o
+join (values
+        ('video-editing-capcut',   'video-editing-with-capcut'),
+        ('graphic-design-canva',   'graphic-design-with-canva'),
+        ('mobile-app-development', 'mobile-application-development'),
+        ('web-design-wordpress',   'web-design-with-wordpress'),
+        ('ui-ux-design-figma',     'ui-ux-design-with-figma')
+) as pair(orig, twin) on pair.orig = o.slug
+left join public.courses c on c.slug = pair.twin and c.published and not coalesce(c.archived, false)
+where not coalesce(o.published, false) or coalesce(o.archived, false)
+order by o.slug;
+
 -- 4) LEARNING-PATH RELEASE BLOCKERS. This result must also be EMPTY.
 with path_inventory as (
   select lp.title,
          lp.is_published,
          cardinality(coalesce(lp.course_ids, '{}'::uuid[])) as steps,
-         (select count(*)::int from public.courses c where c.id = any(coalesce(lp.course_ids, '{}'::uuid[]))) as resolved_steps
+         (select count(*)::int from public.courses c where c.id = any(coalesce(lp.course_ids, '{}'::uuid[]))) as resolved_steps,
+         -- A step that exists but is archived or draft renders as a missing
+         -- step for students (RLS hides it) and a dead link for admins.
+         (select count(*)::int from public.courses c
+           where c.id = any(coalesce(lp.course_ids, '{}'::uuid[]))
+             and c.published and not coalesce(c.archived, false)) as openable_steps
   from public.learning_paths lp
 ), blockers as (
   select 'published learning-path count'::text as problem,
@@ -157,6 +198,13 @@ with path_inventory as (
          concat('published=', is_published, ', steps=', steps, ', resolved=', resolved_steps)
   from path_inventory
   where not is_published or steps < 2 or resolved_steps <> steps
+  union all
+  select 'unopenable learning-path step', title,
+         'every step published and not archived',
+         concat('steps=', steps, ', openable=', openable_steps,
+                ' — repoint it (README_RUNBOOK.md: Repointing learning-path steps)')
+  from path_inventory
+  where openable_steps <> steps
 )
 select * from blockers order by problem, path;
 

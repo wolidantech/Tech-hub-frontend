@@ -321,7 +321,10 @@ export const uploadThumbnail = async (courseId, file) => uploadFile('thumbnails'
 // ============================================================ COURSES
 export const fetchCourses = async ({ onlyPublished = false } = {}) => {
   let q = sb().from('courses').select('*').order('featured', { ascending: false }).order('created_at', { ascending: true });
-  if (onlyPublished) q = q.eq('published', true);
+  // "Published" alone is not the storefront rule: archived duplicates are
+  // still flagged published=true in the catalog, so a caller asking for the
+  // public list must not receive them. Admin views keep the unfiltered call.
+  if (onlyPublished) q = q.eq('published', true).eq('archived', false);
   return (await one(q)).map(mapCourseLight);
 };
 

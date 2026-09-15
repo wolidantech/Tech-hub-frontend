@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { User, Mail, Phone, Lock, Award, BookOpen, Save, Camera, Share2, Eye } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { copyText } from '../lib/utils';
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import SignedFile from '../components/common/SignedFile';
@@ -96,15 +97,24 @@ export default function Profile() {
               <label className="flex items-center justify-between text-sm"><span>Public portfolio page</span><input type="checkbox" checked={form.portfolioPublic} onChange={(e) => setForm({ ...form, portfolioPublic: e.target.checked })} className="h-4 w-4" /></label>
               <label className="flex items-center justify-between text-sm"><span>Show certificates publicly</span><input type="checkbox" checked={form.showCertificates} onChange={(e) => setForm({ ...form, showCertificates: e.target.checked })} className="h-4 w-4" /></label>
               <label className="flex items-center justify-between text-sm"><span>Show projects publicly</span><input type="checkbox" checked={form.showProjects} onChange={(e) => setForm({ ...form, showProjects: e.target.checked })} className="h-4 w-4" /></label>
-              <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/student/${user.id}`); toast.success('Portfolio link copied!'); }} className="w-full h-10 rounded-full glass font-bold text-xs">COPY PORTFOLIO LINK</button>
+              <button
+                onClick={async () => {
+                  const ok = await copyText(`${window.location.origin}/student/${user.id}`);
+                  if (ok) toast.success('Portfolio link copied!');
+                  else toast.error('Copy was blocked by your browser — long-press to copy the link.');
+                }}
+                className="w-full h-11 rounded-full glass font-bold text-xs"
+              >
+                COPY PORTFOLIO LINK
+              </button>
             </div>
 
             <div className="glass rounded-[24px] p-6 space-y-4">
               <h3 className="font-bold flex items-center gap-2"><Lock className="h-5 w-5 text-amber-300" /> Change Password</h3>
               <form onSubmit={handlePwd} className="space-y-3">
-                <input type="password" required value={pwd.current} onChange={(e) => setPwd({ ...pwd, current: e.target.value })} placeholder="Current password" className="w-full h-11 rounded-full glass px-4 text-sm" />
-                <input type="password" required value={pwd.next} onChange={(e) => setPwd({ ...pwd, next: e.target.value })} placeholder="New password" className="w-full h-11 rounded-full glass px-4 text-sm" />
-                <input type="password" required value={pwd.confirm} onChange={(e) => setPwd({ ...pwd, confirm: e.target.value })} placeholder="Confirm new password" className="w-full h-11 rounded-full glass px-4 text-sm" />
+                <input type="password" required value={pwd.current} onChange={(e) => setPwd({ ...pwd, current: e.target.value })} placeholder="Current password" autoComplete="current-password" enterKeyHint="next" className="w-full h-11 rounded-full glass px-4 text-sm" />
+                <input type="password" required value={pwd.next} onChange={(e) => setPwd({ ...pwd, next: e.target.value })} placeholder="New password" autoComplete="new-password" enterKeyHint="next" className="w-full h-11 rounded-full glass px-4 text-sm" />
+                <input type="password" required value={pwd.confirm} onChange={(e) => setPwd({ ...pwd, confirm: e.target.value })} placeholder="Confirm new password" autoComplete="new-password" enterKeyHint="go" className="w-full h-11 rounded-full glass px-4 text-sm" />
                 <button className="w-full h-11 rounded-full bg-white text-black font-bold text-sm">UPDATE PASSWORD</button>
               </form>
             </div>
@@ -116,7 +126,7 @@ export default function Profile() {
               <form onSubmit={handleSave} className="space-y-5">
                 <div className="relative">
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-                  <input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="w-full h-[52px] rounded-full glass pl-11 pr-4 text-sm focus:outline-none focus:border-cyan-400/50" placeholder="Full Name" />
+                  <input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} autoComplete="name" autoCapitalize="words" enterKeyHint="next" className="w-full h-[52px] rounded-full glass pl-11 pr-4 text-sm focus:outline-none focus:border-cyan-400/50" placeholder="Full Name" />
                 </div>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
@@ -124,7 +134,7 @@ export default function Profile() {
                 </div>
                 <div className="relative">
                   <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-                  <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full h-[52px] rounded-full glass pl-11 pr-4 text-sm focus:outline-none focus:border-cyan-400/50" placeholder="Phone" />
+                  <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} type="tel" autoComplete="tel" inputMode="tel" enterKeyHint="next" className="w-full h-[52px] rounded-full glass pl-11 pr-4 text-sm focus:outline-none focus:border-cyan-400/50" placeholder="Phone" />
                 </div>
                 <div>
                   <label className="text-xs font-bold text-white/40 mb-1 block">BIO (shown on your portfolio)</label>

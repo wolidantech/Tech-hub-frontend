@@ -6,6 +6,8 @@
 // request this subject" state — never fake catalog entries.
 // ============================================================
 
+import { isCatalogCourse } from '../lib/lms';
+
 export const SKILL_AREAS = [
   {
     area: 'Artificial Intelligence & Data',
@@ -103,5 +105,7 @@ export function searchSubjects(query) {
 /** Map a subject to live courses (by category) — honest: [] when none yet. */
 export function coursesForSubject(subject, courses) {
   if (!subject?.category) return [];
-  return courses.filter((c) => c.published !== false && !c.archived && c.category === subject.category);
+  // The shared storefront rule, so an archived duplicate can never pad a
+  // subject's course count or link to a page that shows "course not found".
+  return courses.filter((c) => isCatalogCourse(c) && c.category === subject.category);
 }

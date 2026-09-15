@@ -2,16 +2,27 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Send, Square, Plus, Copy, Check, RefreshCw, Pencil, Trash2, Paperclip, Sparkles, History, X, BookOpen, Layers, StickyNote, Dumbbell, Save } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { askDanTech, AI_MODES, QUICK_ACTIONS } from '../lib/dantech';
+import { askDanTech, AI_MODES, QUICK_ACTIONS, isCloudDanTechEnabled } from '../lib/dantech';
 import { generate } from '../lib/ai';
 import { renderLessonMarkdown } from '../lib/lms';
 import { saveNoteDb } from '../lib/store';
 import { toast, Toaster } from 'sonner';
+import { copyText } from '../lib/utils';
 
 const LS_CONVOS = 'wdth_ai_convos_v1';
 const LS_ACTIVE = 'wdth_ai_active_v1';
 const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 const loadConvos = () => { try { return JSON.parse(localStorage.getItem(LS_CONVOS) || '[]') || []; } catch { return []; } };
+
+// Honest capability labels. A student who believes the cloud answered when the
+// on-device engine did will quote an answer that was never checked against a real
+// model — so the badge describes what actually replied, every time.
+const CLOUD_BADGE = {
+  local: { label: 'ON-DEVICE', dot: 'bg-slate-300', cls: 'text-white/60 border-white/15', sub: 'Your study & career copilot (on this device)', title: 'No AI gateway is configured (VITE_DANTECH_ENDPOINT). Answers come from the built-in lesson-aware engine — reliable, offline, no keys.' },
+  ready: { label: 'READY', dot: 'bg-cyan-300', cls: 'text-cyan-200 border-cyan-400/30', sub: 'Cloud gateway configured — confirmed by the first answer', title: 'An AI gateway address is configured. The badge turns ONLINE once the gateway actually answers, so a broken URL never looks healthy.' },
+  online: { label: 'ONLINE', dot: 'bg-emerald-400', cls: 'text-emerald-200 border-emerald-400/30', sub: 'Answered by the secure cloud gateway', title: 'The last answer came from your server-side AI gateway. Model keys never sit in the browser.' },
+  degraded: { label: 'ON-DEVICE', dot: 'bg-amber-400', cls: 'text-amber-200 border-amber-400/30', sub: 'Cloud unavailable — answering on this device', title: 'The AI gateway was tried and failed. Answers come from the on-device engine until it recovers.' },
+};
 
 function TypingDots() {
   return (
@@ -125,6 +136,13 @@ export default function AIPage() {
   const [copied, setCopied] = useState(null);
   const [histOpen, setHistOpen] = useState(false);
   const [studyOpen, setStudyOpen] = useState(false);
+  // What the student is actually talking to. Four honest states, not a permanent
+  // "AI" label: `local` = no gateway configured at all, `ready` = a gateway
+  // address exists but we have not had a live answer yet on this visit,
+  // `online` = the gateway answered, `degraded` = it was tried and failed.
+  const [cloudState, setCloudState] = useState(() => (isCloudDanTechEnabled() ? 'ready' : 'local'));
+  const [issue, setIssue] = useState(null); // { message, code, retryAfterMs, base, text }
+  const [waitLeft, setWaitLeft] = useState(0);
   const ctrlRef = useRef(null);
   const scrollRef = useRef(null);
   const taRef = useRef(null);
@@ -137,6 +155,21 @@ export default function AIPage() {
   useEffect(() => { try { localStorage.setItem(LS_CONVOS, JSON.stringify(convos.slice(0, 20))); } catch { /* full */ } }, [convos]);
   useEffect(() => { if (activeId) localStorage.setItem(LS_ACTIVE, activeId); }, [activeId]);
   useEffect(() => { const el = scrollRef.current; if (el) el.scrollTop = el.scrollHeight; }, [messages.length, busy]);
+
+  // A 429 is a real instruction, not a dead end: keep Retry visibly counting
+  // down so nobody taps it eight times and gets rate-limited for longer.
+  useEffect(() => {
+    const ms = issue?.retryAfterMs || 0;
+    if (!ms) { setWaitLeft(0); return undefined; }
+    const until = Date.now() + ms;
+    setWaitLeft(Math.ceil(ms / 1000));
+    const t = setInterval(() => {
+      const left = Math.ceil((until - Date.now()) / 1000);
+      setWaitLeft(left > 0 ? left : 0);
+      if (left <= 0) clearInterval(t);
+    }, 500);
+    return () => clearInterval(t);
+  }, [issue]);
 
   const newChat = () => {
     const c = { id: uid(), title: 'New chat', messages: [], createdAt: Date.now(), updatedAt: Date.now() };
@@ -165,17 +198,39 @@ export default function AIPage() {
     ctrlRef.current = new AbortController();
     try {
       const res = await askDanTech(prompt, { history, signal: ctrlRef.current.signal, mode });
-      patchConvo(convo.id, (c) => ({ ...c, messages: [...c.messages, { role: 'assistant', content: res.text, ts: Date.now(), mode, provider: res.provider, sources: res.sources || [] }] }));
+      // The answer's own provenance travels with the message, so a conversation
+      // scrolled back to next week still says which brain produced each reply.
+      setCloudState(res.provider === 'secure-backend' ? 'online' : res.degraded ? 'degraded' : 'local');
+      setIssue(res.degraded && res.gatewayError ? { ...res.gatewayError, base, text } : null);
+      patchConvo(convo.id, (c) => ({
+        ...c,
+        messages: [...c.messages, {
+          role: 'assistant', content: res.text, ts: Date.now(), mode,
+          provider: res.provider, sources: res.sources || [],
+          degraded: Boolean(res.degraded), gatewayError: res.gatewayError || null,
+        }],
+      }));
     } catch (err) {
       if (err.name === 'AbortError') {
         patchConvo(convo.id, (c) => ({ ...c, messages: [...c.messages, { role: 'assistant', content: '_(stopped by you — ask me to continue or rephrase)_', ts: Date.now(), mode }] }));
       } else {
+        setCloudState('degraded');
+        setIssue({ code: err.code || 'unknown', message: err.message || 'DanTECH AI hit an error', retryAfterMs: err.retryAfterMs || 0, base, text });
         toast.error(err.message || 'DanTECH AI hit an error');
       }
     } finally { setBusy(false); ctrlRef.current = null; }
   };
 
   const stop = () => ctrlRef.current?.abort();
+  // Re-ask the gateway after a failure. send() re-adds the user message, so the
+  // transcript keeps the same order instead of growing a duplicate.
+  const retryCloud = () => {
+    if (!issue || busy) return;
+    const t = issue.text;
+    const base = issue.base;
+    setIssue(null);
+    if (t) send(t, { base });
+  };
   const regenerate = () => {
     const msgs = [...messages];
     for (let i = msgs.length - 1; i >= 0; i--) {
@@ -195,8 +250,8 @@ export default function AIPage() {
     taRef.current?.focus();
   };
   const copyMsg = async (text, key) => {
-    try { await navigator.clipboard.writeText(text); setCopied(key); setTimeout(() => setCopied(null), 1500); }
-    catch { toast.error('Could not copy'); }
+    if (await copyText(text)) { setCopied(key); setTimeout(() => setCopied(null), 1500); }
+    else toast.error('Could not copy — long-press the text to copy it manually.');
   };
 
   const onFile = (e) => {
@@ -220,7 +275,7 @@ export default function AIPage() {
   const modeObj = AI_MODES.find((m) => m.id === mode);
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-gradient-to-br from-[#020a1f] via-[#061236] to-[#020a1f] text-white">
+    <div className="h-[100dvh] max-w-full overflow-x-clip flex flex-col bg-gradient-to-br from-[#020a1f] via-[#061236] to-[#020a1f] text-white">
       <Toaster richColors />
       <StudyTools user={user} open={studyOpen} onClose={() => setStudyOpen(false)} />
 
@@ -230,8 +285,17 @@ export default function AIPage() {
           <div className="flex items-center gap-2 min-w-0">
             <Link to="/dashboard" aria-label="Back to dashboard" className="h-11 w-11 rounded-full glass flex items-center justify-center shrink-0"><ArrowLeft className="h-4 w-4" /></Link>
             <div className="min-w-0">
-              <div className="font-display font-black text-sm sm:text-base truncate">DAN<span className="text-cyan-400">TECH</span> AI</div>
-              <div className="text-[10px] text-white/40 font-bold truncate">Your study & career copilot</div>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-display font-black text-sm sm:text-base truncate">DAN<span className="text-cyan-400">TECH</span> AI</span>
+                <span
+                  title={CLOUD_BADGE[cloudState].title}
+                  className={`shrink-0 inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black tracking-widest border ${CLOUD_BADGE[cloudState].cls}`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${CLOUD_BADGE[cloudState].dot}`} aria-hidden="true" />
+                  {CLOUD_BADGE[cloudState].label}
+                </span>
+              </div>
+              <div className="text-[10px] text-white/40 font-bold truncate">{CLOUD_BADGE[cloudState].sub}</div>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
@@ -253,7 +317,7 @@ export default function AIPage() {
 
       <div className="flex-1 flex min-h-0 relative">
         {/* History sidebar */}
-        <aside className={`${histOpen ? 'flex absolute z-40 inset-y-0 left-0 w-[280px] bg-[#04102c] border-r border-white/10' : 'hidden'} lg:relative lg:flex lg:w-[260px] lg:bg-transparent lg:border-r lg:border-white/5 flex-col`}>
+        <aside className={`${histOpen ? 'flex absolute z-40 inset-y-0 left-0 w-[min(85%,280px)] max-w-full bg-[#04102c] border-r border-white/10 shadow-2xl' : 'hidden'} lg:relative lg:flex lg:w-[260px] lg:bg-transparent lg:border-r lg:border-white/5 flex-col`}>
           <div className="flex items-center justify-between p-3 lg:pt-4">
             <span className="text-[11px] font-bold tracking-widest text-white/40">CONVERSATIONS</span>
             <button onClick={() => setHistOpen(false)} className="lg:hidden h-8 w-8 rounded-full glass flex items-center justify-center"><X className="h-4 w-4" /></button>
@@ -315,8 +379,21 @@ export default function AIPage() {
                       <div className="flex items-center gap-2 mb-2 text-[10px] font-bold tracking-widest text-white/35">
                         <span className="text-cyan-300">DANTECH AI</span>
                         {m.mode && <span className="px-2 py-0.5 rounded-full bg-white/5 text-white/50">{AI_MODES.find((x) => x.id === m.mode)?.name?.toUpperCase() || m.mode}</span>}
-                        {m.provider === 'local' && <span className="text-white/25">ON-DEVICE ASSIST</span>}
-                        {m.provider === 'secure-backend' && <span className="text-white/25">SECURE BACKEND</span>}
+                        {m.provider === 'secure-backend' && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-400/10 text-emerald-200" title="Answered by your server-side AI gateway">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden="true" />ONLINE
+                          </span>
+                        )}
+                        {m.provider === 'local' && !m.degraded && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.06] text-white/45" title="Answered by the built-in on-device engine">
+                            <span className="h-1.5 w-1.5 rounded-full bg-slate-300" aria-hidden="true" />ON-DEVICE
+                          </span>
+                        )}
+                        {m.degraded && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400/10 text-amber-200" title={m.gatewayError?.message || 'The AI gateway did not answer'}>
+                            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" aria-hidden="true" />ON-DEVICE — CLOUD DOWN
+                          </span>
+                        )}
                       </div>
                       <div className="lesson-body text-sm leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: renderLessonMarkdown(m.content) }} />
                       {m.sources?.length > 0 && (
@@ -348,6 +425,19 @@ export default function AIPage() {
                     <button key={qa.id} onClick={() => send(qa.prompt)} disabled={busy}
                       className="shrink-0 px-3 py-1.5 rounded-full glass text-[10px] font-bold text-white/60 hover:text-cyan-300 disabled:opacity-40">{qa.label}</button>
                   ))}
+                </div>
+              )}
+              {issue && (
+                <div className="mb-2 rounded-2xl border border-amber-400/30 bg-amber-400/[0.07] p-3 flex items-start gap-3">
+                  <span className="text-lg leading-none mt-0.5" aria-hidden="true">⚠️</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[11px] font-black tracking-widest text-amber-200">ANSWERED ON THIS DEVICE</div>
+                    <p className="text-xs text-white/70 mt-1 leading-relaxed">{issue.message}</p>
+                  </div>
+                  <button onClick={retryCloud} disabled={busy || waitLeft > 0}
+                    className="shrink-0 min-h-11 px-3.5 rounded-full bg-amber-400 text-[#1a1200] text-[11px] font-black inline-flex items-center gap-1.5 disabled:opacity-50">
+                    <RefreshCw className="h-3.5 w-3.5" />{waitLeft > 0 ? `RETRY IN ${waitLeft}s` : 'RETRY'}
+                  </button>
                 </div>
               )}
               <div className="flex items-end gap-2">

@@ -4,6 +4,8 @@
 // These functions are written backend-agnostic so the SAME code can run on the
 // server gateway AND as an optimistic client. Never trust client-only results.
 
+import { CATEGORY_RECOMMENDATIONS } from '../data/catalog';
+
 export const SUBMISSION_STATUSES = ['submitted', 'under_review', 'approved', 'needs_revision'];
 export const AI_CONTENT_STATUSES = ['draft', 'in_review', 'approved', 'published', 'archived'];
 
@@ -105,8 +107,41 @@ export function evaluateCompletion({ rules, lessonsProgressPct, quizAverage, app
   return { met: checks.every((c) => c.met), checks };
 }
 
+// ---------- Catalog visibility (the one rule every surface must agree on) ----------
+/**
+ * A course is part of the public storefront only when it is published AND not
+ * archived. RLS enforces the same predicate for anonymous students, but admins
+ * and enrolled students receive the full list, so every discovery surface
+ * (storefront, home, search, recommendations, learning paths, skill subjects)
+ * has to apply it too — otherwise the archived duplicates show up next to the
+ * live course and a category looks doubled.
+ *
+ * Note `published !== false` rather than `published === true`: the offline
+ * catalog fixtures and any row written before the flag existed must keep
+ * working; only an explicit false hides a course.
+ */
+export const isCatalogCourse = (course) => Boolean(course) && course.published !== false && !course.archived;
+
+/**
+ * Resolve a learning path to the steps a visitor can actually open.
+ *
+ * Path rows store course IDs, and the catalog was consolidated: some launch
+ * courses are archived duplicates whose curriculum lives on under a new slug.
+ * Returning the resolved steps plus a `hidden` count means the UI can say
+ * "2 steps unavailable" instead of quietly shortening a roadmap.
+ */
+export function resolvePathSteps(path, courses = []) {
+  const visible = courses.filter(isCatalogCourse);
+  const byId = new Map(visible.map((c) => [c.id, c]));
+  const bySlug = new Map(visible.map((c) => [c.slug, c]));
+  const refs = (path?.courseIds?.length ? path.courseIds : path?.courseSlugs || []);
+  const steps = refs
+    .map((ref) => (path?.courseIds?.length ? byId.get(ref) : bySlug.get(ref)))
+    .filter(Boolean);
+  return { steps, hidden: Math.max(0, refs.length - steps.length) };
+}
+
 // ---------- Recommendations ----------
-import { CATEGORY_RECOMMENDATIONS } from '../data/catalog';
 
 export function recommendCourses({ courses, enrolledIds = [], completedIds = [], viewedIds = [], interests = [], limit = 4 }) {
   const byId = new Map(courses.map((c) => [c.id, c]));
@@ -122,7 +157,7 @@ export function recommendCourses({ courses, enrolledIds = [], completedIds = [],
   interests.forEach((cat) => touch(cat, 2.5));
   const excluded = new Set([...enrolledIds, ...completedIds]);
   return courses
-    .filter((c) => c.published !== false && !excluded.has(c.id))
+    .filter((c) => isCatalogCourse(c) && !excluded.has(c.id))
     .map((c) => ({ course: c, s: (score.get(c.category) || 0) + (c.rating || 0) * 0.1 + Math.min(c.students || 0, 300) / 3000 }))
     .sort((a, b) => b.s - a.s)
     .slice(0, limit)

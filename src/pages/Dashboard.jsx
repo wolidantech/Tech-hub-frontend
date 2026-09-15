@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { formatNaira } from '../lib/utils';
-import { bucketByDay, estimateLearningMinutes, recommendCourses } from '../lib/lms';
+import { bucketByDay, estimateLearningMinutes, isCatalogCourse, recommendCourses } from '../lib/lms';
 import { computeGamification, BADGES } from '../lib/gamify';
 import { fetchLeaderboard } from '../lib/store';
 import { ProgressRing, BarChart } from '../components/charts/Charts';
@@ -51,7 +51,7 @@ export default function Dashboard() {
     const enrolledIds = enrollments.map((e) => e.courseId);
     const completedIds = enrolledIds.filter((id) => getProgress(uid, id).progress === 100);
     const viewedIds = courseViews.filter((v) => v.userId === uid).map((v) => v.courseId);
-    return recommendCourses({ courses: courses.filter((c) => c.published !== false && !c.archived), enrolledIds, completedIds, viewedIds, interests: user?.interests || [], limit: 3 });
+    return recommendCourses({ courses: courses.filter(isCatalogCourse), enrolledIds, completedIds, viewedIds, interests: user?.interests || [], limit: 3 });
   }, [courses, enrollments, courseViews, uid, getProgress, user]);
 
   const myAnnouncements = useMemo(() => announcements.filter((a) => !a.courseId || enrollments.some((e) => e.courseId === a.courseId)).slice(0, 3), [announcements, enrollments]);

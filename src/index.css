@@ -164,6 +164,17 @@ h1, h2, h3, h4, p, a { overflow-wrap: anywhere; }
 .lesson-body img, .lesson-body iframe { max-width: 100%; height: auto; }
 .lesson-body pre { max-width: 100%; overflow-x: auto; }
 .lesson-body table { display: block; max-width: 100%; overflow-x: auto; }
+/* Embedded media must never be wider than the phone it is read on. iframes get an
+   explicit 16:9 box (an iframe with no height collapses to the UA default 150px),
+   while video keeps its own aspect and letterboxes instead of stretching — a
+   portrait phone recording inside a forced 16:9 frame would be unwatchable. */
+.lesson-body iframe, .lesson-body embed, .lesson-body object {
+  width: 100%; max-width: 100%; height: auto; aspect-ratio: 16 / 9;
+  border: 0; border-radius: 1rem; background: #000; display: block; margin: 1rem 0;
+}
+.lesson-body video { width: 100%; max-width: 100%; height: auto; object-fit: contain; background: #000; display: block; margin: 1rem 0; }
+.lesson-body audio { width: 100%; max-width: 100%; }
+.lesson-body svg { max-width: 100%; height: auto; }
 button, a, input, textarea, select, summary { touch-action: manipulation; }
 :focus-visible { outline: 2px solid #22d3ee; outline-offset: 3px; }
 @media (max-width: 767px), (pointer: coarse) {
@@ -177,8 +188,10 @@ button, a, input, textarea, select, summary { touch-action: manipulation; }
     min-height: 44px;
   }
 }
-@media (max-width: 767px) {
-  /* iOS zooms focused form controls below 16px; utility classes must not win here. */
+@media (max-width: 767px), (pointer: coarse) {
+  /* iOS zooms focused form controls below 16px; utility classes must not win here.
+     Keyed on pointer too so tablets and large phones (which are wider than 767px)
+     do not get the auto-zoom on their 11-13px inputs. */
   input, textarea, select { font-size: 16px !important; }
   .lesson-body { font-size: 15px; }
   [role="dialog"]:not(.inset-0), [aria-modal="true"]:not(.inset-0) { max-width: calc(100vw - 1rem); }
@@ -202,3 +215,60 @@ button, a, input, textarea, select, summary { touch-action: manipulation; }
 .lesson-body ul { list-style-type: disc; padding-left: 1.5rem; }
 .lesson-body ol { list-style-type: decimal; padding-left: 1.5rem; }
 .lesson-body li > ul, .lesson-body li > ol { margin-top: .5rem; }
+
+/* ============================================================
+   MOBILE — Android + iOS (touch, browser chrome, keyboards)
+   ------------------------------------------------------------
+   The rules here are deliberately unlayered: they must beat the generated
+   Tailwind utilities they are patching, on the small set of elements that opt
+   in via .dialog-panel / hover:* utility classes.
+   ============================================================ */
+
+/* Phones/tablets have no real hover, but :hover sticks after a tap until the
+   user taps elsewhere — cards stay enlarged and their hit area shifts out from
+   under the finger, which reads as "the button needs two taps". Colour changes
+   are harmless, so only the hover *scale* is neutralised, and only while the
+   element is not being pressed (active:scale stays as tap feedback). */
+@media (hover: none), (pointer: coarse) {
+  .btn-primary:hover:not(:active),
+  .btn-secondary:hover:not(:active),
+  [class*="hover:scale"]:not(:active) {
+    --tw-scale-x: 1;
+    --tw-scale-y: 1;
+  }
+}
+
+/* The grey tap flash is only useful on platforms that have no other feedback. */
+a, button, summary, label, select, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Dialogs/sheets: 90vh is measured with the browser UI *hidden*, so a modal
+   capped at 90vh can bury its footer behind the URL bar, the Android gesture
+   bar or an open keyboard. dvh tracks the viewport that is actually on screen.
+   The vh line stays as the fallback for Safari < 15.4 / Chrome < 108, which
+   drop the dvh declaration instead of losing max-height entirely. */
+.dialog-panel {
+  max-height: 88vh;
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+@supports (max-height: 100dvh) {
+  .dialog-panel { max-height: 88dvh; }
+}
+
+/* iOS momentum scrolling inside vertical scrollers (sidebars, mobile menus). */
+.overflow-y-auto { -webkit-overflow-scrolling: touch; }
+
+/* iOS/Android "reduce motion" (also honoured by Android's "remove animations").
+   Framer Motion animations are driven in JS and keep working; this stops the
+   CSS float/glow loops that can make a low-end phone feel like it is stuttering. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

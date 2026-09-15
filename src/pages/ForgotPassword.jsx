@@ -44,7 +44,7 @@ export default function ForgotPassword() {
           <form onSubmit={handle} className="space-y-4">
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-              <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email address" className="w-full h-[48px] rounded-full glass pl-11 pr-5 text-sm focus:outline-none focus:border-cyan-400/50" />
+              <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email address" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="go" className="w-full h-[48px] rounded-full glass pl-11 pr-5 text-sm focus:outline-none focus:border-cyan-400/50" />
             </div>
             <button disabled={busy} className="w-full btn-primary !py-3.5 disabled:opacity-50">{busy ? 'SENDING...' : 'SEND RESET LINK'}</button>
           </form>
