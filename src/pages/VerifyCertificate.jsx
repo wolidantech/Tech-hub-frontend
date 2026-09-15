@@ -61,7 +61,7 @@ export default function VerifyCertificate() {
           <form onSubmit={handleVerify} className="space-y-4">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
-              <input value={id} onChange={(e) => setId(e.target.value)} placeholder="Certificate ID or Verification Code (e.g. WDTH-2026-ABC123)" className="w-full h-[56px] rounded-full glass pl-12 pr-4 font-mono text-sm placeholder:font-sans placeholder:text-white/40 focus:outline-none focus:border-cyan-400/50 focus:bg-white/[0.08] transition" required />
+              <input value={id} onChange={(e) => setId(e.target.value)} placeholder="Certificate ID or Verification Code (e.g. WDTH-2026-ABC123)" autoComplete="off" autoCapitalize="characters" autoCorrect="off" spellCheck={false} enterKeyHint="go" className="w-full h-[56px] rounded-full glass pl-12 pr-4 font-mono text-sm placeholder:font-sans placeholder:text-white/40 focus:outline-none focus:border-cyan-400/50 focus:bg-white/[0.08] transition" required />
             </div>
             <button type="submit" disabled={verifying} className="w-full btn-primary !py-4 disabled:opacity-50">{verifying ? 'VERIFYING…' : 'VERIFY CERTIFICATE'}</button>
           </form>

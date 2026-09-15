@@ -1,21 +1,29 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Map, CheckCircle2, ArrowRight, Play } from 'lucide-react';
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
 import CourseArt from '../components/course/CourseArt';
+import { resolvePathSteps } from '../lib/lms';
 
 export default function LearningPaths() {
-  const { courses, getCourseBySlug, isEnrolled, getProgress } = useCourses();
+  const { courses, isEnrolled, getProgress } = useCourses();
   const { learningPaths } = useLMS();
   const { user } = useAuth();
 
+  // Steps resolve through the storefront visibility rule: a path must never
+  // render a step the visitor cannot open (an archived duplicate, a draft).
+  // `hidden` keeps the roadmap honest instead of silently shortening it.
+  const paths = useMemo(
+    () => learningPaths.map((path) => ({ ...path, ...resolvePathSteps(path, courses) })),
+    [learningPaths, courses]
+  );
+
   const pathProgress = (path) => {
-    if (!user) return null;
-    const items = path.courseSlugs.map((s) => getCourseBySlug(s)).filter(Boolean);
-    if (!items.length) return 0;
-    const total = items.reduce((s, c) => s + getProgress(user.id, c.id).progress, 0);
-    return Math.round(total / items.length);
+    if (!user || !path.steps.length) return null;
+    const total = path.steps.reduce((s, c) => s + getProgress(user.id, c.id).progress, 0);
+    return Math.round(total / path.steps.length);
   };
 
   return (
@@ -29,8 +37,8 @@ export default function LearningPaths() {
       </div>
 
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-        {learningPaths.map((path) => {
-          const items = path.courseSlugs.map((s) => getCourseBySlug(s)).filter(Boolean);
+        {paths.map((path) => {
+          const items = path.steps;
           const pct = pathProgress(path);
           return (
             <div key={path.id} className="glass rounded-[24px] p-6 md:p-8">
@@ -40,7 +48,12 @@ export default function LearningPaths() {
                   <div>
                     <h2 className="font-black text-xl md:text-2xl">{path.title}</h2>
                     <p className="text-sm text-white/60 mt-1 max-w-[520px]">{path.desc}</p>
-                    <div className="text-xs text-cyan-300 font-bold mt-1">{path.level} • {items.length} courses</div>
+                    <div className="text-xs text-cyan-300 font-bold mt-1">
+                      {path.level} • {items.length} course{items.length === 1 ? '' : 's'}
+                      {path.hidden > 0 && (
+                        <span className="text-white/35 font-semibold"> • {path.hidden} step{path.hidden === 1 ? '' : 's'} unavailable</span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 {pct != null && (
@@ -52,6 +65,12 @@ export default function LearningPaths() {
                 )}
               </div>
 
+              {items.length === 0 && (
+                <div role="status" className="rounded-2xl bg-white/[0.03] border border-white/10 p-4 text-sm text-white/60">
+                  This path has no open courses yet — its {path.hidden} step{path.hidden === 1 ? '' : 's'} {path.hidden === 1 ? 'is' : 'are'} unpublished.
+                  Ask support, or pick another path below.
+                </div>
+              )}
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                 {items.map((c, i) => {
                   const enrolled = user ? isEnrolled(user.id, c.id) : false;

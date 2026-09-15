@@ -6,14 +6,21 @@ import { useLMS } from '../context/LMSContext';
 import CourseCard from '../components/course/CourseCard';
 import CatalogEmpty from '../components/common/CatalogEmpty';
 import { useNavigate } from 'react-router-dom';
+import { isCatalogCourse, resolvePathSteps } from '../lib/lms';
 
 export default function Home() {
   const { courses, coursesLoading, coursesError } = useCourses();
   const { learningPaths } = useLMS();
+  // Path steps resolve through the same visibility rule as the storefront, so a
+  // consolidated catalog (archived duplicates) cannot advertise dead steps.
   const navigate = useNavigate();
   const [heroSearch, setHeroSearch] = useState('');
-  const live = courses.filter((c) => c.published !== false && !c.archived);
+  const live = courses.filter(isCatalogCourse);
   const featured = [...live].sort((a, b) => (b.students || 0) - (a.students || 0)).slice(0, 6);
+  const visiblePaths = learningPaths
+    .map((p) => ({ ...p, ...resolvePathSteps(p, live) }))
+    .filter((p) => p.steps.length > 0)
+    .slice(0, 4);
 
   return (
     <div className="overflow-hidden">
@@ -250,12 +257,15 @@ export default function Home() {
             <Link to="/learning-paths" className="btn-secondary gap-2">ALL PATHS <ArrowRight className="h-4 w-4" /></Link>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {learningPaths.slice(0, 4).map((p) => (
+            {visiblePaths.map((p) => (
               <Link key={p.id} to="/learning-paths" className="glass rounded-[24px] p-6 hover:border-green-400/40 transition group">
                 <div className="text-5xl">{p.icon}</div>
                 <h3 className="font-bold text-lg mt-3 group-hover:text-green-300">{p.title}</h3>
                 <p className="text-sm text-white/50 mt-1.5 leading-relaxed line-clamp-2">{p.desc}</p>
-                <div className="text-xs text-green-300 font-bold mt-3">{p.courseSlugs?.length || 0} courses • {p.level}</div>
+                <div className="text-xs text-green-300 font-bold mt-3">
+                  {p.steps.length} course{p.steps.length === 1 ? '' : 's'} • {p.level}
+                  {p.hidden > 0 && <span className="text-white/30 ml-1">({p.hidden} unavailable)</span>}
+                </div>
               </Link>
             ))}
           </div>

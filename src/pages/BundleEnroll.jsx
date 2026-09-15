@@ -4,7 +4,7 @@ import { Shield, Copy, CheckCircle2, Upload, AlertTriangle, ArrowLeft, FileText,
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
-import { formatNaira } from '../lib/utils';
+import { copyText, formatNaira } from '../lib/utils';
 import { toast, Toaster } from 'sonner';
 import PaymentFlow from '../components/payment/PaymentFlow';
 
@@ -44,11 +44,14 @@ export default function BundleEnroll() {
   const bundleCourses = (bundle.courseIds || []).map((cid) => getCourseById(cid)).filter(Boolean);
   const alreadyAll = bundleCourses.length > 0 && bundleCourses.every((c) => isEnrolled(user.id, c.id));
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(bank.accountNumber);
-    setCopied(true);
-    toast.success('Account number copied!');
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    if (await copyText(bank.accountNumber)) {
+      setCopied(true);
+      toast.success('Account number copied!');
+      setTimeout(() => setCopied(false), 2000);
+      return;
+    }
+    toast.error('Copy was blocked by your browser — long-press the account number to copy it.');
   };
 
   const handleFileChange = (e) => {

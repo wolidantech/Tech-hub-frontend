@@ -11,13 +11,22 @@ import { DatabaseZap, Stethoscope, SearchX } from 'lucide-react';
 //   filtering  -> the visitor typed/filtered themselves into an empty result
 //   backend    -> the catalog query failed, or returned nothing because the
 //                 seed was never run / every course is still unpublished
-export default function CatalogEmpty({ filtering = false, error = null, compact = false, onRetry = null }) {
+export default function CatalogEmpty({ filtering = false, error = null, compact = false, onRetry = null, emptyCategory = null, onClearCategory = null }) {
   if (filtering) {
     return (
       <div className={`text-center glass rounded-[24px] ${compact ? 'py-10' : 'py-20'}`}>
         <SearchX className="h-10 w-10 mx-auto text-white/20 mb-4" />
-        <div className="font-bold text-lg">No courses match that search</div>
-        <div className="text-sm text-white/50 mt-1">Try a different keyword or category</div>
+        <div className="font-bold text-lg">{emptyCategory ? 'Nothing is open in this subject yet' : 'No courses match that search'}</div>
+        <div className="text-sm text-white/50 mt-1 max-w-[420px] mx-auto">
+          {emptyCategory
+            ? <>Every course in <span className="text-white/80 font-semibold">{emptyCategory}</span> is unpublished or archived. Browse the whole library, or ask us on WhatsApp to open this subject.</>
+            : 'Try a different keyword or category'}
+        </div>
+        {emptyCategory && (
+          <button onClick={onClearCategory} className="mt-4 min-h-11 inline-flex items-center gap-2 px-5 rounded-full glass text-xs font-bold hover:bg-white/10 transition">
+            SHOW ALL COURSES
+          </button>
+        )}
       </div>
     );
   }

@@ -4,7 +4,7 @@ import { useCourses } from '../../context/CourseContext';
 import { useLMS } from '../../context/LMSContext';
 import { useAuth } from '../../context/AuthContext';
 import { generateCouponCode } from '../../lib/ids';
-import { formatNaira } from '../../lib/utils';
+import { copyText, formatNaira } from '../../lib/utils';
 import { toast } from 'sonner';
 
 export default function CouponManager() {
@@ -104,7 +104,7 @@ export default function CouponManager() {
                   <tr key={c.id} className="hover:bg-white/[0.02]">
                     <td className="p-4">
                       <span className="font-mono font-bold text-cyan-300">{c.code}</span>
-                      <button onClick={() => { navigator.clipboard.writeText(c.code); toast.success('Copied!'); }} className="ml-2 text-white/30 hover:text-white"><Copy className="h-3.5 w-3.5 inline" /></button>
+                      <button onClick={async () => { (await copyText(c.code)) ? toast.success('Copied!') : toast.error('Copy blocked by this browser'); }} className="ml-2 inline-flex items-center justify-center h-11 w-11 text-white/30 hover:text-white" aria-label={`Copy coupon ${c.code}`}><Copy className="h-3.5 w-3.5" /></button>
                     </td>
                     <td className="p-4 text-xs max-w-[160px] truncate">{c.courseId === 'ALL' ? 'All courses' : course?.title || c.courseId}</td>
                     <td className="p-4"><span className={`px-2 py-1 rounded-full text-[11px] font-bold ${c.discountType === 'free' ? 'bg-green-500/20 text-green-300' : 'bg-cyan-500/20 text-cyan-300'}`}>{discountLabel(c)}</span></td>

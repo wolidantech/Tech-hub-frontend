@@ -137,6 +137,10 @@ Office Productivity Pro, Digital Business Growth) whose steps resolve to
 real course ids via subselect. Expected end state: 12 published courses,
 192 lessons, 192 videos, 12 quizzes / 120 questions, 12 final projects,
 4 published learning paths.
+Run it as ONE query in a single tab and wait for the result grid — never split
+it into chunks. It is ~385 KB of set-based bulk SQL (about 25 statements), so
+it completes in seconds instead of the minutes a per-lesson script spent on
+parse and result rendering.
 
 STEP 4 — VERIFY
 Run this in SQL Editor; results must be 12 / 48 / 192 / 192 / 12 / 12 / 12 / 4 / 0:
@@ -154,7 +158,7 @@ Run this in SQL Editor; results must be 12 / 48 / 192 / 192 / 12 / 12 / 12 / 4 /
        where not exists (select 1 from courses c where c.id = cid))    as broken_path_steps;
 Optional full proof on any machine with Node:
   cd supabase/verify && npm install && npm run verify && npm run verify:seed
-(must print "45 passed, 0 failed" and "34 passed, 0 failed").
+(must print "46 passed, 0 failed" and "38 passed, 0 failed").
 
 STEP 5 — CREATE THE OWNER/ADMIN ACCOUNT
 - In the app (or Supabase Auth UI) sign up the owner email — this creates

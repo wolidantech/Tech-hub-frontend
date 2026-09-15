@@ -365,10 +365,17 @@ export const LMSProvider = ({ children }) => {
         targetCourseId, createdBy: actor?.email,
       });
       setAIContent((p) => [content, ...p]);
-      await updateAIJob(job.id, { status: 'completed' });
+      // The job row keeps a note when the model was unreachable, so an admin
+      // reviewing the queue later can see the draft came from the fallback.
+      await updateAIJob(job.id, {
+        status: 'completed',
+        error: out.degraded ? `gateway unavailable — on-device fallback (${out.gatewayError?.message || 'unknown'})` : null,
+      });
       setAIJobs((p) => p.map((j) => (j.id === job.id ? { ...j, status: 'completed' } : j)));
-      if (actor) audit(actor, 'ai.generate', 'ai_content', content.id, { kind, provider: out.provider });
-      return content;
+      if (actor) audit(actor, 'ai.generate', 'ai_content', content.id, { kind, provider: out.provider, degraded: Boolean(out.degraded) });
+      // degraded/gatewayError are returned on the row but never written to the
+      // table — they describe this run, not the saved draft.
+      return { ...content, degraded: Boolean(out.degraded), gatewayError: out.gatewayError || null };
     } catch (err) {
       await updateAIJob(job.id, { status: 'failed', error: err.message }).catch(() => {});
       setAIJobs((p) => p.map((j) => (j.id === job.id ? { ...j, status: 'failed', error: err.message } : j)));

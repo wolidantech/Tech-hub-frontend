@@ -6,6 +6,7 @@ import { useCourses } from '../../context/CourseContext';
 import { useLMS } from '../../context/LMSContext';
 import { askDanTech, buildCourseIndex, SUGGESTED_PROMPTS, DANTECH_NAME, isCloudDanTechEnabled, AI_MODES, QUICK_ACTIONS } from '../../lib/dantech';
 import { renderLessonMarkdown, downloadAsFile } from '../../lib/lms';
+import { copyText } from '../../lib/utils';
 
 function withCopyButtons(html) {
   return String(html).replace(
@@ -13,6 +14,14 @@ function withCopyButtons(html) {
     '<div class="dantech-codewrap"><button data-copy-code="1" class="dantech-copy">Copy code</button><pre class="lesson-code">'
   ).replace(/<\/code><\/pre>/g, '</code></pre></div>');
 }
+
+// One line under the composer that tells the truth about the last answer.
+const ANSWER_NOTE = {
+  ready: '• Cloud AI armed',
+  online: '• Answered by the cloud gateway',
+  local: '• On-device answers',
+  degraded: '• On-device — cloud unavailable',
+};
 
 export default function DanTechAI() {
   const { user } = useAuth();
@@ -27,6 +36,10 @@ export default function DanTechAI() {
   const [showHistory, setShowHistory] = useState(false);
   const [mode, setMode] = useState('quick');
   const [copiedIdx, setCopiedIdx] = useState(null);
+  // Provenance of the newest answer in this panel: 'online' | 'local' | 'degraded'
+  // (tried the cloud, failed). Kept so the footer never claims "Cloud AI" while
+  // every answer came from the on-device engine.
+  const [answeredBy, setAnsweredBy] = useState(() => (isCloudDanTechEnabled() ? 'ready' : 'local'));
   const bottomRef = useRef(null);
   const boxRef = useRef(null);
   const ctrlRef = useRef(null);
@@ -112,7 +125,13 @@ export default function DanTechAI() {
         signal: ctrl.signal, mode,
         index, course, lesson, nextLesson, progress,
       });
-      const final = [...next, { role: 'ai', text: reply.text, sources: reply.sources || [], mode, createdAt: new Date().toISOString() }];
+      setAnsweredBy(reply.provider === 'secure-backend' ? 'online' : reply.degraded ? 'degraded' : 'local');
+      const final = [...next, {
+        role: 'ai', text: reply.text, sources: reply.sources || [], mode,
+        provider: reply.provider, degraded: Boolean(reply.degraded),
+        gatewayError: reply.gatewayError || null,
+        createdAt: new Date().toISOString(),
+      }];
       setMessages(final);
       persist(final);
     } catch (err) {
@@ -134,7 +153,9 @@ export default function DanTechAI() {
     send(lastUser.text, { base: messages.slice(0, Math.max(0, messages.length - 2)) });
   };
   const copyMsg = async (text, idx) => {
-    try { await navigator.clipboard.writeText(text); setCopiedIdx(idx); setTimeout(() => setCopiedIdx(null), 1500); } catch { /* noop */ }
+    // copyText() has an execCommand fallback, which is what makes copying an
+    // AI answer work inside Android/iOS in-app browsers.
+    if (await copyText(text)) { setCopiedIdx(idx); setTimeout(() => setCopiedIdx(null), 1500); }
   };
 
   const newChat = () => { setMessages([]); setConvoId(null); setShowHistory(false); };
@@ -144,8 +165,8 @@ export default function DanTechAI() {
     const btn = e.target.closest('[data-copy-code]');
     if (!btn) return;
     const code = btn.parentElement?.querySelector('code')?.innerText || '';
-    navigator.clipboard.writeText(code).then(() => {
-      btn.textContent = 'Copied!';
+    copyText(code).then((ok) => {
+      btn.textContent = ok ? 'Copied!' : 'Select + copy';
       setTimeout(() => { btn.textContent = 'Copy code'; }, 1500);
     });
   };
@@ -231,7 +252,14 @@ export default function DanTechAI() {
                 {messages.map((msg, i) => (
                   <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[88%] rounded-2xl px-4 py-3 ${msg.role === 'user' ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-br-md' : 'bg-white/[0.06] border border-white/10 rounded-bl-md'}`}>
-                      {msg.role === 'ai' && <div className="text-[10px] font-black tracking-widest text-purple-300 mb-1.5">✨ {DANTECH_NAME}</div>}
+                      {msg.role === 'ai' && (
+                        <div className="flex items-center gap-1.5 flex-wrap text-[10px] font-black tracking-widest text-purple-300 mb-1.5">
+                          <span>✨ {DANTECH_NAME}</span>
+                          {msg.provider === 'secure-backend' && <span className="px-1.5 py-0.5 rounded-full bg-emerald-400/10 text-emerald-200" title="Answered by the server-side AI gateway">ONLINE</span>}
+                          {msg.provider === 'local' && !msg.degraded && <span className="px-1.5 py-0.5 rounded-full bg-white/[0.06] text-white/45" title="Answered by the built-in on-device engine">ON-DEVICE</span>}
+                          {msg.degraded && <span className="px-1.5 py-0.5 rounded-full bg-amber-400/10 text-amber-200" title={msg.gatewayError?.message || 'The AI gateway did not answer'}>ON-DEVICE · CLOUD DOWN</span>}
+                        </div>
+                      )}
                       {msg.role === 'user' ? (
                         <div className="text-sm whitespace-pre-wrap leading-relaxed">{msg.text}</div>
                       ) : (
@@ -290,7 +318,7 @@ export default function DanTechAI() {
                 )}
               </form>
               <div className="px-4 pb-2.5 text-[10px] text-white/30 text-center">
-                {DANTECH_NAME} guides your learning — it won't do assignments for you 🙂 {isCloudDanTechEnabled() ? '• Cloud AI' : '• On-device'}
+                {DANTECH_NAME} guides your learning — it won't do assignments for you 🙂 {ANSWER_NOTE[answeredBy] || '• On-device'}
               </div>
             </>
           )}

@@ -243,7 +243,7 @@ export default function PaymentsManager() {
       {/* ============ RECEIPT VIEWER MODAL ============ */}
       {viewPayment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
-          <div className="w-full max-w-[700px] max-h-[90vh] overflow-auto glass-strong rounded-[24px] p-6 space-y-4">
+          <div className="w-full max-w-[700px] dialog-panel overflow-auto glass-strong rounded-[24px] p-6 space-y-4">
             <div className="flex items-center justify-between gap-3">
               <h3 className="font-bold text-lg flex items-center gap-2"><Eye className="h-5 w-5 text-cyan-300" /> Receipt — Secure View (Admin)</h3>
               <button onClick={() => setViewPayment(null)} className="h-8 w-8 rounded-full glass flex items-center justify-center shrink-0">✕</button>
@@ -287,7 +287,7 @@ export default function PaymentsManager() {
       {/* ============ APPROVAL CONFIRMATION MODAL ============ */}
       {approveTarget && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
-          <div className="w-full max-w-[480px] glass-strong rounded-[24px] p-6 space-y-5">
+          <div className="w-full max-w-[480px] dialog-panel overflow-auto glass-strong rounded-[24px] p-6 space-y-5">
             {!approveResult ? (
               <>
                 <div className="flex items-center gap-3">
@@ -341,7 +341,7 @@ export default function PaymentsManager() {
       {/* ============ REJECTION MODAL ============ */}
       {rejectTarget && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
-          <div className="w-full max-w-[520px] max-h-[92vh] overflow-auto glass-strong rounded-[24px] p-6 space-y-5">
+          <div className="w-full max-w-[520px] dialog-panel overflow-auto glass-strong rounded-[24px] p-6 space-y-5">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-red-500/20 flex items-center justify-center shrink-0"><XCircle className="h-5 w-5 text-red-400" /></div>
               <div><h3 className="font-bold">Reject this payment?</h3><p className="text-xs text-white/50">{rejectTarget.studentName} • {rejectTarget.courseName} • {formatNaira(rejectTarget.amount)}</p></div>

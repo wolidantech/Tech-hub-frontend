@@ -133,7 +133,7 @@ export default function CommunityManager() {
 
           {showLive && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
-              <div className="w-full max-w-[560px] max-h-[90vh] overflow-auto glass-strong rounded-[24px] p-6 space-y-4">
+              <div className="w-full max-w-[560px] dialog-panel overflow-auto glass-strong rounded-[24px] p-6 space-y-4">
                 <div className="flex justify-between items-center"><h3 className="font-bold text-lg flex items-center gap-2"><Video className="h-5 w-5 text-red-400" /> {editingLive ? 'Edit' : 'Schedule'} Live Class</h3><button onClick={() => { setShowLive(false); setEditingLive(null); }}><X className="h-5 w-5" /></button></div>
                 <input value={liveForm.title} onChange={(e) => setLiveForm({ ...liveForm, title: e.target.value })} placeholder="Class title" className="w-full h-11 rounded-full glass px-4 text-sm" />
                 <select value={liveForm.courseId} onChange={(e) => setLiveForm({ ...liveForm, courseId: e.target.value })} className="w-full h-11 rounded-full glass px-4 text-sm">
@@ -181,7 +181,7 @@ export default function CommunityManager() {
 
       {viewPost && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
-          <div className="w-full max-w-[640px] max-h-[90vh] overflow-auto glass-strong rounded-[24px] p-6 space-y-4">
+          <div className="w-full max-w-[640px] dialog-panel overflow-auto glass-strong rounded-[24px] p-6 space-y-4">
             <div className="flex justify-between items-start"><h3 className="font-bold text-lg">{viewPost.title}</h3><button onClick={() => setViewPost(null)}><X className="h-5 w-5" /></button></div>
             <div className="text-xs text-white/40">{viewPost.authorName} • {courseName(viewPost.courseId)}</div>
             <p className="text-sm text-white/75 whitespace-pre-line">{viewPost.body}</p>

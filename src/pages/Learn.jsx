@@ -117,7 +117,7 @@ function LessonVideo({ lesson, onVideoProgress }) {
           controls
           playsInline
           ref={node => { if (node) node.playbackRate = speed; }}
-          className="absolute inset-0 w-full h-full bg-black"
+          className="absolute inset-0 w-full h-full bg-black object-contain"
           onLoadedMetadata={(e) => { try { e.target.playbackRate = speed; } catch { /* ignore */ } }}
           onTimeUpdate={(e) => {
             if (!onVideoProgress) return;

@@ -19,6 +19,19 @@ in the Supabase Dashboard SQL Editor.
 
 ## Exact order
 
+### Fast path (any project that already has migrations 001–009)
+
+One paste, one Run:
+
+1. `supabase/seed/setup_full_catalog.sql` — the 12 courses, the full curriculum,
+   publishing and the 4 learning paths, in the correct order, in one file.
+2. `supabase/verify/verify_curriculum.sql` (read-only verification).
+
+`setup_full_catalog.sql` is generated from the four files below by
+`node supabase/seed/generate_setup.mjs`, so it can never drift from them. Use the
+step-by-step order below when you want a per-step result grid (a production repair
+where you want to see each stage land), or when a step has to be repeated alone.
+
 ### Fresh project
 
 Run each migration as a separate SQL Editor query, in numeric order:
@@ -66,12 +79,43 @@ Apply the checked-in sequence below so migration history and data are repaired:
 5. Run `seed_learning_paths.sql`.
 6. Run `verify_curriculum.sql` and save/export the result for the release record.
 
-## Pasting the ~1 MB curriculum in SQL Editor
+## Pasting the curriculum in SQL Editor (fast path)
 
-`seed_curriculum.sql` is approximately 0.92 MB and 16,800 lines. Do not copy it
-from a rendered GitHub preview, which can truncate large files.
+`seed_curriculum.sql` is approximately 0.39 MB and 6,200 lines, and it runs as
+about **25 statements**. That is the whole point of its shape: the curriculum is
+loaded into three temp payload tables with one multi-row `values` insert each and
+then fanned out with set-based statements, instead of one statement per lesson per
+table.
 
-1. Open the raw local file in a code editor.
+Measured on a throwaway Postgres (PGlite) with the same 12×4×4 curriculum —
+`cd supabase/verify && npm run bench:seed`:
+
+| Shape | Lines | Size | Semicolons | Cold run | Idempotent re-run |
+|---|---|---|---|---|---|
+| one statement per lesson (old) | 16,874 | 894 KB | 1,571 | 705 ms | 527 ms |
+| set-based payload fan-out (this file) | 6,169 | 385 KB | 410 | 105 ms | 54 ms |
+
+The wall-clock gap is far bigger in the dashboard than in these numbers, because
+the SQL Editor tokenizes the paste and renders a result grid per statement: a
+~1,570-statement script is what made the editor sit on "Running query…" or crash
+the tab. Fewer, larger statements is also why the file starts with
+`set local statement_timeout = 0;` and `set local synchronous_commit = off;`
+(both local to this transaction only — the rollback guarantees are unchanged).
+
+Do not copy the file from a rendered GitHub preview, which can truncate large
+files. To get the exact bytes onto the clipboard fast:
+
+```bash
+# macOS
+pbcopy < supabase/seed/seed_curriculum.sql
+# Windows PowerShell
+Get-Content -Raw supabase/seed/seed_curriculum.sql | Set-Clipboard
+# Linux (X11 / Wayland)
+xclip -selection clipboard -in supabase/seed/seed_curriculum.sql
+wl-copy < supabase/seed/seed_curriculum.sql
+```
+
+1. Open the raw local file in a code editor (or use the clipboard command above).
 2. Select all and copy. Confirm the copied text starts with the generated-file
    header and contains `begin;`, and that the end contains `commit;` followed by
    the verification `select`.
@@ -96,7 +140,9 @@ and does not duplicate the canonical video URL.
 
 ## Expected end state
 
-For each of these 12 launch slugs:
+Each of the 12 launch **subjects** — evaluated against whichever row students can
+actually open, i.e. the live custom twin where one exists (see
+[Course catalog topology](#course-catalog-topology-what-correct-means-on-this-project)):
 
 - `published = true` and `archived = false`
 - 4 modules
@@ -104,32 +150,155 @@ For each of these 12 launch slugs:
 - 16 full written bodies
 - 16 published YouTube video rows
 - resources on all 16 lessons
+- 1 published final quiz with 10 questions, 1 published final project, and 1
+  completion-rule row (these three are what gate the certificate)
 
-Launch slugs:
+Launch subjects, by original slug: `ai-video-content-creation`,
+`video-editing-capcut`, `graphic-design-canva`, `digital-marketing`,
+`mobile-app-development`, `portfolio-creation`, `frontend-web-development`,
+`web-design-wordpress`, `ui-ux-design-figma`, `microsoft-excel`, `microsoft-word`,
+`microsoft-powerpoint`.
 
-- `ai-video-content-creation`
-- `video-editing-capcut`
-- `graphic-design-canva`
-- `digital-marketing`
-- `mobile-app-development`
-- `portfolio-creation`
-- `frontend-web-development`
-- `web-design-wordpress`
-- `ui-ux-design-figma`
-- `microsoft-excel`
-- `microsoft-word`
-- `microsoft-powerpoint`
+There must also be exactly four published learning paths, and every step of each
+must point at a course that is published AND not archived.
 
-There should also be exactly four published learning paths, all referencing real
-course IDs. On a clean database this means exactly 12 published courses. On the
-existing project, the total may be higher if an already-published custom course
-is intentionally retained; `publish_courses.sql` never unpublishes it.
+On a clean database this means exactly 12 published courses. On the existing
+project there are 18 rows and 12 visible: the five superseded duplicates and the
+junk placeholder stay archived, and `publish_courses.sql` never touches an
+archived row in either direction.
 
 Results 3 and 4 in `verify_curriculum.sql` are launch release blockers and must
-both be empty; each returned row names the exact failed count/state. Result 5
-lists custom or legacy courses with zero lessons. For the known live data,
-`video-editing-with-capcut` is expected there until its separate merge/archive
-decision is completed. None of the 12 launch slugs may appear in result 5.
+both be empty; each returned row names the exact failed count/state. Result 3b is
+informational — the superseded originals with their enrollment/payment/certificate
+counts (all zero today), as reconciliation evidence. Result 5 lists courses with
+zero lessons; today that should be `video-eiting` only, because the five twins
+hold cloned curricula. If a *launch* slug appears in result 5, its twin was never
+populated and students would open an empty course.
+
+## Course catalog topology (what "correct" means on this project)
+
+The live catalog was consolidated after the seed chain ran, and it no longer
+matches a fresh project one-to-one. Both topologies are supported by the seeds;
+nothing here may be "fixed" by unarchiving:
+
+| Group | Slugs | State |
+|---|---|---|
+| Launch courses taught directly | `ai-video-content-creation`, `digital-marketing`, `frontend-web-development`, `microsoft-excel`, `microsoft-word`, `microsoft-powerpoint`, `portfolio-creation` | `published = true`, `archived = false` |
+| Live custom twins (the real content) | `graphic-design-with-canva`, `mobile-application-development`, `ui-ux-design-with-figma`, `video-editing-with-capcut`, `web-design-with-wordpress` | `published = true`, `archived = false`, cloned curriculum |
+| Superseded seed duplicates — **never unarchive, never reference** | `graphic-design-canva`, `mobile-app-development`, `ui-ux-design-figma`, `video-editing-capcut`, `web-design-wordpress` | `archived = true` (and unpublished), 0 enrollments |
+| Junk placeholder | `video-eiting` | `archived = true`, placeholder lessons, 0 enrollments |
+
+18 rows total, **12 visible to students**. The storefront rule is
+`published = true AND archived = false` — enforced by RLS for anonymous visitors
+and applied identically in the app (`isCatalogCourse` in `src/lib/lms.js`) so an
+admin's list can never show a duplicate next to its live twin.
+
+Because of this, the curriculum seed still writes the 12 launch subjects (the
+archived rows keep their curriculum as the source of truth for the twins and for
+a future fresh project), while **learning paths, UI and analytics must only ever
+reference the visible row**. `verify_curriculum.sql` reflects that: result 3
+checks the contract per subject (twin preferred), and result 3b lists the
+superseded originals with their enrollment/payment/certificate counts as
+reconciliation evidence.
+
+> **Check the twins actually hold the assessments.** Cloning a curriculum in the
+> admin UI copies modules, lessons and bodies; a quiz or assignment that was
+> created on the duplicate stays behind on it, and completion rules gate the
+> certificate. Read-only check — run it and expect 1/10/1/1 per twin:
+>
+> ```sql
+> select c.slug, c.title,
+>        (select count(*) from public.quizzes q
+>          where q.course_id = c.id and q.is_final and q.status = 'published') as final_quizzes,
+>        (select count(*) from public.quizzes q
+>          join public.quiz_questions qq on qq.quiz_id = q.id
+>          where q.course_id = c.id and q.is_final and q.status = 'published') as final_questions,
+>        (select count(*) from public.assignments a
+>          where a.course_id = c.id and a.is_final_project and a.status = 'published') as final_projects,
+>        (select count(*) from public.course_completion_rules r where r.course_id = c.id) as completion_rules
+> from public.courses c
+> where c.slug in ('graphic-design-with-canva', 'mobile-application-development',
+>                  'ui-ux-design-with-figma', 'video-editing-with-capcut',
+>                  'web-design-with-wordpress')
+> order by c.slug;
+> ```
+>
+> A twin reporting `0` final quizzes/questions/projects/rules cannot award a
+> certificate even at 100% lesson progress. Copy them across with the same
+> insert-select pattern the curriculum seed uses (never by deleting the source
+> rows), and re-run `verify_curriculum.sql`.
+
+## Repointing learning-path steps (only if paths already exist)
+
+`seed_learning_paths.sql` never overwrites an existing path, so on a project
+whose paths were seeded **before** the consolidation, their steps still point at
+the archived duplicates. `/learning-paths` then renders short paths for students
+and dead links for admins. `verify_curriculum.sql` result 4 names them
+(`unopenable learning-path step`).
+
+This repair is deliberately a separate, reviewed statement rather than part of
+the seed, so a routine re-run can never clobber a path an admin curated. It only
+touches the four launch titles, is idempotent, and rewrites a step only when a
+strictly better (visible) course exists for it:
+
+```sql
+-- Review first: what do the launch paths point at right now?
+select lp.title, cid.i as step, c.slug, c.published, coalesce(c.archived, false) as archived
+from public.learning_paths lp
+cross join lateral unnest(lp.course_ids) with ordinality as cid(id, i)
+left join public.courses c on c.id = cid.id
+where lp.title = any (array['Web & Mobile Developer', 'Digital Creator',
+                            'Office Productivity Pro', 'Digital Business Growth'])
+order by lp.title, cid.i;
+
+-- Then repoint, in one transaction.
+begin;
+create temp table _path_fix (title text, step int, candidates text[]) on commit drop;
+insert into _path_fix (title, step, candidates) values
+  ('Web & Mobile Developer', 1, array['frontend-web-development']),
+  ('Web & Mobile Developer', 2, array['web-design-with-wordpress','web-design-wordpress']),
+  ('Web & Mobile Developer', 3, array['ui-ux-design-with-figma','ui-ux-design-figma']),
+  ('Web & Mobile Developer', 4, array['mobile-application-development','mobile-app-development']),
+  ('Web & Mobile Developer', 5, array['portfolio-creation']),
+  ('Digital Creator',        1, array['ai-video-content-creation']),
+  ('Digital Creator',        2, array['video-editing-with-capcut','video-editing-capcut']),
+  ('Digital Creator',        3, array['graphic-design-with-canva','graphic-design-canva']),
+  ('Digital Creator',        4, array['digital-marketing']),
+  ('Digital Creator',        5, array['portfolio-creation']),
+  ('Office Productivity Pro',1, array['microsoft-word']),
+  ('Office Productivity Pro',2, array['microsoft-excel']),
+  ('Office Productivity Pro',3, array['microsoft-powerpoint']),
+  ('Digital Business Growth',1, array['digital-marketing']),
+  ('Digital Business Growth',2, array['graphic-design-with-canva','graphic-design-canva']),
+  ('Digital Business Growth',3, array['ai-video-content-creation']),
+  ('Digital Business Growth',4, array['portfolio-creation']);
+
+update public.learning_paths lp
+   set course_ids = (
+         select array_agg(
+                  coalesce(
+                    (select c.id from public.courses c
+                      where c.slug = any(f.candidates) and c.published and not coalesce(c.archived, false)
+                      order by array_position(f.candidates, c.slug) limit 1),
+                    lp.course_ids[f.step])
+                order by f.step)
+           from _path_fix f where f.title = lp.title
+       ),
+       updated_at = now()
+ where lp.title = any (select distinct title from _path_fix);
+commit;
+
+-- Must return zero rows (see result 4 of verify_curriculum.sql):
+select lp.title, cid.i, c.slug, c.published, coalesce(c.archived, false) as archived
+from public.learning_paths lp
+cross join lateral unnest(lp.course_ids) with ordinality as cid(id, i)
+join public.courses c on c.id = cid.id
+where c.archived or not c.published;
+```
+
+Enrollments, payments, progress and certificates are keyed on course **ids**, so
+repointing a path changes no student's access. Do not "fix" an archived slug by
+unarchiving it — that puts a second, identical course back in the storefront.
 
 ## Authorization checks
 
@@ -179,18 +348,36 @@ npm test
 npm run build
 ```
 
-## CapCut duplicate: recommendation (do not delete during restore)
+## The consolidated duplicates (decision already taken)
 
-### Current comparison
+This section used to recommend archiving the custom CapCut course. **The
+decision went the other way and is settled**: all five seed duplicates were
+archived and the custom twins kept, each holding a clone of its counterpart's
+curriculum. Do not reopen that choice during a restore — in particular, never
+unarchive a seed duplicate, and never delete a course that ever received a
+payment. The remaining work is purely bookkeeping, in this order:
 
-The canonical seed course is `video-editing-capcut`: category **Video & Media**,
-4 modules, 16 lessons, written bodies, resources, videos, final quiz, and final
-project. The custom `video-editing-with-capcut` row is category **General** and
-currently has no lessons. The title similarity does not make their UUIDs
-interchangeable: enrollments, payments, certificates, paths, and progress point
-to course IDs, not display titles.
+1. Confirm every twin is complete (assessments in particular — see the query in
+   [Course catalog topology](#course-catalog-topology-what-correct-means-on-this-project)).
+2. Repoint the four learning paths if their steps still name archived slugs
+   (see [Repointing learning-path steps](#repointing-learning-path-steps-only-if-paths-already-exist)).
+3. Keep the archived rows as audit records. Only after backup, owner sign-off and
+   a reconciliation report showing zero references may any of them be deleted.
 
-Use this read-only inventory before deciding:
+The one duplicate that carries money today is `video-editing-with-capcut`
+(1 paid enrollment) — it is the **live twin**, not the archived row, so no
+reconciliation is required to keep it visible; the archived
+`video-editing-capcut` has 0 enrollments (result 3b proves it on every run).
+
+### Why the UUIDs are not interchangeable
+
+The seed course `video-editing-capcut` and the custom `video-editing-with-capcut`
+look the same by title, but enrollments, payments, certificates, learning-path
+steps and progress rows all point at course **ids**, never display titles. That is
+exactly why a path step must be re-pointed at the twin's id rather than "fixed"
+by renaming or unarchiving a slug.
+
+### Inventory query (read-only)
 
 ```sql
 select c.id, c.slug, c.title, c.category, c.price, c.published, c.archived,
@@ -205,29 +392,20 @@ where c.slug in ('video-editing-capcut', 'video-editing-with-capcut')
 order by c.slug;
 ```
 
-### Recommended merge/archive plan
+Read it as: the **twin** (`video-editing-with-capcut`) is published and carries
+the paid enrollment; the **seed duplicate** is archived with zero references and
+stays that way. If a future run shows a nonzero reference count on the archived
+side, that is a reconciliation task for the owner — not a reason to unarchive.
 
-1. Make `video-editing-capcut` the canonical destination because all seeded
-   curriculum and learning-path references already target it.
-2. Back up the database and inventory **all** foreign keys referencing the custom
-   course UUID. Reconcile approved payments and enrollment status per student.
-3. In one reviewed transaction, upsert each custom-course enrollment onto the
-   canonical course. If a student already has both, retain one canonical row and
-   preserve the strongest access state (`active` over `completed` over `removed`)
-   according to the business decision. Preserve payment IDs/approval evidence.
-4. Repoint payment, certificate, notification, activity/progress, discussion,
-   submission, and other auditable references only after the owner approves the
-   accounting implications. Payment rows must not be deleted; their amount,
-   reference, receipt, approval, and timestamps are financial history.
-5. Validate that every paid/approved student can open the canonical classroom and
-   that no certificate or progress row is orphaned.
-6. Set the custom course to `published = false, archived = true` first. Keep it as
-   an audit record through a reconciliation period. Add an application redirect
-   for old shared links if those links exist.
-7. Hard-delete only after backup, owner sign-off, zero remaining references, and
-   a completed reconciliation report. Archiving indefinitely is safer than
-   deleting a course that ever received a payment.
+### If a duplicate ever has to be merged for real
 
-If the custom course has zero enrollments, payments, certificates, progress, and
-other references, archive it and later delete it after the same backup/sign-off
-process. This runbook intentionally provides no production deletion statement.
+Only if a paid enrollment is ever found stranded on an archived row. Then, and
+only then: back up, inventory every foreign key referencing that course id,
+repoint enrollments first (keeping the strongest access state: `active` over
+`completed` over `removed`), then payments/certificates/progress/discussions/
+submissions with the owner's sign-off, verify each paid student can open the
+classroom, archive the empty row, and delete nothing until the reconciliation
+report is closed. Payment rows are financial history and are never deleted. A
+duplicate that has zero enrollments, payments, certificates and progress may be
+archived now and deleted later under the same backup/sign-off process — this
+runbook intentionally provides no production deletion statement.

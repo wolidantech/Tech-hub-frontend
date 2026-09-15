@@ -3,11 +3,12 @@ import { useParams, Link } from 'react-router-dom';
 import { Award, BadgeCheck, MapPin, Share2, ArrowLeft } from 'lucide-react';
 import { fetchPublicPortfolio } from '../lib/store';
 import SignedFile from '../components/common/SignedFile';
-import { formatDate } from '../lib/utils';
+import { formatDate, shareOrCopy } from '../lib/utils';
 
 export default function StudentPortfolio() {
   const { id } = useParams();
   const [data, setData] = useState(undefined); // undefined = loading
+  const [shareState, setShareState] = useState('idle');
 
   useEffect(() => {
     let alive = true;
@@ -50,7 +51,19 @@ export default function StudentPortfolio() {
       <div className="safe-inline safe-bottom mx-auto max-w-[960px] lg:px-8 py-10">
         <div className="flex justify-between items-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white"><ArrowLeft className="h-4 w-4" /> Home</Link>
-          <button onClick={() => navigator.clipboard.writeText(window.location.href)} className="px-4 py-2 rounded-full glass text-xs font-bold flex items-center gap-2"><Share2 className="h-3.5 w-3.5" /> SHARE PORTFOLIO</button>
+          <button
+            onClick={async () => {
+              const result = await shareOrCopy({ title: 'Student portfolio', url: window.location.href });
+              if (result === 'copied' || result === 'failed') {
+                setShareState(result);
+                setTimeout(() => setShareState('idle'), 2200);
+              }
+            }}
+            className="px-4 py-2 rounded-full glass text-xs font-bold flex items-center gap-2 active:scale-[0.98] transition"
+          >
+            <Share2 className="h-3.5 w-3.5" />
+            {shareState === 'copied' ? 'LINK COPIED' : shareState === 'failed' ? 'LONG-PRESS TO COPY' : 'SHARE PORTFOLIO'}
+          </button>
         </div>
 
         <div className="glass-strong rounded-[28px] p-8 md:p-10 text-center relative overflow-hidden">

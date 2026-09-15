@@ -55,7 +55,7 @@ export default function Navbar() {
             ))}
             <form onSubmit={doSearch} className="relative ml-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40" />
-              <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search..." className="h-9 w-[130px] focus:w-[190px] transition-all rounded-full glass pl-9 pr-3 text-xs placeholder:text-white/30 focus:outline-none focus:border-cyan-400/50" />
+              <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search..." type="search" autoComplete="off" autoCapitalize="none" spellCheck={false} enterKeyHint="search" className="h-9 w-[130px] focus:w-[190px] transition-all rounded-full glass pl-9 pr-3 text-xs placeholder:text-white/30 focus:outline-none focus:border-cyan-400/50" />
             </form>
           </div>
 
@@ -106,7 +106,7 @@ export default function Navbar() {
           <div className="safe-inline safe-bottom py-6 space-y-4">
             <form onSubmit={doSearch} className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-              <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search courses, lessons, paths..." className="h-11 w-full rounded-full glass pl-11 pr-4 text-sm focus:outline-none" />
+              <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search courses, lessons, paths..." type="search" autoComplete="off" autoCapitalize="none" spellCheck={false} enterKeyHint="search" className="h-11 w-full rounded-full glass pl-11 pr-4 text-sm focus:outline-none" />
             </form>
             {navLinks.map(l => (
               <Link key={l.to} to={l.to} onClick={() => setOpen(false)} className={`block px-4 py-3 rounded-xl font-medium ${isActive(l.to) ? 'bg-white/[0.08] text-white' : 'text-white/70'}`}>

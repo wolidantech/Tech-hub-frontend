@@ -5,7 +5,7 @@ import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
 import CourseCard from '../components/course/CourseCard';
 import CatalogEmpty from '../components/common/CatalogEmpty';
-import { recommendCourses } from '../lib/lms';
+import { isCatalogCourse, recommendCourses } from '../lib/lms';
 import { formatNaira } from '../lib/utils';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { SKILL_AREAS, coursesForSubject } from '../data/skillsLibrary';
@@ -24,7 +24,7 @@ export default function Courses() {
   const [sort, setSort] = useState('popular');
   const [level, setLevel] = useState('All');
 
-  const visible = useMemo(() => courses.filter((c) => c.published !== false && !c.archived), [courses]);
+  const visible = useMemo(() => courses.filter(isCatalogCourse), [courses]);
 
   const filtered = useMemo(() => {
     let list = [...visible];
@@ -59,6 +59,15 @@ export default function Courses() {
   }, [user, visible, getUserEnrollments, getProgress, courseViews]);
 
   const cats = ['All', ...categories];
+  // A category can hold only archived duplicates after the catalog was
+  // consolidated (Video & Media / Design / Mobile Development are the live
+  // examples), which used to render a confident chip leading to an empty grid.
+  // Counting visible courses per category makes that state visible up front.
+  const countByCat = useMemo(() => {
+    const counts = {};
+    visible.forEach((c) => { counts[c.category] = (counts[c.category] || 0) + 1; });
+    return counts;
+  }, [visible]);
 
   return (
     <div className="min-h-screen max-w-full overflow-x-clip">
@@ -79,7 +88,7 @@ export default function Courses() {
             <div className="w-full md:w-auto flex flex-col sm:flex-row gap-3">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search courses, skills..." className="h-12 w-full md:w-[320px] rounded-full glass pl-11 pr-4 text-sm placeholder:text-white/40 focus:outline-none focus:border-cyan-400/50 focus:bg-white/[0.08] transition" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search courses, skills..." type="search" autoComplete="off" autoCapitalize="none" spellCheck={false} enterKeyHint="search" className="h-12 w-full md:w-[320px] rounded-full glass pl-11 pr-4 text-sm placeholder:text-white/40 focus:outline-none focus:border-cyan-400/50 focus:bg-white/[0.08] transition" />
               </div>
               <div className="relative">
                 <SlidersHorizontal className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
@@ -94,11 +103,21 @@ export default function Courses() {
           </div>
 
           <div className="mt-8 flex flex-wrap gap-2" aria-label="Course categories">
-            {cats.map((cat) => (
-              <button key={cat} onClick={() => setActiveCat(cat)} className={`min-h-11 px-4 sm:px-5 rounded-full text-[12px] sm:text-[13px] font-bold tracking-wide transition-all ${activeCat === cat ? 'bg-gradient-to-r from-cyan-400 to-blue-600 text-white shadow-[0_0_20px_rgba(14,165,233,0.4)]' : 'glass text-white/60 hover:text-white hover:bg-white/[0.08]'}`}>
-                {cat.toUpperCase()}
-              </button>
-            ))}
+            {cats.map((cat) => {
+              const n = cat === 'All' ? visible.length : (countByCat[cat] || 0);
+              const isActive = activeCat === cat;
+              return (
+                <button key={cat} onClick={() => setActiveCat(cat)} aria-pressed={isActive}
+                  aria-label={cat === 'All' ? `All courses, ${n} available` : `${cat}, ${n} ${n === 1 ? 'course' : 'courses'} available`}
+                  title={n === 0 ? 'Nothing published in this subject yet' : undefined}
+                  className={`min-h-11 inline-flex items-center gap-2 px-4 sm:px-5 rounded-full text-[12px] sm:text-[13px] font-bold tracking-wide transition-all ${isActive ? 'bg-gradient-to-r from-cyan-400 to-blue-600 text-white shadow-[0_0_20px_rgba(14,165,233,0.4)]' : 'glass text-white/60 hover:text-white hover:bg-white/[0.08]'}`}>
+                  {cat.toUpperCase()}
+                  <span className={`min-w-5 h-5 px-1.5 rounded-full text-[10px] font-black inline-flex items-center justify-center ${isActive ? 'bg-white/25 text-white' : n === 0 ? 'bg-white/[0.06] text-white/30' : 'bg-white/10 text-white/70'}`}>
+                    {n}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Difficulty / student level filter */}
@@ -193,7 +212,13 @@ export default function Courses() {
               ))}
             </div>
           ) : filtered.length === 0 ? (
-            <CatalogEmpty filtering={filtering && !coursesError} error={coursesError} onRetry={refreshCourses} />
+            <CatalogEmpty
+              filtering={filtering && !coursesError}
+              error={coursesError}
+              onRetry={refreshCourses}
+              emptyCategory={activeCat !== 'All' && !coursesError ? activeCat : null}
+              onClearCategory={() => setActiveCat('All')}
+            />
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filtered.map((c) => (

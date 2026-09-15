@@ -4,6 +4,7 @@ import {
   RefreshCw, Copy, Check, ArrowLeft, Server, Stethoscope,
 } from 'lucide-react';
 import { runDiagnostics, diagnosticsToText, isConfigured } from '../lib/backendHealth';
+import { copyText } from '../lib/utils';
 
 const ICONS = {
   pass: { Icon: CheckCircle2, cls: 'text-emerald-400', ring: 'border-emerald-500/30', bg: 'bg-emerald-500/10', label: 'OK' },
@@ -34,11 +35,12 @@ export default function BackendStatus() {
   useEffect(() => { run(); }, [run]);
 
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(diagnosticsToText(report));
+    if (await copyText(diagnosticsToText(report))) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch { /* clipboard blocked — the report is still readable on screen */ }
+    }
+    // Clipboard blocked — the report is still readable on screen, and every
+    // line of it is shown in the panels below.
   };
 
   const verdict = !report

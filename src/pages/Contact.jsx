@@ -68,10 +68,10 @@ export default function Contact() {
             <p className="text-sm text-white/50 mb-6">Fill the form and we'll reply via WhatsApp or email</p>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
-                <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Full Name" className="h-[52px] rounded-full glass px-5 text-sm placeholder:text-white/40 focus:outline-none focus:border-cyan-400/50" />
-                <input required value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="Phone Number" className="h-[52px] rounded-full glass px-5 text-sm placeholder:text-white/40 focus:outline-none focus:border-cyan-400/50" />
+                <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Full Name" autoComplete="name" autoCapitalize="words" enterKeyHint="next" className="h-[52px] rounded-full glass px-5 text-sm placeholder:text-white/40 focus:outline-none focus:border-cyan-400/50" />
+                <input required value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="Phone Number" type="tel" autoComplete="tel" inputMode="tel" enterKeyHint="next" className="h-[52px] rounded-full glass px-5 text-sm placeholder:text-white/40 focus:outline-none focus:border-cyan-400/50" />
               </div>
-              <input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="Email Address" className="w-full h-[52px] rounded-full glass px-5 text-sm placeholder:text-white/40 focus:outline-none focus:border-cyan-400/50" />
+              <input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="Email Address" autoComplete="email" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="next" className="w-full h-[52px] rounded-full glass px-5 text-sm placeholder:text-white/40 focus:outline-none focus:border-cyan-400/50" />
               <textarea required value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} placeholder="How can we help you? Tell us about your goals..." rows={6} className="w-full rounded-[20px] glass p-5 text-sm placeholder:text-white/40 focus:outline-none focus:border-cyan-400/50 resize-none" />
               <button type="submit" className="w-full btn-primary !py-4 gap-2"><Send className="h-4 w-4" /> SUBMIT MESSAGE</button>
               <div className="text-[11px] text-white/30 text-center">We respect your privacy. No spam, only helpful replies.</div>

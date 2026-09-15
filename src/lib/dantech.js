@@ -9,6 +9,8 @@
 // (mini-RAG over approved lessons) and enforces academic integrity.
 // ============================================================
 
+import { aiAuthHeaders } from './supabase';
+
 const ENDPOINT = import.meta.env?.VITE_DANTECH_ENDPOINT || '';
 export const DANTECH_NAME = 'DanTECH AI';
 
@@ -203,38 +205,232 @@ export function generateLocalReply(message, { context = {}, index = [], course =
   };
 }
 
-// ---------- Cloud call (secure backend) ----------
-export async function askCloudDanTech(message, { context, history, signal } = {}) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 30000);
-  try {
-    const res = await fetch(ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, context, history: (history || []).slice(-12) }),
-      signal: signal || ctrl.signal,
-    });
-    if (!res.ok) throw new Error(`DanTECH AI backend error (${res.status})`);
-    const data = await res.json();
-    return { text: data.reply || data.text || '...', sources: data.sources || [] };
-  } finally {
-    clearTimeout(timer);
+// ============================================================
+// Cloud call — the DanTECH AI gateway protocol
+// ------------------------------------------------------------
+// Shape sent to VITE_DANTECH_ENDPOINT (see server/ai-gateway.example.mjs and
+// supabase/README.md#ai-gateway):
+//   { message, mode, modeId, context: {courseId, lessonId, moduleId, level, ...},
+//     history: [{ role, text }] }
+// with `Authorization: Bearer <supabase access token>` when a student is signed
+// in, so the gateway can rate-limit per person and scope context to their
+// enrolments instead of trusting ids from the browser.
+// ============================================================
+
+export const GATEWAY_MODES = ['GENERAL', 'STUDY', 'CODING', 'RESEARCH', 'CAREER', 'DEEP_EXPLANATION'];
+
+// UI mode ids are not the gateway vocabulary. Mapping in one place means adding
+// a mode to AI_MODES without a protocol entry is a visible mistake, not a request
+// that silently arrives with mode:undefined.
+export const PROTOCOL_MODE_MAP = {
+  quick: 'GENERAL',
+  deep: 'DEEP_EXPLANATION',
+  study: 'STUDY',
+  coding: 'CODING',
+  research: 'RESEARCH',
+  career: 'CAREER',
+};
+export function toProtocolMode(id) {
+  return PROTOCOL_MODE_MAP[id] || 'GENERAL';
+}
+
+// Ids + level only, plus the short human-readable strings the reference gateway
+// formats into its system prompt. Deliberately no name/email/notes: a lesson
+// excerpt is enough to answer well and this payload leaves the device.
+export function buildGatewayContext(context = {}) {
+  const out = {
+    courseId: context.courseId ?? null,
+    lessonId: context.lessonId ?? null,
+    moduleId: context.moduleId ?? null,
+    level: context.level ?? null,
+  };
+  if (context.courseTitle) out.courseTitle = String(context.courseTitle).slice(0, 160);
+  if (context.lessonTitle) out.lessonTitle = String(context.lessonTitle).slice(0, 160);
+  if (context.lessonText) out.lessonText = String(context.lessonText).slice(0, 3000);
+  return out;
+}
+
+// Callers disagree on the key name (DanTechAI uses `text`, AIPage used `content`)
+// and the gateway reads `text` — normalize instead of forwarding two shapes.
+export function normalizeHistory(history) {
+  return (Array.isArray(history) ? history : [])
+    .slice(-12)
+    .map((m) => ({
+      role: m.role === 'user' ? 'user' : 'assistant',
+      // Trim first: a whitespace-only turn wastes a slot in the last-12 window and
+      // gives the model an empty message to reason about.
+      text: String(m.text ?? m.content ?? '').trim().slice(0, 1500),
+    }))
+    .filter((m) => m.text.length > 0);
+}
+
+/** Error carrying everything the UI needs: honest copy, a code, and a wait time. */
+export class DanTechGatewayError extends Error {
+  constructor(message, { status = 0, code = 'gateway', retryAfterMs = 0 } = {}) {
+    super(message);
+    this.name = 'DanTechGatewayError';
+    this.status = status;
+    this.code = code;
+    this.retryAfterMs = retryAfterMs;
   }
 }
 
-// ---------- Unified ask (cloud first, local fallback) ----------
+const GATEWAY_TIMEOUT_MS = 30000;
+
+function codeForStatus(status) {
+  if (status === 400) return 'bad_request';
+  if (status === 401 || status === 403) return 'unauthorized';
+  if (status === 404) return 'not_found';
+  if (status === 408) return 'timeout';
+  if (status === 413) return 'too_long';
+  if (status === 429) return 'rate_limited';
+  if (status === 501) return 'not_configured';
+  if (status >= 502 && status <= 504) return 'unavailable';
+  if (status >= 500) return 'server_error';
+  return 'gateway';
+}
+
+// Student-facing copy: what happened, whether it is their fault, and what to do.
+// Never a raw stack or provider text — the gateway may answer with a message
+// intended for the administrator's logs.
+export function friendlyGatewayMessage(status, retryAfterSec = 0) {
+  // status 0 is our own marker for "the request never got an HTTP answer":
+  // airplane mode, a dead WiFi hotspot, a blocked mixed-content URL.
+  if (!status) return 'We could not reach the AI gateway at all — this usually means the device is offline or the gateway address is unreachable. Reconnect and try again.';
+  const code = codeForStatus(status);
+  switch (code) {
+    case 'bad_request':
+      return 'The AI gateway could not read that request. Send your question once more — if it keeps happening, the gateway version does not match the website.';
+    case 'unauthorized':
+      return 'Your sign-in is not valid for the AI gateway. Reload the page (or sign in again) and try once more.';
+    case 'not_found':
+      return 'The AI gateway address is not answering at that path. Check VITE_DANTECH_ENDPOINT (it should be /api/dantech/chat on the server that runs the gateway).';
+    case 'timeout':
+      return 'The AI gateway took too long to reply. Try again — a short question usually answers faster.';
+    case 'too_long':
+      return 'That message is too long for the gateway. Paste the part of your text you want feedback on instead of all of it.';
+    case 'rate_limited':
+      return retryAfterSec > 0
+        ? `You are sending messages faster than the gateway allows. Wait ${retryAfterSec} second${retryAfterSec === 1 ? '' : 's'} and try again.`
+        : 'The AI gateway asked us to slow down. Wait a few seconds and try again.';
+    case 'not_configured':
+      return 'The cloud tutor is not configured on this server yet, so answers come from the on-device study engine.';
+    case 'unavailable':
+    case 'server_error':
+      return 'The AI gateway is having trouble right now. Your question is safe — try again in a moment.';
+    default:
+      return `The AI gateway replied with an unexpected status (${status}). Try again; if it continues, tell the administrator.`;
+  }
+}
+
+// `Retry-After` is allowed as seconds or an HTTP date; a bad value must not turn
+// a rate limit into NaN.
+export function parseRetryAfter(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return 0;
+  if (/^\d+$/.test(raw)) return Math.min(600, Number(raw));
+  const at = Date.parse(raw);
+  if (Number.isNaN(at)) return 0;
+  return Math.max(0, Math.min(600, Math.round((at - Date.now()) / 1000)));
+}
+
+export async function askCloudDanTech(message, { context, history, signal, mode } = {}) {
+  const auth = await aiAuthHeaders();
+  const ctrl = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, GATEWAY_TIMEOUT_MS);
+  // Our own controller does the aborting so a timeout cannot be mistaken for the
+  // user pressing Stop; the caller signal is mirrored into it.
+  const relay = () => ctrl.abort();
+  if (signal) {
+    if (signal.aborted) ctrl.abort();
+    else signal.addEventListener('abort', relay, { once: true });
+  }
+  const abortLike = () => {
+    const e = new Error('Aborted');
+    e.name = 'AbortError';
+    return e;
+  };
+  try {
+    let res;
+    try {
+      res = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...auth },
+        body: JSON.stringify({
+          message,
+          mode: toProtocolMode(mode),
+          // Kept for gateways that were written against the UI ids.
+          modeId: mode ?? null,
+          context: buildGatewayContext(context),
+          history: normalizeHistory(history),
+        }),
+        signal: ctrl.signal,
+      });
+    } catch (err) {
+      if (signal?.aborted) throw abortLike();
+      if (timedOut) throw new DanTechGatewayError(friendlyGatewayMessage(408), { status: 408, code: 'timeout', retryAfterMs: 5000 });
+      // fetch itself rejects on DNS/offline/CORS. Saying "server error" here sends
+      // an admin to the wrong place; the gateway is simply unreachable.
+      throw new DanTechGatewayError(friendlyGatewayMessage(0), { status: 0, code: 'offline', retryAfterMs: 4000 });
+    }
+    if (!res.ok) {
+      const retryAfterSec = parseRetryAfter(res.headers?.get?.('retry-after'));
+      throw new DanTechGatewayError(friendlyGatewayMessage(res.status, retryAfterSec), {
+        status: res.status,
+        code: codeForStatus(res.status),
+        retryAfterMs: retryAfterSec ? retryAfterSec * 1000 : res.status === 429 ? 15000 : 0,
+      });
+    }
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new DanTechGatewayError('The AI gateway replied with something that was not a valid answer. Try again.', { code: 'bad_json', retryAfterMs: 5000 });
+    }
+    const text = String(data?.reply || data?.text || '').trim();
+    if (!text) {
+      throw new DanTechGatewayError('The AI gateway replied with an empty answer. Try rephrasing your question.', { code: 'empty', retryAfterMs: 3000 });
+    }
+    return { text, sources: Array.isArray(data?.sources) ? data.sources : [], degraded: false, modeUsed: data?.mode || toProtocolMode(mode) };
+  } finally {
+    clearTimeout(timer);
+    if (signal) signal.removeEventListener?.('abort', relay);
+  }
+}
+
+// ---------- Unified ask (cloud first, on-device fallback) ----------
+// A gateway failure is not the student's problem to solve: we still answer from
+// the local lesson-aware engine. What changed is that the fallback is now
+// *declared* (`degraded` + `error`) instead of looking like a cloud answer, and
+// `offline`/`unauthorized` states are reported honestly so the UI can offer a
+// Retry and an admin can see the reason.
 export async function askDanTech(message, opts = {}) {
   const blocked = checkIntegrity(message);
-  if (blocked) return { text: blocked, sources: [], provider: 'guardrail' };
+  if (blocked) return { text: blocked, sources: [], provider: 'guardrail', degraded: false, online: false };
   if (isCloudDanTechEnabled()) {
     try {
       const r = await askCloudDanTech(message, opts);
-      return { ...r, provider: 'secure-backend' };
+      return { ...r, provider: 'secure-backend', degraded: false, online: true };
     } catch (err) {
-      console.warn('[DanTECH AI] backend failed, using local engine:', err.message);
+      if (err?.name === 'AbortError') throw err; // Stop button pressed: no fake answer
+      console.warn('[DanTECH AI] cloud gateway unavailable, answering on this device:', err.code, err.message);
+      const local = generateLocalReply(message, opts);
+      return {
+        ...local,
+        provider: 'local',
+        online: false,
+        degraded: true,
+        gatewayError: {
+          code: err.code || 'gateway',
+          status: err.status || 0,
+          message: err.message || 'The AI gateway is unavailable.',
+          retryAfterMs: err.retryAfterMs || 0,
+        },
+      };
     }
   }
-  return { ...generateLocalReply(message, opts), provider: 'local' };
+  return { ...generateLocalReply(message, opts), provider: 'local', degraded: false, online: false };
 }
 
 export const SUGGESTED_PROMPTS = [

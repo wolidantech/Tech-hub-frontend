@@ -4,7 +4,10 @@
   "type": "module",
   "scripts": {
     "verify": "node run.mjs",
-    "verify:seed": "node verify-seed.mjs"
+    "verify:seed": "node verify-seed.mjs",
+    "bench:seed": "node bench-seed.mjs"
   },
-  "dependencies": { "@electric-sql/pglite": "^0.3.0" }
+  "dependencies": {
+    "@electric-sql/pglite": "^0.3.0"
+  }
 }

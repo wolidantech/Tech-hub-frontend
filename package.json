@@ -9,7 +9,10 @@
     "preview": "vite preview --host 0.0.0.0 --port 5173",
     "verify": "node supabase/verify/run.mjs",
     "verify:seed": "node supabase/verify/verify-seed.mjs",
-    "test": "vitest run"
+    "verify:seed:bench": "node supabase/verify/bench-seed.mjs",
+    "seed:generate": "node supabase/seed/generate_curriculum.mjs && node supabase/seed/generate_setup.mjs",
+    "test": "vitest run",
+    "mock:ai": "node scripts/mock-dantech-gateway.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
