@@ -93,7 +93,11 @@ Measured on a throwaway Postgres (PGlite) with the same 12×4×4 curriculum —
 | Shape | Lines | Size | Semicolons | Cold run | Idempotent re-run |
 |---|---|---|---|---|---|
 | one statement per lesson (old) | 16,874 | 894 KB | 1,571 | 705 ms | 527 ms |
-| set-based payload fan-out (this file) | 6,169 | 385 KB | 410 | 105 ms | 54 ms |
+| set-based payload fan-out (this file) | 6,169 | 385 KB | 410 | 71–105 ms | 36–54 ms |
+
+Two runs are quoted because the set-based file's time depends on cold-cache state;
+the range above is what `npm run bench:seed` printed before and after the
+topology rewrite, and both runs produced byte-identical rows.
 
 The wall-clock gap is far bigger in the dashboard than in these numbers, because
 the SQL Editor tokenizes the paste and renders a result grid per statement: a
