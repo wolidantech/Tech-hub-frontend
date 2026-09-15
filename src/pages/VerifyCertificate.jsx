@@ -1,114 +1,113 @@
-import { useState, useEffect } from 'react';
-import { Search, CheckCircle2, XCircle, Award, Calendar, User, BookOpen, ShieldAlert } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { BadgeCheck, Search, ShieldAlert } from 'lucide-react';
 import { useCourses } from '../context/CourseContext';
 import { formatDate } from '../lib/utils';
-import { Link, useSearchParams } from 'react-router-dom';
 
+// Public certificate verifier. The holder's FULL name is returned by design
+// (owner-requested): certificate IDs carry a random suffix and verification
+// codes are separate random values, so they are safe public references.
 export default function VerifyCertificate() {
-  const [searchParams] = useSearchParams();
-  const [id, setId] = useState('');
+  const { verifyCertificate } = useCourses();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [input, setInput] = useState(searchParams.get('code') || '');
+  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [searched, setSearched] = useState(false);
-  const [verifying, setVerifying] = useState(false);
-  const { verifyCertificate } = useCourses();
 
-  const runVerify = async (code) => {
-    setVerifying(true);
-    try {
-      const found = await verifyCertificate(code.trim());
-      setResult(found || null);
-    } catch {
-      setResult(null);
-    } finally {
-      setVerifying(false);
-      setSearched(true);
-    }
+  const check = async (value) => {
+    const code = String(value ?? '').trim();
+    if (!code) return;
+    setLoading(true); setResult(null); setSearched(true);
+    try { setResult(await verifyCertificate(code)); }
+    catch { setResult({ found: false }); }
+    finally { setLoading(false); }
   };
 
-  // Support QR deep-link: /verify-certificate?code=XXX
+  // Support deep-link: /verify-certificate?code=WDTH-XXXX (QR codes use this)
   useEffect(() => {
     const code = searchParams.get('code');
-    if (code) {
-      setId(code);
-      runVerify(code);
-    }
+    if (code) check(code);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleVerify = (e) => {
-    e.preventDefault();
-    runVerify(id);
-  };
-
-  // Privacy: show first name + last initial only on public verification
-  const maskedName = (name = '') => {
-    const parts = name.trim().split(/\s+/);
-    if (!parts[0]) return 'Student';
-    if (parts.length === 1) return parts[0];
-    return `${parts[0]} ${parts[parts.length - 1].charAt(0)}.`;
-  };
+  const revoked = result?.found && result.status === 'revoked';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#020a1f] via-[#061236] to-[#020a1f] py-16">
-      <div className="mx-auto max-w-[640px] px-4 sm:px-6 lg:px-8">
-        <div className="text-center space-y-4 mb-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-[11px] font-bold tracking-widest"><Award className="h-4 w-4 text-cyan-300" /> CERTIFICATE VERIFICATION</div>
-          <h1 className="font-display font-black text-[36px] leading-none">Verify Certificate</h1>
-          <p className="text-white/60">Enter a Certificate ID or Verification Code to verify authenticity. Employers and institutions can use this tool.</p>
+    <div className="min-h-screen bg-gradient-to-br from-[#020a1f] via-[#061236] to-[#020a1f] py-10 sm:py-14 px-4">
+      <div className="mx-auto max-w-[680px]">
+        <div className="text-center mb-8">
+          <div className="h-16 w-16 mx-auto rounded-full border-2 border-[#c9a227] bg-[#061236] flex items-center justify-center mb-4">
+            <BadgeCheck className="h-8 w-8 text-[#e9cf8b]" />
+          </div>
+          <h1 className="font-display font-black text-[28px] sm:text-[34px] leading-tight">Verify a Certificate</h1>
+          <p className="mt-2 text-white/60 text-sm sm:text-base">Enter a certificate ID or verification code to confirm its authenticity.</p>
         </div>
 
-        <div className="glass-strong rounded-[24px] p-8 space-y-6">
-          <form onSubmit={handleVerify} className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
-              <input value={id} onChange={(e) => setId(e.target.value)} placeholder="Certificate ID or Verification Code (e.g. WDTH-2026-ABC123)" autoComplete="off" autoCapitalize="characters" autoCorrect="off" spellCheck={false} enterKeyHint="go" className="w-full h-[56px] rounded-full glass pl-12 pr-4 font-mono text-sm placeholder:font-sans placeholder:text-white/40 focus:outline-none focus:border-cyan-400/50 focus:bg-white/[0.08] transition" required />
-            </div>
-            <button type="submit" disabled={verifying} className="w-full btn-primary !py-4 disabled:opacity-50">{verifying ? 'VERIFYING…' : 'VERIFY CERTIFICATE'}</button>
-          </form>
+        <form className="flex flex-col sm:flex-row gap-3 mb-8" onSubmit={e => { e.preventDefault(); check(input); if (input.trim()) setSearchParams({ code: input.trim() }); }}>
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+            <input value={input} onChange={e => setInput(e.target.value)} placeholder="e.g. WDTH-2026-ABC123 or WDTH-ABCD-1234" type="search" autoComplete="off" autoCapitalize="none" spellCheck={false} enterKeyHint="search" className="h-12 w-full rounded-full glass pl-11 pr-4 text-base sm:text-sm placeholder:text-white/40 focus:outline-none focus:border-[#c9a227]/60" />
+          </div>
+          <button type="submit" disabled={loading || !input.trim()} className="h-12 px-6 rounded-full bg-[#c9a227] text-[#0a1a4a] font-bold text-sm disabled:opacity-50 hover:bg-[#e9cf8b] transition">
+            {loading ? 'Checking…' : 'Verify Certificate'}
+          </button>
+        </form>
 
-          {searched && (
-            <div className="pt-6 border-t border-white/10">
-              {result ? (
-                result.status === 'revoked' ? (
-                  <div className="text-center space-y-4">
-                    <div className="h-16 w-16 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center mx-auto"><ShieldAlert className="h-8 w-8 text-red-400" /></div>
-                    <div><div className="font-bold text-lg text-red-300">Certificate Revoked 🚫</div><div className="text-sm text-white/50 mt-1">This certificate is no longer valid.</div></div>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3 text-green-300 font-bold"><CheckCircle2 className="h-6 w-6" /> VALID CERTIFICATE ✅</div>
-                    <div className="rounded-2xl bg-green-500/10 border border-green-500/20 p-6 space-y-4">
-                      <div className="flex justify-between text-sm"><span className="text-white/50">Student Name</span><span className="font-bold flex items-center gap-1"><User className="h-4 w-4" /> {maskedName(result.studentName)}</span></div>
-                      <div className="flex justify-between text-sm"><span className="text-white/50">Course</span><span className="font-bold flex items-center gap-1"><BookOpen className="h-4 w-4" /> {result.courseName}</span></div>
-                      <div className="flex justify-between text-sm"><span className="text-white/50">Date Completed</span><span className="font-bold flex items-center gap-1"><Calendar className="h-4 w-4" /> {formatDate(result.issueDate)}</span></div>
-                      <div className="flex justify-between text-sm"><span className="text-white/50">Certificate ID</span><span className="font-mono font-bold text-cyan-300">{result.certificateId}</span></div>
-                      <div className="flex justify-between text-sm"><span className="text-white/50">Issued By</span><span className="font-bold">WOLI DAN TECH HUB</span></div>
-                    </div>
-                    <div className="text-center">
-                      <Link to={`/certificate/${result.certificateId}`} className="inline-flex px-6 py-3 rounded-full bg-white text-black font-bold text-sm">VIEW FULL CERTIFICATE</Link>
-                    </div>
-                  </div>
-                )
-              ) : (
-                <div className="text-center space-y-4">
-                  <div className="h-16 w-16 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center mx-auto"><XCircle className="h-8 w-8 text-red-400" /></div>
-                  <div><div className="font-bold text-lg">Certificate Not Found ❌</div><div className="text-sm text-white/50 mt-1">No certificate matches: <span className="font-mono text-white">{id}</span></div></div>
-                  <div className="text-xs text-white/30">Please check the ID and try again. Contact support if issue persists.</div>
+        {loading && (
+          <div className="glass rounded-[24px] p-10 text-center">
+            <div className="h-10 w-10 mx-auto rounded-full border-2 border-white/10 border-t-[#c9a227] animate-spin mb-3" />
+            <p className="text-sm text-white/60">Checking certificate…</p>
+          </div>
+        )}
+
+        {!loading && searched && result && (
+          <div className={`glass rounded-[24px] border-2 p-8 ${revoked ? 'border-red-500/40' : result.found ? 'border-[#c9a227]/50' : 'border-red-500/30'}`}>
+            {!result.found ? (
+              <div className="text-center py-4">
+                <div className="text-5xl mb-4">❌</div>
+                <h2 className="font-display font-bold text-xl text-red-400 mb-2">Certificate Not Found</h2>
+                <p className="text-sm text-white/60">No certificate matches that ID or code. Check for typos and try again.</p>
+              </div>
+            ) : revoked ? (
+              <div className="text-center py-4">
+                <ShieldAlert className="h-12 w-12 mx-auto text-red-400 mb-4" />
+                <h2 className="font-display font-bold text-xl text-red-400 mb-2">Certificate Revoked</h2>
+                <p className="text-sm text-white/60 mb-6">This certificate has been revoked by Woli Dan Tech Hub and is no longer valid.</p>
+                <div className="text-left glass rounded-2xl p-5 space-y-3 text-sm">
+                  <div className="flex justify-between gap-4"><span className="text-white/40 shrink-0">Certificate ID</span><span className="font-mono font-bold text-right">{result.certificateId}</span></div>
+                  <div className="flex justify-between gap-4"><span className="text-white/40 shrink-0">Course</span><span className="font-bold text-right">{result.courseName}</span></div>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
+              </div>
+            ) : (
+              <div>
+                <div className="text-center mb-6">
+                  <div className="h-16 w-16 mx-auto rounded-full bg-[#c9a227] flex items-center justify-center mb-4 shadow-[0_0_40px_rgba(201,162,39,0.4)]">
+                    <BadgeCheck className="h-9 w-9 text-[#0a1a4a]" />
+                  </div>
+                  <h2 className="font-display font-bold text-xl text-[#e9cf8b]">Valid Certificate</h2>
+                  <p className="text-xs text-white/50 mt-1">Authentic WOLI DAN TECH HUB certificate</p>
+                </div>
+                <div className="divide-y divide-white/[0.08] rounded-2xl border border-white/[0.08] px-5">
+                  <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4 py-3 text-sm"><span className="text-white/40 shrink-0">Awarded To</span><span className="cert-serif font-bold text-base text-right">{result.studentName}</span></div>
+                  <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4 py-3 text-sm"><span className="text-white/40 shrink-0">Course</span><span className="font-bold text-right">{result.courseName}</span></div>
+                  <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4 py-3 text-sm"><span className="text-white/40 shrink-0">Date of Issue</span><span className="font-bold text-right">{formatDate(result.issueDate)}</span></div>
+                  <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4 py-3 text-sm"><span className="text-white/40 shrink-0">Certificate ID</span><span className="font-mono text-[13px] font-bold text-cyan-300 text-right break-all">{result.certificateId}</span></div>
+                  {result.verificationCode && (
+                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4 py-3 text-sm"><span className="text-white/40 shrink-0">Verification Code</span><span className="font-mono text-[13px] font-bold text-[#e9cf8b] text-right break-all">{result.verificationCode}</span></div>
+                  )}
+                  <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4 py-3 text-sm"><span className="text-white/40 shrink-0">Issued By</span><span className="font-bold text-right">{result.issuedBy || 'WOLI DAN TECH HUB'}</span></div>
+                </div>
+                <p className="mt-5 text-center text-xs text-white/40">
+                  Signed by Olowoake Daniel Ayomide, Director, Woli Dan Tech Hub.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
-        <div className="mt-8 glass rounded-2xl p-6 text-sm text-white/50 leading-relaxed">
-          <div className="font-bold text-white mb-2">How verification works:</div>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Every certificate has a unique Certificate ID and Verification Code</li>
-            <li>Enter either one above to confirm authenticity</li>
-            <li>Valid certificates show student name, course, and completion date</li>
-            <li>Only limited public details are shown to protect student privacy</li>
-            <li>Contact us on WhatsApp 08159610509 for manual verification</li>
-          </ul>
+        <div className="mt-8 glass rounded-[20px] p-5 text-center">
+          <p className="text-xs text-white/50">Looking for your own certificates? Find them anytime under <span className="text-[#e9cf8b] font-semibold">My Certificates</span> in your dashboard.</p>
         </div>
       </div>
     </div>

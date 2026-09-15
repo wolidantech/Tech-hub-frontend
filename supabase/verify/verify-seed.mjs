@@ -4,7 +4,7 @@
 //   cd supabase/verify && npm install && npm run verify:seed
 //
 // Proves the sequence an administrator is told to run actually produces a
-// working, non-empty storefront — migrations 001-009, then the catalog,
+// working, non-empty storefront — migrations 001-010, then the catalog,
 // curriculum, publish and learning-path seeds. This is the chain that previously ended in "no courses visible"
 // (everything seeded as an unpublished draft) and "no admin can log in"
 // (nothing ever promotes a profile).
@@ -76,11 +76,12 @@ const MIGRATIONS = [
   '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql',
   '007_classroom_upgrade.sql', '008_cv_builder_and_study_tools.sql',
   '009_fix_is_admin_recursion.sql',
+  '010_certificate_fullname.sql',
 ];
 for (const f of MIGRATIONS) {
   await db.exec(read(join(here, '../migrations', f)));
 }
-console.log('migrations 001-009 applied clean');
+console.log('migrations 001-010 applied clean');
 
 // ---------- 2. catalog seed ----------
 await db.exec(read(join(here, '../seed/seed_12_courses.sql')));
