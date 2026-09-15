@@ -10,7 +10,7 @@ const R = {
 };
 
 export default {
-  slug: 'video-editing-capcut',
+  slug: 'video-editing-with-capcut',
   curriculum: [
     {
       title: 'Module 1: CapCut Fundamentals',

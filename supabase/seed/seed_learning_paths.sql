@@ -3,21 +3,18 @@
 -- ============================================================
 -- Guided step-by-step routes through the REAL published catalog.
 --
--- STEPS RESOLVE BY SLUG CANDIDATES, IN PREFERENCE ORDER.
--- The catalog was consolidated on the live project: five launch slugs are now
--- archived duplicates whose curriculum lives on under a custom twin slug
--- (web-design-wordpress -> web-design-with-wordpress, ui-ux-design-figma ->
--- ui-ux-design-with-figma, mobile-app-development ->
--- mobile-application-development, video-editing-capcut ->
--- video-editing-with-capcut, graphic-design-canva ->
--- graphic-design-with-canva). A path must point at whichever row students can
--- actually open, so every step lists its slugs "twin first, original as the
--- fallback" and takes the first one that is published and not archived. One
--- file therefore stays correct for a fresh project (only the originals exist)
--- and for the live one (only the twins are visible).
+-- EVERY STEP REFERENCES THE LIVE TWIN SLUGS. The catalog was consolidated on
+-- the live project: five launch courses are archived duplicates whose
+-- curriculum lives on under custom twin slugs. Every step in this file names
+-- the twin a student can actually open (e.g. web-design-with-wordpress,
+-- ui-ux-design-with-figma, mobile-application-development,
+-- video-editing-with-capcut, graphic-design-with-canva) and never the
+-- archived launch slug it replaced. seed_12_courses.sql seeds those same twin
+-- slugs, so the paths resolve on a fresh project AND on the live one.
 --
--- If NO candidate for a step resolves, this file aborts loudly instead of
--- silently seeding a path with a missing step (no fake paths, ever).
+-- If ANY step resolves to no published, unarchived course, this file aborts
+-- loudly instead of silently seeding a path with a missing step (no fake
+-- paths, ever).
 --
 -- IDEMPOTENT: keyed on exact title — re-running never duplicates and
 -- never overwrites paths an admin has deliberately edited. Repointing paths
@@ -31,8 +28,8 @@
 
 do $learning_paths$
 declare
-  -- Each path: title, description, icon, level_range, and steps as an array of
-  -- candidate-slug arrays, in the order a student should take them.
+  -- Each path: title, description, icon, level_range, and steps as the exact
+  -- course slugs a student should take, in order.
   defs jsonb := $paths$[
     {
       "title": "Web & Mobile Developer",
@@ -40,11 +37,11 @@ declare
       "icon": "🚀",
       "level_range": "Beginner → Advanced",
       "steps": [
-        ["frontend-web-development"],
-        ["web-design-with-wordpress", "web-design-wordpress"],
-        ["ui-ux-design-with-figma", "ui-ux-design-figma"],
-        ["mobile-application-development", "mobile-app-development"],
-        ["portfolio-creation"]
+        "frontend-web-development",
+        "web-design-with-wordpress",
+        "ui-ux-design-with-figma",
+        "mobile-application-development",
+        "portfolio-creation"
       ]
     },
     {
@@ -53,11 +50,11 @@ declare
       "icon": "🎬",
       "level_range": "Beginner → Intermediate",
       "steps": [
-        ["ai-video-content-creation"],
-        ["video-editing-with-capcut", "video-editing-capcut"],
-        ["graphic-design-with-canva", "graphic-design-canva"],
-        ["digital-marketing"],
-        ["portfolio-creation"]
+        "ai-video-content-creation",
+        "video-editing-with-capcut",
+        "graphic-design-with-canva",
+        "digital-marketing",
+        "portfolio-creation"
       ]
     },
     {
@@ -66,9 +63,9 @@ declare
       "icon": "📊",
       "level_range": "Beginner → Intermediate",
       "steps": [
-        ["microsoft-word"],
-        ["microsoft-excel"],
-        ["microsoft-powerpoint"]
+        "microsoft-word",
+        "microsoft-excel",
+        "microsoft-powerpoint"
       ]
     },
     {
@@ -77,10 +74,10 @@ declare
       "icon": "📈",
       "level_range": "Beginner → Intermediate",
       "steps": [
-        ["digital-marketing"],
-        ["graphic-design-with-canva", "graphic-design-canva"],
-        ["ai-video-content-creation"],
-        ["portfolio-creation"]
+        "digital-marketing",
+        "graphic-design-with-canva",
+        "ai-video-content-creation",
+        "portfolio-creation"
       ]
     }
   ]$paths$;
@@ -89,9 +86,7 @@ declare
   lp_title   text;
   lp_steps   uuid[];
   lp_picked  uuid;
-  lp_tried   text;
-  lp_cand    text;
-  step       jsonb;
+  lp_slug    text;
   step_no    int;
 begin
   for lp in select d from jsonb_array_elements(defs) as d loop
@@ -106,23 +101,16 @@ begin
     lp_steps := '{}'::uuid[];
     step_no  := 0;
 
-    for step in select s from jsonb_array_elements(lp->'steps') as s loop
-      step_no   := step_no + 1;
-      lp_picked := null;
-      lp_tried  := '';
+    for lp_slug in select s from jsonb_array_elements_text(lp->'steps') as s loop
+      step_no := step_no + 1;
 
-      for lp_cand in select c from jsonb_array_elements_text(step) as c loop
-        lp_tried := case when lp_tried = '' then lp_cand else lp_tried || ' or ' || lp_cand end;
-        if lp_picked is null then
-          select c.id into lp_picked
-            from public.courses c
-           where c.slug = lp_cand and c.published and not c.archived;
-        end if;
-      end loop;
+      select c.id into lp_picked
+        from public.courses c
+       where c.slug = lp_slug and c.published and not c.archived;
 
       if lp_picked is null then
         raise exception 'seed_learning_paths: path "%" step % matches no published, unarchived course [%]',
-          lp_title, step_no, lp_tried;
+          lp_title, step_no, lp_slug;
       end if;
       lp_steps := lp_steps || lp_picked;
     end loop;
@@ -176,9 +164,9 @@ end
 $learning_paths_guard$;
 
 -- ---------- Verify ----------
--- Expected on a fresh project: the 7 original slugs plus 5 originals (no twins
--- exist). Expected on the consolidated live project: the 5 twin slugs instead.
--- Every row must be published = true / archived = false.
+-- Every step of the four launch paths, with its course's visibility flags.
+-- Every row must be published = true / archived = false; the five remapped
+-- steps appear under their live twin slugs.
 select lp.title, cid.i as step, c.slug, c.published, c.archived
 from public.learning_paths lp
 cross join lateral unnest(lp.course_ids) with ordinality as cid(id, i)

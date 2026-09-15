@@ -7,6 +7,15 @@
 -- NOTE: new courses seed as UNPUBLISHED. Next run seed_curriculum.sql,
 -- which provides the complete modules, bodies, resources and lesson videos;
 -- only then run publish_courses.sql.
+--
+-- SLUGS MATCH THE CONSOLIDATED LIVE CATALOG. Five launch courses are seeded
+-- under their custom "twin" slugs — graphic-design-with-canva,
+-- mobile-application-development, ui-ux-design-with-figma,
+-- video-editing-with-capcut, web-design-with-wordpress — because that is how
+-- students open them on the live project. The five superseded launch slugs
+-- they replaced are ARCHIVED duplicates there: this seed never creates them,
+-- never unarchives them, never references them (README_RUNBOOK.md names them
+-- in the topology table for audit purposes only).
 -- ============================================================
 
 -- ---------- Categories ----------
@@ -35,7 +44,7 @@ on conflict (slug) do update set
   color = excluded.color, what_you_will_learn = excluded.what_you_will_learn,
   updated_at = now();
 insert into public.courses (slug, title, short_description, description, long_description, category, instructor, instructor_role, duration, level, price, original_price, thumbnail_key, color, what_you_will_learn, published, featured) values (
-  $$video-editing-capcut$$, $$VIDEO EDITING WITH CAPCUT$$, $$Edit like a pro on your phone & PC - transitions, effects, captions$$, $$Master CapCut for mobile and desktop. Learn cutting, transitions, effects, auto-captions, and trending editing styles used by top creators.$$, $$CapCut is the #1 editing tool for creators. This course teaches you everything from basic cuts to advanced effects, keyframes, color grading, and viral TikTok/Reels editing techniques. No laptop needed - start on your phone!$$,
+  $$video-editing-with-capcut$$, $$VIDEO EDITING WITH CAPCUT$$, $$Edit like a pro on your phone & PC - transitions, effects, captions$$, $$Master CapCut for mobile and desktop. Learn cutting, transitions, effects, auto-captions, and trending editing styles used by top creators.$$, $$CapCut is the #1 editing tool for creators. This course teaches you everything from basic cuts to advanced effects, keyframes, color grading, and viral TikTok/Reels editing techniques. No laptop needed - start on your phone!$$,
   $$Video & Media$$, $$Woli Dan$$, $$Video Editor$$, $$6 hours$$, $$Beginner$$,
   5000, 12000, $$video$$, $$from-cyan-500 to-blue-600$$,
   $JSON$["CapCut interface mastery","Cutting & trimming like a pro","Transitions & effects","Auto captions & text animations","Color grading & filters","Sound design & music","Export settings for all platforms","Creating viral short-form content"]$JSON$::jsonb, false, false
@@ -50,7 +59,7 @@ on conflict (slug) do update set
   color = excluded.color, what_you_will_learn = excluded.what_you_will_learn,
   updated_at = now();
 insert into public.courses (slug, title, short_description, description, long_description, category, instructor, instructor_role, duration, level, price, original_price, thumbnail_key, color, what_you_will_learn, published, featured) values (
-  $$graphic-design-canva$$, $$GRAPHIC DESIGN WITH CANVA$$, $$Design stunning graphics, flyers, logos & social posts without Photoshop$$, $$Learn professional graphic design using Canva. Create flyers, social media designs, logos, presentations, and brand kits that clients will pay for.$$, $$Canva has democratized design. This course shows you how to create professional-grade designs for businesses, even if you've never designed before. Includes client work templates and monetization strategies.$$,
+  $$graphic-design-with-canva$$, $$GRAPHIC DESIGN WITH CANVA$$, $$Design stunning graphics, flyers, logos & social posts without Photoshop$$, $$Learn professional graphic design using Canva. Create flyers, social media designs, logos, presentations, and brand kits that clients will pay for.$$, $$Canva has democratized design. This course shows you how to create professional-grade designs for businesses, even if you've never designed before. Includes client work templates and monetization strategies.$$,
   $$Design$$, $$Woli Dan$$, $$Brand Designer$$, $$5 hours$$, $$Beginner$$,
   5000, 10000, $$design$$, $$from-fuchsia-500 to-purple-600$$,
   $JSON$["Canva mastery from scratch","Design principles & typography","Social media design pack","Flyer & poster design","Logo & brand kit creation","Presentation design","Client project workflow","Selling designs online"]$JSON$::jsonb, false, false
@@ -80,7 +89,7 @@ on conflict (slug) do update set
   color = excluded.color, what_you_will_learn = excluded.what_you_will_learn,
   updated_at = now();
 insert into public.courses (slug, title, short_description, description, long_description, category, instructor, instructor_role, duration, level, price, original_price, thumbnail_key, color, what_you_will_learn, published, featured) values (
-  $$mobile-app-development$$, $$MOBILE APPLICATION DEVELOPMENT$$, $$Build real mobile apps with no-code & Flutterflow basics$$, $$Learn to build functional mobile apps without complex coding. From idea to Play Store.$$, $$Build your first mobile app in 2 weeks. This beginner-friendly course covers app ideation, UI design, no-code development, and publishing. Perfect for entrepreneurs with app ideas.$$,
+  $$mobile-application-development$$, $$MOBILE APPLICATION DEVELOPMENT$$, $$Build real mobile apps with no-code & Flutterflow basics$$, $$Learn to build functional mobile apps without complex coding. From idea to Play Store.$$, $$Build your first mobile app in 2 weeks. This beginner-friendly course covers app ideation, UI design, no-code development, and publishing. Perfect for entrepreneurs with app ideas.$$,
   $$Mobile Development$$, $$Woli Dan Tech Team$$, $$Mobile Developer$$, $$15 hours$$, $$Beginner$$,
   5000, 25000, $$mobile$$, $$from-emerald-500 to-teal-600$$,
   $JSON$["Mobile app fundamentals","UI/UX for mobile apps","No-code app development","Database & authentication","APIs & integrations","Testing & deployment","Publishing to Play Store","App monetization"]$JSON$::jsonb, false, false
@@ -125,7 +134,7 @@ on conflict (slug) do update set
   color = excluded.color, what_you_will_learn = excluded.what_you_will_learn,
   updated_at = now();
 insert into public.courses (slug, title, short_description, description, long_description, category, instructor, instructor_role, duration, level, price, original_price, thumbnail_key, color, what_you_will_learn, published, featured) values (
-  $$web-design-wordpress$$, $$WEB DESIGN WITH WORDPRESS$$, $$Build professional business websites with WordPress - no coding$$, $$Learn to build stunning WordPress websites for businesses. Domain, hosting, Elementor, and client delivery.$$, $$WordPress powers 40% of the web. Learn to build professional websites for clients, charge premium prices, and deliver in days not months. Includes hosting setup and client handover.$$,
+  $$web-design-with-wordpress$$, $$WEB DESIGN WITH WORDPRESS$$, $$Build professional business websites with WordPress - no coding$$, $$Learn to build stunning WordPress websites for businesses. Domain, hosting, Elementor, and client delivery.$$, $$WordPress powers 40% of the web. Learn to build professional websites for clients, charge premium prices, and deliver in days not months. Includes hosting setup and client handover.$$,
   $$Web Development$$, $$Woli Dan$$, $$WordPress Expert$$, $$8 hours$$, $$Beginner$$,
   5000, 15000, $$wordpress$$, $$from-sky-600 to-blue-700$$,
   $JSON$["WordPress fundamentals","Domain & hosting setup","Elementor page builder","Theme customization","E-commerce with WooCommerce","SEO basics","Security & maintenance","Charging clients & delivery"]$JSON$::jsonb, false, false
@@ -140,7 +149,7 @@ on conflict (slug) do update set
   color = excluded.color, what_you_will_learn = excluded.what_you_will_learn,
   updated_at = now();
 insert into public.courses (slug, title, short_description, description, long_description, category, instructor, instructor_role, duration, level, price, original_price, thumbnail_key, color, what_you_will_learn, published, featured) values (
-  $$ui-ux-design-figma$$, $$UI/UX DESIGN WITH FIGMA$$, $$Design beautiful apps & websites in Figma - from wireframe to prototype$$, $$Master UI/UX design with Figma. Learn user research, wireframing, design systems, and prototyping.$$, $$UI/UX is one of the highest-paying tech skills. This course teaches you to design user-centered digital products, create design systems, and build interactive prototypes that developers love.$$,
+  $$ui-ux-design-with-figma$$, $$UI/UX DESIGN WITH FIGMA$$, $$Design beautiful apps & websites in Figma - from wireframe to prototype$$, $$Master UI/UX design with Figma. Learn user research, wireframing, design systems, and prototyping.$$, $$UI/UX is one of the highest-paying tech skills. This course teaches you to design user-centered digital products, create design systems, and build interactive prototypes that developers love.$$,
   $$Design$$, $$Woli Dan Tech Team$$, $$Product Designer$$, $$12 hours$$, $$Beginner$$,
   5000, 18000, $$figma$$, $$from-purple-600 to-pink-600$$,
   $JSON$["UI/UX fundamentals","User research & personas","Wireframing & user flows","Figma mastery","Design systems & components","Prototyping & animations","Usability testing","Portfolio & job prep"]$JSON$::jsonb, false, false

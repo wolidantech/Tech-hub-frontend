@@ -17,31 +17,31 @@ export const categories = [
 // stays reviewable and the seed chain stays the single consumer.
 // ============================================================
 import aiVideoContentCreation from "./curriculum/ai-video-content-creation.js";
-import videoEditingCapcut from "./curriculum/video-editing-capcut.js";
-import graphicDesignCanva from "./curriculum/graphic-design-canva.js";
+import videoEditingWithCapcut from "./curriculum/video-editing-with-capcut.js";
+import graphicDesignWithCanva from "./curriculum/graphic-design-with-canva.js";
 import digitalMarketing from "./curriculum/digital-marketing.js";
 import frontendWebDevelopment from "./curriculum/frontend-web-development.js";
-import webDesignWordpress from "./curriculum/web-design-wordpress.js";
-import uiUxDesignFigma from "./curriculum/ui-ux-design-figma.js";
+import webDesignWithWordpress from "./curriculum/web-design-with-wordpress.js";
+import uiUxDesignWithFigma from "./curriculum/ui-ux-design-with-figma.js";
 import microsoftExcel from "./curriculum/microsoft-excel.js";
 import microsoftWord from "./curriculum/microsoft-word.js";
 import microsoftPowerpoint from "./curriculum/microsoft-powerpoint.js";
-import mobileAppDevelopment from "./curriculum/mobile-app-development.js";
+import mobileApplicationDevelopment from "./curriculum/mobile-application-development.js";
 import portfolioCreation from "./curriculum/portfolio-creation.js";
 
 const CURRICULA = Object.fromEntries(
   [
     aiVideoContentCreation,
-    videoEditingCapcut,
-    graphicDesignCanva,
+    videoEditingWithCapcut,
+    graphicDesignWithCanva,
     digitalMarketing,
     frontendWebDevelopment,
-    webDesignWordpress,
-    uiUxDesignFigma,
+    webDesignWithWordpress,
+    uiUxDesignWithFigma,
     microsoftExcel,
     microsoftWord,
     microsoftPowerpoint,
-    mobileAppDevelopment,
+    mobileApplicationDevelopment,
     portfolioCreation,
   ].map(({ slug, curriculum }) => [slug, curriculum])
 );
@@ -94,8 +94,8 @@ export const coursesData = [
     ]
   },
   {
-    id: "video-editing-capcut",
-    slug: "video-editing-capcut",
+    id: "video-editing-with-capcut",
+    slug: "video-editing-with-capcut",
     title: "VIDEO EDITING WITH CAPCUT",
     shortDescription: "Edit like a pro on your phone & PC - transitions, effects, captions",
     description: "Master CapCut for mobile and desktop. Learn cutting, transitions, effects, auto-captions, and trending editing styles used by top creators.",
@@ -124,8 +124,8 @@ export const coursesData = [
     ]
   },
   {
-    id: "graphic-design-canva",
-    slug: "graphic-design-canva",
+    id: "graphic-design-with-canva",
+    slug: "graphic-design-with-canva",
     title: "GRAPHIC DESIGN WITH CANVA",
     shortDescription: "Design stunning graphics, flyers, logos & social posts without Photoshop",
     description: "Learn professional graphic design using Canva. Create flyers, social media designs, logos, presentations, and brand kits that clients will pay for.",
@@ -184,8 +184,8 @@ export const coursesData = [
     ]
   },
   {
-    id: "mobile-app-development",
-    slug: "mobile-app-development",
+    id: "mobile-application-development",
+    slug: "mobile-application-development",
     title: "MOBILE APPLICATION DEVELOPMENT",
     shortDescription: "Build real mobile apps with Flutter & Dart - from zero to Play Store",
     description: "Learn to build real mobile apps for Android and iOS from one codebase with Flutter. From setup to publishing.",
@@ -274,8 +274,8 @@ export const coursesData = [
     ]
   },
   {
-    id: "web-design-wordpress",
-    slug: "web-design-wordpress",
+    id: "web-design-with-wordpress",
+    slug: "web-design-with-wordpress",
     title: "WEB DESIGN WITH WORDPRESS",
     shortDescription: "Build professional business websites with WordPress - no coding",
     description: "Learn to build stunning WordPress websites for businesses. Domain, hosting, Elementor, and client delivery.",
@@ -304,8 +304,8 @@ export const coursesData = [
     ]
   },
   {
-    id: "ui-ux-design-figma",
-    slug: "ui-ux-design-figma",
+    id: "ui-ux-design-with-figma",
+    slug: "ui-ux-design-with-figma",
     title: "UI/UX DESIGN WITH FIGMA",
     shortDescription: "Design beautiful apps & websites in Figma - from wireframe to prototype",
     description: "Master UI/UX design with Figma. Learn user research, wireframing, design systems, and prototyping.",

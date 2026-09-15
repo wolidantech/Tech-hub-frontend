@@ -13,7 +13,7 @@ const R = {
 };
 
 export default {
-  slug: 'graphic-design-canva',
+  slug: 'graphic-design-with-canva',
   curriculum: [
     {
       title: 'Module 1: Design Foundations & Canva Mastery',

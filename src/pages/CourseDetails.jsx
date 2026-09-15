@@ -5,6 +5,7 @@ import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
 import { copyText, formatNaira, getCourseThumbnailGradient } from '../lib/utils';
 import CourseArt from '../components/course/CourseArt';
+import { isCatalogCourse } from '../lib/lms';
 import { useState, useEffect } from 'react';
 import { toast, Toaster } from 'sonner';
 
@@ -123,6 +124,11 @@ export default function CourseDetails() {
   if (coursesLoading) return <div role="status" className="min-h-[60vh] grid place-content-center p-6 text-center text-white/60">Loading course…</div>;
   if (coursesError && !course) return <div role="alert" className="min-h-[60vh] grid place-content-center gap-4 p-6 text-center"><p>{coursesError}</p><button className="btn-primary min-h-11 mx-auto" onClick={refreshCourses}>Try again</button></div>;
   if (!course) return <div className="min-h-[60vh] grid place-content-center gap-4 p-6 text-center"><p>Course not found.</p><Link className="btn-secondary min-h-11" to="/courses">Browse courses</Link></div>;
+  // Storefront visibility rule: an archived or unpublished slug is "not found"
+  // for everyone but an admin (who manages those rows in the dashboard).
+  // RLS hides the same rows from anonymous visitors; this stops a direct URL
+  // typed by a signed-in non-admin from opening an archived duplicate.
+  if (!isCatalogCourse(course) && user?.role !== 'admin') return <div className="min-h-[60vh] grid place-content-center gap-4 p-6 text-center"><p>Course not found.</p><Link className="btn-secondary min-h-11" to="/courses">Browse courses</Link></div>;
 
   const enrolled = user ? isEnrolled(user.id, course.id) : false;
   const manualPayment = user ? getManualPaymentByCourse(user.id, course.id) : null;

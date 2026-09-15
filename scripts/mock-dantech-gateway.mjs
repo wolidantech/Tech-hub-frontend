@@ -11,9 +11,14 @@
 //
 //   node scripts/mock-dantech-gateway.mjs
 //
-// Then, in a second terminal:
+// Then, in a second terminal (absolute endpoint…):
 //
 //   VITE_DANTECH_ENDPOINT=http://localhost:8788/api/dantech/chat npm run dev
+//
+// …or the relative one, which the vite dev server proxies to this port
+// (use this for hosted/browser previews where localhost is not the browser):
+//
+//   VITE_DANTECH_ENDPOINT=/api/dantech/chat npm run dev
 //
 // Open /ai and type any of these to force a case:
 //   hello                      -> 200 answer (and check the header prints)

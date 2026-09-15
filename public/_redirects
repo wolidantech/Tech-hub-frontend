@@ -1,0 +1,4 @@
+# Single-page-app fallback: every client route (e.g. /course/:slug, /learn/:slug,
+# /ai, /learning-paths) must serve index.html so React Router can own the URL.
+# Without this file, direct loads of deep links return Netlify's 404 page.
+/*    /index.html   200

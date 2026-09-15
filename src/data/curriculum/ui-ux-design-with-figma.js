@@ -14,7 +14,7 @@ const R = {
 };
 
 export default {
-  slug: 'ui-ux-design-figma',
+  slug: 'ui-ux-design-with-figma',
   curriculum: [
     {
       title: 'Module 1: UX Thinking & Figma Foundations',

@@ -11,7 +11,7 @@ const R = {
 };
 
 export default {
-  slug: 'web-design-wordpress',
+  slug: 'web-design-with-wordpress',
   curriculum: [
     {
       title: 'Module 1: WordPress Foundations',

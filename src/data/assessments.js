@@ -23,7 +23,7 @@ export const finalQuizzes = {
       { type: 'multiple_choice', q: 'A content calendar helps creators mainly by…', options: ['Replacing creativity', 'Keeping publishing consistent and planned', 'Increasing video file size', 'Automating client payments'], answer: 1, why: 'Consistency wins on every platform; a calendar turns ideas into a reliable pipeline.' },
     ],
   },
-  'video-editing-capcut': {
+  'video-editing-with-capcut': {
     title: 'Final Assessment — Video Editing with CapCut',
     questions: [
       { type: 'multiple_choice', q: 'What is a "cut" in video editing?', options: ['A color filter', 'The point where one clip changes to the next', 'A music track', 'A caption style'], answer: 1, why: 'Cuts are the fundamental building blocks of every edit.' },
@@ -38,7 +38,7 @@ export const finalQuizzes = {
       { type: 'multiple_choice', q: 'A viral short-form edit typically changes something visually every…', options: ['30 seconds', '1–3 seconds', '2 minutes', 'It never changes'], answer: 1, why: 'Frequent visual changes (cuts, zooms, text) hold attention in short-form.' },
     ],
   },
-  'graphic-design-canva': {
+  'graphic-design-with-canva': {
     title: 'Final Assessment — Graphic Design with Canva',
     questions: [
       { type: 'multiple_choice', q: 'Visual hierarchy means…', options: ['Using as many fonts as possible', 'Guiding the viewer\u2019s eye to what matters first', 'Centering everything', 'Using only photos'], answer: 1, why: 'Hierarchy (size, weight, color, position) controls what the viewer sees first.' },
@@ -83,7 +83,7 @@ export const finalQuizzes = {
       { type: 'true_false', q: 'Alt text on images improves accessibility and SEO.', answer: 0, why: 'Alt text serves screen readers and search engines — always include it.' },
     ],
   },
-  'web-design-wordpress': {
+  'web-design-with-wordpress': {
     title: 'Final Assessment — Web Design with WordPress',
     questions: [
       { type: 'multiple_choice', q: 'WordPress.org differs from WordPress.com because WordPress.org…', options: ['Is the free software you host yourself', 'Only works on phones', 'Is a paid-only service', 'Cannot use plugins'], answer: 0, why: 'WordPress.org = self-hosted software with full control; WordPress.com is a hosted service.' },
@@ -98,7 +98,7 @@ export const finalQuizzes = {
       { type: 'multiple_choice', q: 'Before handing a site to a client you should…', options: ['Test forms, links and mobile view', 'Delete the admin account permanently', 'Disable all plugins', 'Remove the theme'], answer: 0, why: 'A launch checklist (forms, links, mobile, analytics) prevents embarrassing handovers.' },
     ],
   },
-  'ui-ux-design-figma': {
+  'ui-ux-design-with-figma': {
     title: 'Final Assessment — UI/UX Design with Figma',
     questions: [
       { type: 'multiple_choice', q: 'UX design is primarily concerned with…', options: ['How a product works and feels to use', 'Only colors', 'Logo animation', 'Printing'], answer: 0, why: 'UX = the full experience of achieving goals; UI is the visual layer.' },
@@ -158,7 +158,7 @@ export const finalQuizzes = {
       { type: 'multiple_choice', q: 'Before emailing a deck with custom fonts you should…', options: ['Embed fonts (File → Options → Save)', 'Convert it to .txt', 'Remove all images', 'Increase slide count'], answer: 0, why: 'Embedded fonts keep your typography on any machine.' },
     ],
   },
-  'mobile-app-development': {
+  'mobile-application-development': {
     title: 'Final Assessment — Mobile App Development',
     questions: [
       { type: 'multiple_choice', q: 'Flutter\u2019s main advantage is…', options: ['One codebase for Android and iOS', 'It only runs on the web', 'It requires two codebases', 'It cannot use APIs'], answer: 0, why: 'Cross-platform from one Dart codebase is Flutter\u2019s core value.' },
@@ -197,13 +197,13 @@ export const finalProjects = {
     instructions: '1) Write a 30–60 second script using the hook → value → CTA structure.\n2) Generate all visuals/video clips with AI tools (text-to-video and/or image-to-video).\n3) Add an AI voiceover, captions and music.\n4) Edit everything into a finished vertical (9:16) video.\n5) Write a short reflection: what prompts worked, what you would improve.',
     requiredOutput: 'One exported vertical video (MP4 or link), the script document, and your 1-page reflection. Submit the video file or a hosted link with a note describing your tools and process.',
   },
-  'video-editing-capcut': {
+  'video-editing-with-capcut': {
     title: 'Final Project: 60-Second Client-Style Edit',
     description: 'Edit a 45–60 second video for a real or realistic client brief (product promo, event recap, or creator reel).',
     instructions: '1) Gather or shoot 8–15 clips (phone footage is fine).\n2) Edit with tight cuts, at least 2 transitions used intentionally, background music and sound effects.\n3) Add auto-captions and CORRECT every mistake.\n4) Apply one consistent color style.\n5) Export twice: 9:16 for TikTok/Reels and 16:9 for YouTube, both 1080p.',
     requiredOutput: 'Both exported files (or links), plus a short note listing the techniques used (J/L cuts, keyframes, captions, sound design).',
   },
-  'graphic-design-canva': {
+  'graphic-design-with-canva': {
     title: 'Final Project: Complete Brand Mini-Kit',
     description: 'Design a brand mini-kit for a real or invented business: logo, social media set and one flyer.',
     instructions: '1) Define the brand: name, audience, 2 fonts, 3–4 colors (document why).\n2) Design a primary logo + one variation (e.g. icon-only).\n3) Create a social pack: 1 profile frame, 2 post templates, 1 story template.\n4) Design one A5 flyer with a clear single CTA.\n5) Apply hierarchy, alignment and white-space rules throughout.',
@@ -221,13 +221,13 @@ export const finalProjects = {
     instructions: '1) Requirements: semantic HTML, responsive layout (mobile-first), at least one interactive feature built with JavaScript (menu toggle, form validation, gallery, or dark-mode switch).\n2) Include: header/nav, hero, services/features section, about, contact form (validated with JS), footer.\n3) Use Flexbox or Grid deliberately; test at 3 screen widths.\n4) Deploy the site (GitHub Pages, Netlify or similar).',
     requiredOutput: 'Deployed site URL + repository link + a short README explaining your structure and the interactive feature.',
   },
-  'web-design-wordpress': {
+  'web-design-with-wordpress': {
     title: 'Final Project: Complete Business Website on WordPress',
     description: 'Build a complete 5+ page WordPress website for a real or practice business and pass a professional launch checklist.',
     instructions: '1) Pages: Home, Services (or Products), About, Blog (2 posts with categories), Contact.\n2) Use a lightweight theme; customize branding via the Customizer or a page builder.\n3) Add a working contact form, WhatsApp button, menu (≤7 items) and footer CTA.\n4) Apply speed (compressed images, caching) and SEO basics (titles, meta, alt text).\n5) Complete the launch checklist: mobile pass, links tested, form tested, analytics installed.',
     requiredOutput: 'The live site URL (or staging URL) + screenshots of each page + your completed launch checklist.',
   },
-  'ui-ux-design-figma': {
+  'ui-ux-design-with-figma': {
     title: 'Final Project: Mobile App Case Study',
     description: 'Design a complete mobile app experience in Figma and publish it as a professional case study.',
     instructions: '1) Research: interview 2–3 users or analyze reviews of a similar app; write the core problem statement.\n2) Map the user flow, then wireframe 4+ key screens in grayscale.\n3) Build a mini design system (colors, type scale, 2–3 components with variants).\n4) Produce the final UI for all screens including one empty state and one error state.\n5) Prototype the full flow (smart animate + at least one overlay) and test it with 2 people; note fixes.\n6) Publish the case study (problem → research → design → validation) on Behance.',
@@ -251,7 +251,7 @@ export const finalProjects = {
     instructions: '1) Choose a real topic: a business pitch, a training lesson, or a project proposal.\n2) Structure with one idea per slide: hook → problem → solution → proof → ask.\n3) Apply design rules: master-based branding, 2 fonts max, full-bleed images or highlighted charts, aligned elements, generous white space.\n4) Use ONE transition deck-wide and at most 2 purposeful animations (include one Morph).\n5) Add speaker notes to every slide, rehearse once with the timer, and export both PPTX and PDF.',
     requiredOutput: 'The PPTX + PDF + a 60–90 second video (or audio) of you presenting 2–3 key slides.',
   },
-  'mobile-app-development': {
+  'mobile-application-development': {
     title: 'Final Project: Ship a Real Flutter App',
     description: 'Build, polish and distribute a complete Flutter application solving a real need.',
     instructions: '1) Choose a brief: marketplace, learning app, or an app for a real local business.\n2) Implement: 4+ screens with navigation, a list built with ListView.builder, forms with validation, state via Provider, and data from an API or Firebase.\n3) Polish: branded icon + splash, themed fonts/colors, loading/empty/error states everywhere.\n4) Build a signed release (APK and/or App Bundle).\n5) Distribute to at least 10 real users (Play Store, APK share, or TestFlight) and collect their feedback.',

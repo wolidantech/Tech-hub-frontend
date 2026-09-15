@@ -8,18 +8,15 @@
   <url><loc>/contact</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>/verify-certificate</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>/course/ai-video-content-creation</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>/course/video-editing-capcut</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>/course/graphic-design-canva</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/course/video-editing-with-capcut</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/course/graphic-design-with-canva</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>/course/digital-marketing</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>/course/mobile-app-development</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/course/mobile-application-development</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>/course/portfolio-creation</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>/course/frontend-web-development</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>/course/web-design-wordpress</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>/course/ui-ux-design-figma</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/course/web-design-with-wordpress</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>/course/ui-ux-design-with-figma</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>/course/microsoft-excel</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>/course/microsoft-word</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>/course/microsoft-powerpoint</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>/course/prompt-engineering-mastery</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>/course/python-for-beginners</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>/course/freelancing-blueprint</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
 </urlset>

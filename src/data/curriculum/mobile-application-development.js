@@ -13,7 +13,7 @@ const R = {
 };
 
 export default {
-  slug: 'mobile-app-development',
+  slug: 'mobile-application-development',
   curriculum: [
     {
       title: 'Module 1: Dart & Environment Setup',

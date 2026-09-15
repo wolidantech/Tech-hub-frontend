@@ -63,7 +63,7 @@ export default function DanTechAI() {
   }, [courseId, course?.curriculum, ensureCourseDetail]);
 
   const allLessons = useMemo(
-    () => (course?.curriculum || []).flatMap((mod) => (mod.lessons || []).map((l) => ({ ...l, moduleTitle: mod.title }))),
+    () => (course?.curriculum || []).flatMap((mod) => (mod.lessons || []).map((l) => ({ ...l, moduleId: mod.id, moduleTitle: mod.title }))),
     [course],
   );
   const lesson = lessonCtx && course ? allLessons.find((l) => l.id === lessonCtx.lessonId) : null;
@@ -120,7 +120,7 @@ export default function DanTechAI() {
     ctrlRef.current = ctrl;
     try {
       const reply = await askDanTech(prompt, {
-        context: { courseId: course?.id, lessonId: lesson?.id, level: course?.level },
+        context: { courseId: course?.id, lessonId: lesson?.id, moduleId: lesson?.moduleId, level: course?.level },
         history: next.map((x) => ({ role: x.role, text: x.text })),
         signal: ctrl.signal, mode,
         index, course, lesson, nextLesson, progress,

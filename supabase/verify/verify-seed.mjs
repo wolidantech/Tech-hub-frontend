@@ -41,14 +41,14 @@ async function t(name, fn) {
 const assert = (c, msg) => { if (!c) throw new Error(msg || 'assertion failed'); };
 const EXPECTED_SLUGS = [
   'ai-video-content-creation',
-  'video-editing-capcut',
-  'graphic-design-canva',
+  'video-editing-with-capcut',
+  'graphic-design-with-canva',
   'digital-marketing',
-  'mobile-app-development',
+  'mobile-application-development',
   'portfolio-creation',
   'frontend-web-development',
-  'web-design-wordpress',
-  'ui-ux-design-figma',
+  'web-design-with-wordpress',
+  'ui-ux-design-with-figma',
   'microsoft-excel',
   'microsoft-word',
   'microsoft-powerpoint',
@@ -451,10 +451,11 @@ await t('one-step setup ships 4 learning paths wired to real courses', async () 
 });
 
 // ---------- 8. consolidated catalog (the live project's topology) ----------
-// On the live project five launch slugs are archived duplicates whose curriculum
-// now lives on under custom "twin" slugs. The paths seed must resolve every step
-// to whatever is actually visible, or /learning-paths renders short paths for
-// students (RLS hides the archived row) and dead links for admins.
+// The seed chain seeds the five custom courses under their LIVE twin slugs.
+// On the live project the five original launch slugs also exist — as ARCHIVED
+// duplicates that must never surface. Simulate that exact topology: run the
+// full chain, drop the archived originals in beside the seeded twins, then
+// prove the learning paths point ONLY at the visible twins.
 const CONSOLIDATED = {
   'graphic-design-canva': 'graphic-design-with-canva',
   'mobile-app-development': 'mobile-application-development',
@@ -465,46 +466,22 @@ const CONSOLIDATED = {
 const live = new PGlite();
 await live.exec(read(join(here, 'stubs.sql')));
 for (const f of MIGRATIONS) await live.exec(read(join(here, '../migrations', f)));
-await live.exec(read(join(here, '../seed/seed_12_courses.sql')));
-await live.exec(read(join(here, '../seed/seed_curriculum.sql')));
-await live.exec(read(join(here, '../seed/publish_courses.sql')));
-// Archive the duplicates and put the catalog copy on their twins, as on live.
-const archivedList = Object.keys(CONSOLIDATED).map((x) => `'${x}'`).join(', ');
-await live.exec(`update courses set archived = true, published = false
-                  where slug = any(array[${archivedList}]::text[])`);
+await live.exec(read(join(here, '../seed/setup_full_catalog.sql')));
+// The legacy duplicates as they exist on live: archived, unpublished, and
+// never referenced by anything the seed chain writes.
 await live.exec(`
-  insert into courses (slug, title, short_description, description, category, instructor,
-                       instructor_role, duration, level, price, original_price, thumbnail_key,
-                       color, published, featured)
-  select t.twin, c.title, c.short_description, c.description, c.category, c.instructor,
-         c.instructor_role, c.duration, c.level, c.price, c.original_price, c.thumbnail_key,
-         c.color, true, false
-    from (values ${Object.entries(CONSOLIDATED).map(([o, t]) => `('${o}','${t}')`).join(', ')}) as t(orig, twin)
-    join courses c on c.slug = t.orig`);
-await live.exec(`
-  insert into course_modules (course_id, title, position)
-  select tc.id, m.title, m.position
-    from course_modules m
-    join courses oc on oc.id = m.course_id
-    join (values ${Object.entries(CONSOLIDATED).map(([o, t]) => `('${o}','${t}')`).join(', ')}) as t(orig, twin) on t.orig = oc.slug
-    join courses tc on tc.slug = t.twin;
-  insert into course_lessons (module_id, course_id, title, type, duration, position, resources)
-  select nm.id, tc.id, l.title, l.type, l.duration, l.position, l.resources
-    from course_lessons l
-    join courses oc on oc.id = l.course_id
-    join course_modules om on om.id = l.module_id
-    join (values ${Object.entries(CONSOLIDATED).map(([o, t]) => `('${o}','${t}')`).join(', ')}) as t(orig, twin) on t.orig = oc.slug
-    join courses tc on tc.slug = t.twin
-    join course_modules nm on nm.course_id = tc.id and nm.title = om.title`);
+  insert into courses (slug, title, published, archived)
+  select t.orig, 'Archived duplicate', false, true
+    from (values ${Object.keys(CONSOLIDATED).map((o) => `('${o}')`).join(', ')}) as t(orig)`);
 
 const lcount = async (sql, p = []) => Number((await live.query(sql, p)).rows[0].n);
 
 await t('consolidated catalog keeps exactly the 12 live courses visible', async () => {
   const visible = await lcount(`select count(*)::int as n from courses where published and not archived`);
   assert(visible === 12, `expected 12 visible courses, got ${visible}`);
+  const total = await lcount(`select count(*)::int as n from courses`);
+  assert(total === 17, `expected 17 rows incl. 5 archived duplicates, got ${total}`);
 });
-
-await live.exec(read(join(here, '../seed/seed_learning_paths.sql')));
 
 await t('learning paths resolve every step to the live twin, not the archived original', async () => {
   const rows = (await live.query(`
@@ -546,7 +523,7 @@ await t('paths seed aborts loudly when a step matches no visible course', async 
   for (const f of MIGRATIONS) await stranded.exec(read(join(here, '../migrations', f)));
   await stranded.exec(read(join(here, '../seed/seed_12_courses.sql')));
   await stranded.exec(read(join(here, '../seed/publish_courses.sql')));
-  await stranded.exec(`update courses set archived = true where slug = 'video-editing-capcut'`);
+  await stranded.exec(`update courses set archived = true where slug = 'video-editing-with-capcut'`);
   let message = '';
   try {
     await stranded.exec(read(join(here, '../seed/seed_learning_paths.sql')));

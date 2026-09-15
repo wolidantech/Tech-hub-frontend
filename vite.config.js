@@ -13,6 +13,16 @@ export default defineConfig({
     },
     // Allow all hosts for Arena preview
     allowedHosts: true,
+    // Dev-only same-origin route for the AI gateway, so a browser preview can
+    // use VITE_DANTECH_ENDPOINT=/api/dantech/chat without CORS or mixed
+    // content. Point it at the mock (npm run mock:ai) or a real gateway.
+    // Production builds ignore this; they use the absolute endpoint URL.
+    proxy: {
+      '/api/dantech': {
+        target: process.env.DANTECH_PROXY_TARGET || 'http://localhost:8788',
+        changeOrigin: true,
+      },
+    },
   },
   preview: {
     host: '0.0.0.0',
