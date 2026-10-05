@@ -42,7 +42,7 @@ const CATEGORIES = [
   { id: 'cat-web', name: 'Web Development', description: 'Frontend and backend engineering for the modern web.' },
   { id: 'cat-ai', name: 'AI & Artificial Intelligence', description: 'Applied AI, prompt engineering and automation.' },
   { id: 'cat-design', name: 'Graphic Design', description: 'Brand, layout and digital graphics.' },
-  { id: 'cat-business', name: 'Business Technology', description: 'Spreadsheets, analytics and business systems.' },
+  { id: 'cat-business', name: 'Business/Commercial', description: 'Spreadsheets, accounting, digital marketing and business systems.' },
 ];
 
 const COURSES = [
@@ -57,6 +57,8 @@ const COURSES = [
   { id: 'crs-ai-1', slug: 'ai-video-content-creation', title: 'AI Video & Content Creation', category: 'cat-ai', difficulty: 'BEGINNER', price: 5000, duration: '5 hours' },
   { id: 'crs-design-1', slug: 'graphic-design-with-canva', title: 'Graphic Design with Canva', category: 'cat-design', difficulty: 'BEGINNER', price: 5000, duration: '6 hours' },
   { id: 'crs-business-1', slug: 'microsoft-excel', title: 'Microsoft Excel for Business', category: 'cat-business', difficulty: 'BEGINNER', price: 5000, duration: '8 hours' },
+  { id: 'crs-business-2', slug: 'financial-accounting-basics', title: 'Financial Accounting Basics', category: 'cat-business', difficulty: 'INTERMEDIATE', price: 7000, duration: '9 hours' },
+  { id: 'crs-business-3', slug: 'digital-marketing-commerce', title: 'Digital Marketing for Commerce', category: 'cat-business', difficulty: 'BEGINNER', price: 6000, duration: '7 hours' },
 ];
 
 const MODULES = {

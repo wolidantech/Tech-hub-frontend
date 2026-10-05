@@ -79,11 +79,31 @@ export function sanitizeQuestion(question) {
  * @param {'practice'|'mock'} mode
  * @param {Date|number} [now]
  */
+/**
+ * Who owns the clock for a paper?
+ *
+ * 'server' — the paper carried an absolute deadline (`expires_at`), so the
+ *            countdown survives a refresh or a paused tab and cannot be
+ *            extended from the client. This is the agreed target.
+ * 'client' — no deadline was issued, so the countdown is a DISPLAY timer only:
+ *            the exam server still decides whether the attempt was in time, and
+ *            the UI must say so instead of implying the browser is the referee.
+ */
+export function resolveTimerSource(paper = {}) {
+  const deadline = paper?.expires_at || paper?.deadline || paper?.ends_at;
+  if (deadline) {
+    const ms = typeof deadline === 'number' ? deadline : new Date(deadline).getTime();
+    if (Number.isFinite(ms)) return { source: 'server', deadlineMs: ms };
+  }
+  return { source: 'client', deadlineMs: null };
+}
+
 export function createAttempt({ paper, mode = 'practice', now = Date.now() }) {
   const config = JAMB_MODES[mode] || JAMB_MODES.practice;
   const questions = (paper?.questions || []).map(sanitizeQuestion);
   const startedAt = typeof now === 'number' ? now : new Date(now).getTime();
   const minutes = Number(paper?.duration_minutes) > 0 ? Number(paper.duration_minutes) : config.defaultMinutes;
+  const timer = resolveTimerSource(paper);
   const subjects = paper?.subjects
     || [...new Set(questions.map((q) => q.subject).filter(Boolean))]
     || [];
@@ -98,8 +118,10 @@ export function createAttempt({ paper, mode = 'practice', now = Date.now() }) {
     flagged: [],
     index: 0,
     startedAt,
-    endsAt: startedAt + minutes * 60 * 1000,
+    // A server-issued deadline wins; otherwise the clock starts now.
+    endsAt: timer.source === 'server' ? timer.deadlineMs : startedAt + minutes * 60 * 1000,
     durationMinutes: minutes,
+    timerSource: timer.source,
     submittedAt: null,
   };
 }

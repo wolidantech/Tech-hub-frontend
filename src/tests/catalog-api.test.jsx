@@ -29,9 +29,12 @@ import CourseDetails from '../pages/CourseDetails';
 
 // --------------------------------------------------------------- fixtures
 const CATEGORIES = [
+  // Deliberately out of the pinned order: the chips must be reordered by the
+  // client, and every teaching area must be reachable by its real category_id.
+  { id: 'cat-web', name: 'Web Development', description: 'Web engineering' },
+  { id: 'cat-business', name: 'Business/Commercial', description: 'Commerce & accounting' },
   { id: 'cat-science', name: 'Science & Laboratory', description: 'Lab technique' },
   { id: 'cat-art', name: 'Art & Industrial Design', description: 'Design & making' },
-  { id: 'cat-web', name: 'Web Development', description: 'Web engineering' },
 ];
 
 const COURSES = [
@@ -194,12 +197,28 @@ describe('Courses page — data-driven catalogue', () => {
     expect(screen.getByText('2 COURSES')).toBeTruthy();
   });
 
-  it('always offers the Science & Laboratory and Art & Industrial Design filters', async () => {
+  it('pins a filter for each teaching area: Science & Laboratory, Art & Industrial Design, Business/Commercial', async () => {
     page();
     await screen.findByText('Laboratory Safety Basics');
+    expect(FEATURED_CATEGORIES).toEqual(['Science & Laboratory', 'Art & Industrial Design', 'Business/Commercial']);
     FEATURED_CATEGORIES.forEach((name) => {
       expect(screen.getByRole('button', { name: name.toUpperCase() })).toBeTruthy();
     });
+    // The three pinned areas lead the chip row, in that order, ahead of the
+    // categories the backend returned first.
+    const chips = screen.getAllByRole('button').map((b) => b.textContent.trim());
+    const pinned = [...FEATURED_CATEGORIES, 'Web Development'].map((name) => chips.indexOf(name.toUpperCase()));
+    expect(pinned.every((p) => p >= 0)).toBe(true);
+    expect(pinned[0]).toBeLessThan(pinned[1]);
+    expect(pinned[1]).toBeLessThan(pinned[2]);
+    expect(pinned[2]).toBeLessThan(pinned[3]);   // …and before Web Development
+  });
+
+  it('filters Business/Commercial by its real category_id, like the other areas', async () => {
+    page();
+    await screen.findByText('Laboratory Safety Basics');
+    fireEvent.click(screen.getByRole('button', { name: 'BUSINESS/COMMERCIAL' }));
+    await waitFor(() => expect(calls.some((c) => c.includes('/api/courses?category_id=cat-business'))).toBe(true));
   });
 
   it('re-fetches the catalogue with category_id when a category chip is used', async () => {

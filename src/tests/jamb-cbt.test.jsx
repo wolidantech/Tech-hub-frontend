@@ -16,10 +16,26 @@ import {
   saveActiveAttempt, saveAnswer, secondsLeft, toHistoryEntry, toggleFlag, unansweredIds,
 } from '../lib/jambEngine';
 import {
-  JambApiUnavailableError, fetchJambSubjects, getJambApiStatus, resetJambApiStatus, startJambAttempt,
+  JambApiUnavailableError, configureJambApi, fetchJambSubjects, getJambApiStatus,
+  isJambApiConfigured, resetJambApiConfig, startJambAttempt,
 } from '../lib/jambApi';
 import JambCBT from '../pages/jamb/JambCBT';
 import JambExam from '../pages/jamb/JambExam';
+
+// The paid gate and the session are not what these tests exercise, so both are
+// stubbed: `accessState` is mutated per test to model locked / pending / granted.
+const accessState = vi.hoisted(() => ({
+  state: 'granted',
+  entitled: true,
+  product: { id: 'bundle-jamb', title: 'JAMB CBT Pass', price: 5000, kind: 'exam_access', isPublished: true },
+  payment: null,
+  error: '',
+  reload: vi.fn(),
+}));
+vi.mock('../lib/useJambAccess', () => ({ useJambAccess: () => accessState }));
+vi.mock('../context/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 'student-1', fullName: 'Test Student', email: 't@example.com' } }),
+}));
 
 const json = (body, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
 
@@ -36,6 +52,20 @@ const PAPER = {
     { id: 'q-3', subject: 'Mathematics', text: 'Solve: 3 × 3 = ?', options: [{ id: 'a', text: '6' }, { id: 'b', text: '12' }, { id: 'c', text: '9' }] },
   ],
 };
+
+/**
+ * The contract the tests agree on. In production these four paths come from the
+ * backend team via `configureJambApi()` / `VITE_EXAM_API_*` — nothing is guessed
+ * in src/lib/jambApi.js itself.
+ */
+const TEST_CONTRACT = {
+  subjectsPath: '/exams/jamb/subjects',
+  attemptsPath: '/exams/jamb/attempts',
+  submitPath: '/exams/jamb/attempts/:attemptId/submit',
+  historyPath: '/exams/jamb/attempts/mine',
+};
+
+const agreeOnContract = () => configureJambApi(TEST_CONTRACT);
 
 function mockExamApi({ available = true } = {}) {
   const calls = [];
@@ -61,7 +91,11 @@ function mockExamApi({ available = true } = {}) {
 
 beforeEach(() => {
   cleanup();
-  resetJambApiStatus();
+  resetJambApiConfig();          // start un-agreed, like a fresh deployment
+  accessState.state = 'granted';
+  accessState.entitled = true;
+  accessState.payment = null;
+  accessState.error = '';
   clearHistory();
   clearActiveAttempt();
 });
@@ -132,19 +166,32 @@ describe('JAMB engine — session logic without answer keys', () => {
 
 // ================================================================== api seam
 describe('JAMB exam API seam', () => {
-  it('reports the service as unavailable while the endpoints are missing', async () => {
-    mockExamApi({ available: false });
-    const status = await getJambApiStatus();
-    expect(status.available).toBe(false);
-    expect(status.reason).toMatch(/not connected yet/);
+  it('ships with no endpoint configured and never guesses a route', async () => {
+    const fetchSpy = mockExamApi({ available: true });
+    const status = getJambApiStatus();
+    expect(status.configured).toBe(false);
+    expect(isJambApiConfigured()).toBe(false);
+    // All four contract points are named as still to be agreed.
+    expect(status.missing).toEqual([
+      'VITE_EXAM_API_SUBJECTS_PATH', 'VITE_EXAM_API_ATTEMPTS_PATH',
+      'VITE_EXAM_API_SUBMIT_PATH', 'VITE_EXAM_API_HISTORY_PATH',
+    ]);
     await expect(fetchJambSubjects()).rejects.toBeInstanceOf(JambApiUnavailableError);
     await expect(startJambAttempt({ subjectIds: ['sub-maths'] })).rejects.toBeInstanceOf(JambApiUnavailableError);
+    await expect(fetchJambSubjects()).rejects.toThrow(/not connected yet/);
+    // The honest state costs zero requests: no invented URL was probed.
+    expect(fetchSpy).toHaveLength(0);
   });
 
-  it('issues a paper with the selected subjects and mode when available', async () => {
+  it('rejects a configured path that is not API-relative', () => {
+    expect(() => configureJambApi({ subjectsPath: 'https://guessed.example/exams' })).toThrow(/API-relative/);
+    expect(() => configureJambApi({ attemptsPath: 'exams/jamb/attempts' })).toThrow(/API-relative/);
+  });
+
+  it('issues a paper with the selected subjects and mode once the contract is agreed', async () => {
     const calls = mockExamApi({ available: true });
-    resetJambApiStatus();
-    expect((await getJambApiStatus()).available).toBe(true);
+    agreeOnContract();
+    expect(getJambApiStatus().configured).toBe(true);
 
     const subjects = await fetchJambSubjects();
     expect(subjects.map((s) => s.name)).toEqual(['Mathematics', 'Use of English']);
@@ -152,8 +199,15 @@ describe('JAMB exam API seam', () => {
     const paper = await startJambAttempt({ subjectIds: ['sub-maths'], mode: 'mock', questionCount: 40 });
     const post = calls.find((c) => c.body && c.body.subject_ids);
     expect(post.body).toEqual({ subject_ids: ['sub-maths'], mode: 'mock', question_count: 40 });
+    expect(post.url).toContain('/api/exams/jamb/attempts');
     // The issued paper carries questions and options — never the key.
     expect(JSON.stringify(paper)).not.toMatch(/correct_answer|is_correct|"answer"/i);
+  });
+
+  it('falls back to the honest state when an agreed route is missing server-side', async () => {
+    mockExamApi({ available: false });   // every route 404s
+    agreeOnContract();
+    await expect(fetchJambSubjects()).rejects.toThrow(/not connected yet/);
   });
 });
 
@@ -169,7 +223,7 @@ describe('JAMB CBT interface', () => {
   );
 
   it('says plainly that the exam service is not connected, and disables starting', async () => {
-    mockExamApi({ available: false });
+    mockExamApi({ available: false });   // unconfigured: nothing is fetched
     hub();
     expect(await screen.findByText('Exam service not connected yet')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'START PAPER' }).disabled).toBe(true);
@@ -177,18 +231,46 @@ describe('JAMB CBT interface', () => {
     expect(screen.queryByText('Mathematics')).toBeNull();
   });
 
-  it('re-checks the exam service on demand', async () => {
-    mockExamApi({ available: false });
+  it('picks the subjects up on re-check once the contract is configured', async () => {
     hub();
     await screen.findByText('Exam service not connected yet');
+    // The backend team agrees the contract; the deployment configures it.
     mockExamApi({ available: true });
+    agreeOnContract();
     fireEvent.click(screen.getByRole('button', { name: /Re-check the exam service/ }));
     await waitFor(() => expect(screen.queryByText('Exam service not connected yet')).toBeNull());
     expect(await screen.findByText('Mathematics')).toBeTruthy();
   });
 
+  it('locks the paper behind the paid pass', async () => {
+    accessState.state = 'locked';
+    accessState.entitled = false;
+    mockExamApi({ available: true });
+    agreeOnContract();
+    hub();
+    expect(await screen.findByText('JAMB CBT is a paid pass')).toBeTruthy();
+    fireEvent.click(await screen.findByText('Mathematics'));
+    expect(screen.getByRole('button', { name: 'START PAPER' }).disabled).toBe(true);
+    // The way in is the existing bundle payment flow, not a new one.
+    expect(screen.getByRole('link', { name: /BUY THE JAMB PASS/ }).getAttribute('href'))
+      .toBe('/enroll/bundle/bundle-jamb');
+  });
+
+  it('shows a payment that is awaiting admin approval', async () => {
+    accessState.state = 'pending';
+    accessState.entitled = false;
+    accessState.payment = { reference: 'TRF-4417', status: 'pending' };
+    mockExamApi({ available: true });
+    agreeOnContract();
+    hub();
+    expect(await screen.findByText(/awaiting approval/i)).toBeTruthy();
+    expect(screen.getByText(/TRF-4417/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'START PAPER' }).disabled).toBe(true);
+  });
+
   it('runs a full paper: subjects → mode → timer → navigation → saved answers → results → history', async () => {
     mockExamApi({ available: true });
+    agreeOnContract();
     hub();
 
     // 1 — subjects come from the exam service
@@ -236,6 +318,7 @@ describe('JAMB CBT interface', () => {
 
   it('restores a saved attempt in a fresh tab session', async () => {
     mockExamApi({ available: true });
+    agreeOnContract();
     const attempt = createAttempt({ paper: PAPER, mode: 'practice' });
     saveActiveAttempt(saveAnswer(attempt, 'q-1', 'b'));
     render(
@@ -267,13 +350,32 @@ describe('JAMB area isolation', () => {
   const read = (file) => fs.readFileSync(path.join(process.cwd(), 'src', file), 'utf8');
 
   it('never touches the Supabase quiz tables or the LMS data layer', () => {
-    ['lib/jambApi.js', 'lib/jambEngine.js', 'pages/jamb/JambCBT.jsx', 'pages/jamb/JambExam.jsx'].forEach((file) => {
+    ['lib/jambApi.js', 'lib/jambEngine.js', 'lib/useJambAccess.js', 'pages/jamb/JambCBT.jsx', 'pages/jamb/JambExam.jsx'].forEach((file) => {
       const src = read(file);
       expect(src).not.toMatch(/from '.*supabase'/);
-      expect(src).not.toMatch(/from '.*\/store'/);
       expect(src).not.toMatch(/from\(('|")quizzes('|")\)/);
       expect(src).not.toMatch(/quiz_attempts|quiz_questions|quiz_options/);
     });
+    // Papers, grading and history bypass the LMS data layer entirely…
+    ['lib/jambApi.js', 'lib/jambEngine.js', 'pages/jamb/JambCBT.jsx', 'pages/jamb/JambExam.jsx'].forEach((file) => {
+      expect(read(file)).not.toMatch(/from '.*\/store'/);
+    });
+    // …while the paid gate may read the payment/bundle tables — that is its job.
+    expect(read('lib/useJambAccess.js')).toMatch(/fetchBundles|fetchMyPayments/);
+  });
+
+  it('labels the clock honestly: a display timer until the server issues a deadline', () => {
+    // No deadline in the paper -> the browser clock is only a display.
+    const clientTimed = createAttempt({ paper: PAPER, mode: 'mock', now: 0 });
+    expect(clientTimed.timerSource).toBe('client');
+    expect(clientTimed.endsAt).toBe(20 * 60 * 1000);   // the paper's own 20 minutes
+    // Server deadline wins, so a refresh cannot extend the paper.
+    const deadline = Date.now() + 5 * 60 * 1000;
+    const serverTimed = createAttempt({ paper: { ...PAPER, expires_at: new Date(deadline).toISOString() }, mode: 'mock', now: 0 });
+    expect(serverTimed.timerSource).toBe('server');
+    expect(serverTimed.endsAt).toBe(deadline);
+    // ...and the runner tells the student which one they are looking at.
+    expect(read('pages/jamb/JambExam.jsx')).toMatch(/display timer/);
   });
 
   it('keeps the question bank out of the frontend bundle', () => {

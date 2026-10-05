@@ -36,6 +36,7 @@ const BundleEnroll = lazy(() => import('./pages/BundleEnroll'));
 const Certificates = lazy(() => import('./pages/Certificates'));
 const CertificateView = lazy(() => import('./pages/CertificateView'));
 const Profile = lazy(() => import('./pages/Profile'));
+const Security = lazy(() => import('./pages/Security'));
 const Admin = lazy(() => import('./pages/Admin'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const CVBuilder = lazy(() => import('./pages/CVBuilder'));
@@ -128,6 +129,7 @@ function GatedApp() {
               <Route path="/enroll/bundle/:id" element={lazyEl(<ProtectedRoute><Layout><BundleEnroll /></Layout></ProtectedRoute>)} />
               <Route path="/certificates" element={lazyEl(<ProtectedRoute><Layout><Certificates /></Layout></ProtectedRoute>)} />
               <Route path="/profile" element={lazyEl(<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>)} />
+              <Route path="/security" element={lazyEl(<ProtectedRoute><Layout><Security /></Layout></ProtectedRoute>)} />
               <Route path="/onboarding" element={lazyEl(<ProtectedRoute><Onboarding /></ProtectedRoute>)} />
               <Route path="/ai" element={lazyEl(<ProtectedRoute><AIPage /></ProtectedRoute>)} />
 

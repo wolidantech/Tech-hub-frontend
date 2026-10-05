@@ -3,9 +3,9 @@
 //
 // The course catalogue is DATA-DRIVEN: every category and every course on the
 // storefront comes from the backend. Nothing on these pages names a course in
-// code — `FEATURED_CATEGORIES` below holds two CATEGORY names only (a filter
-// label), and the courses inside them are whatever `GET /api/courses`
-// returns for that `category_id`.
+// code — `FEATURED_CATEGORIES` below holds CATEGORY names only (filter labels
+// for the three subject areas the school teaches), and the courses inside them
+// are whatever `GET /api/courses` returns for that `category_id`.
 //
 //   GET /api/course-categories             → categories
 //   GET /api/courses?category_id=&search=&difficulty=&page=&limit=
@@ -33,7 +33,14 @@ export const difficultyLabel = (level) => {
  * courses shown under them are fetched with `category=<name>` (the API's
  * name filter) or `category_id=<id>` once the category exists in the database.
  */
-export const FEATURED_CATEGORIES = ['Science & Laboratory', 'Art & Industrial Design'];
+// The three teaching areas get pinned chips. Names must match the backend's
+// category rows exactly; unknown names still render (unpinned, id-less) rather
+// than disappearing.
+export const FEATURED_CATEGORIES = [
+  'Science & Laboratory',
+  'Art & Industrial Design',
+  'Business/Commercial',
+];
 
 const num = (v, fallback = null) => {
   const n = Number(v);

@@ -40,10 +40,11 @@ Optional integrations via `.env` (see `.env.example`):
 | `/` `/courses` `/course/:slug` | Public |
 | `/register` `/login` | Students |
 | `/dashboard` `/my-courses` `/my-payments` `/learn/:slug` `/certificates` `/profile` | Students (auth) |
-| `/enroll/:slug` (bank transfer + coupons) | Students (auth) |
+| `/security` (passkeys + Google Authenticator) | Students (auth) |
+| `/enroll/:slug` `/enroll/bundle/:id` (bank transfer + coupons) | Students (auth) |
 | `/verify-certificate` `/certificate/:id` | Public |
 | `/admin/login` `/admin/dashboard` | Admin |
-| `/jamb-cbt` `/jamb-cbt/exam` | Public — JAMB CBT practice (separate exam area) |
+| `/jamb-cbt` `/jamb-cbt/exam` | **Paid** JAMB CBT pass — separate exam area |
 | `/backend-status` | Public — **not** gated; diagnoses the backend connection |
 
 Admin tabs: Overview (analytics) • Courses (curriculum builder, thumbnails,
@@ -66,9 +67,11 @@ Rules that follow from this:
 
 - Publishing, renaming, re-categorising or archiving a course in the backend
   changes the site on the next fetch — no frontend deploy, no seed file.
-- `Science & Laboratory` and `Art & Industrial Design` are pinned as category
-  filters. They are *category names* only: the courses shown under them are
-  whatever `category_id` (or the API's `category` name filter) returns.
+- `Science & Laboratory`, `Art & Industrial Design` and `Business/Commercial`
+  are pinned as category filters (the school's three teaching areas). They are
+  *category names* only: the courses shown under them are whatever `category_id`
+  (or the API's `category` name filter) returns. A pinned name that the backend
+  has not created yet still renders as a chip instead of vanishing.
 - Difficulty filters send the API's enum (`BEGINNER` / `INTERMEDIATE` / `ADVANCED`).
 - The public outline never carries lesson bodies, video URLs or quiz answers;
   those only exist behind the authenticated classroom endpoint.
@@ -87,22 +90,79 @@ npm run dev        # proxies /api → :8789, so the storefront works with no bac
 
 ## JAMB CBT area
 
-`/jamb-cbt` is a **separate** product surface from the course LMS:
+`/jamb-cbt` is a **separate, paid** product surface from the course LMS:
 
-- Subject selection, practice vs full mock mode, question navigator, live timer
-  with auto-submit, answers saved as you go (survives a reload), server-graded
-  results and attempt history.
+- **Paid pass.** Access needs an approved payment on a published
+  `exam_access` bundle (`bundles.kind`, migration 011) — the same bank-transfer +
+  admin-approval flow as everything else, so there is one payment path and no
+  second entitlement table. `src/lib/useJambAccess.js` resolves
+  granted / awaiting-approval / locked, and the page shows the price and the
+  existing `/enroll/bundle/:id` checkout when it is locked.
+- Subject selection, practice vs full mock mode, question navigator, timer,
+  answers saved as you go (survives a reload), server-graded results and attempt
+  history.
+- **No invented endpoints.** The backend exposes no exam API today, and
+  `src/lib/jambApi.js` therefore ships with **no endpoint paths at all** — it does
+  not guess a URL and issues no probe request. The contract is injected once it
+  is agreed (`configureJambApi()` or the `VITE_EXAM_API_*` vars); until then every
+  call rejects and the page says "Exam service not connected yet".
+  `npm run mock:api` with `EXAMS=1` fakes the contract for UI work.
+- **The timer belongs to the server.** If the issued paper carries an absolute
+  `expires_at`, the countdown is server-owned and survives a refresh
+  (`timerSource: 'server'`). Without one the clock is a *display* timer and the UI
+  labels it as such — the exam server still decides whether an attempt was in time.
 - **Not wired to Supabase's quiz tables.** Course quizzes (`quizzes`,
-  `quiz_questions`, `quiz_attempts`) belong to the classroom; the JAMB area talks
-  only to a standalone exam API, which the backend does **not** expose yet
-  (`src/lib/jambApi.js` documents the expected contract). Until it lands the page
-  says "Exam service not connected yet" and refuses to start a paper rather than
-  inventing questions. `npm run mock:api` with `EXAMS=1` fakes it for UI work.
+  `quiz_questions`, `quiz_attempts`) belong to the classroom; a test enforces that
+  the JAMB files never import them.
 - **Answer keys never reach the browser.** A paper carries
   `{ id, text, options: [{ id, text }] }`; `sanitizeQuestion()` strips any
   key-like field defensively, grading is server-side, and the client only ever
   sends the option ids the student chose. Attempt history stores metadata
   (score, mode, date) — no questions, no keys.
+
+## Sign-in: passkeys and Google Authenticator
+
+Both factors run on Supabase Auth — the frontend holds only the anon key
+(`src/lib/supabase.js`; a test fails the build if a service-role key ever appears
+in `src/`).
+
+| | Where | What happens |
+|---|---|---|
+| Passkey (Face ID / fingerprint / device PIN / security key) | `/login`, managed at `/security` | `auth.signInWithPasskey()` runs the WebAuthn ceremony in the browser; `auth.registerPasskey()` + `auth.passkey.*` manage credentials |
+| Google Authenticator (TOTP, optional) | `/security`, prompted at `/login` | `auth.mfa.enroll()` → QR + setup key, `auth.mfa.challengeAndVerify()` steps the session from `aal1` to `aal2` |
+
+- **No biometric data is collected.** The fingerprint or face never leaves the
+  device; Supabase stores a credential id and a public key. The client labels a
+  passkey from the browser string (`deviceLabel()`), not a fingerprinting script.
+- Passkeys need the client option `auth.experimental.passkey: true` (set in
+  `src/lib/supabase.js`) **and** the Supabase project toggle
+  (Authentication → Providers → Passkeys). Without WebAuthn the login page hides
+  the passkey panel instead of failing on click.
+- After a password sign-in, `auth.mfa.getAuthenticatorAssuranceLevel()` decides
+  whether the code step is shown; a password alone never reaches `/dashboard` for
+  an account that has a verified factor.
+
+## Student ID cards
+
+The card is **issued by the database**, never fabricated in the browser
+(migration 011):
+
+```sql
+issue_student_id_card()   -- requires profiles.avatar_url, allocates WDTH-YYYY-NNNNNN,
+                          -- idempotent, audited, SECURITY DEFINER
+revoke_student_id_card(p_user_id uuid)  -- admin only
+```
+
+`student_id_cards` has a single `SELECT` RLS policy (own row, or admin) and **no**
+insert/update/delete policy, so a student cannot mint or edit an identity document
+— the PGlite harness proves it with real non-owner roles.
+
+On the frontend: registration leads into the onboarding photo step
+(`/onboarding`, step 4), `src/lib/useStudentIdCard.js` drives the states, and
+`src/components/student/StudentIdCard.jsx` renders either the issued card or the
+honest pending state — **"Upload a photo to generate your ID"** when the profile
+has no photo, "Generate my student ID" when it does. The same panel is on
+`/profile`.
 
 ## Mobile (Android + iOS)
 
@@ -169,7 +229,7 @@ catalog) with the fix for each. It also has a **Copy report** button.
 ```bash
 cd supabase/verify
 npm install
-npm run verify        # migrations 001-010 + backend/RLS behavior (47 assertions)
+npm run verify        # migrations 001-011 + backend/RLS behavior (53 assertions)
 npm run verify:seed   # exact 12-course curriculum seed chain (43 assertions)
 ```
 

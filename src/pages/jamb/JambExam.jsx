@@ -186,9 +186,16 @@ export default function JambExam() {
             <div className="text-[11px] text-white/45">
               {attempt.mode === 'mock' ? 'Mock exam' : 'Practice'} • {answered}/{attempt.questions.length} answered
               {attempt.subjects?.length > 0 ? ` • ${attempt.subjects.join(', ')}` : ''}
+              {attempt.timerSource === 'server' ? ' • server-timed' : ' • display timer'}
             </div>
           </div>
-          <div className={`ml-auto flex items-center gap-2 px-4 py-2 rounded-full font-black text-sm ${low ? 'bg-red-500/20 text-red-300' : 'glass'}`} role="timer" aria-live="off">
+          {/* The clock is only the referee when the exam server issued a deadline.
+              Otherwise it is a display timer and the server still decides. */}
+          <div
+            className={`ml-auto flex items-center gap-2 px-4 py-2 rounded-full font-black text-sm ${low ? 'bg-red-500/20 text-red-300' : 'glass'}`}
+            role="timer" aria-live="off"
+            title={attempt.timerSource === 'server' ? 'Deadline set by the exam server' : 'Display timer — the exam server decides if your attempt was in time'}
+          >
             <Timer className="h-4 w-4" /> {formatClock(seconds)}
           </div>
           <button onClick={requestSubmit} disabled={submitting} className="min-h-11 inline-flex items-center gap-2 px-4 rounded-full bg-gradient-to-r from-cyan-400 to-blue-600 text-black text-xs font-black disabled:opacity-50">

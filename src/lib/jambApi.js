@@ -1,44 +1,42 @@
 // ============================================================
 // JAMB CBT — exam API seam.
 //
-// STATUS (2026-10): the backend does NOT yet expose a standalone JAMB exam
-// API. `GET /api/classroom/quizzes/:quizId` exists for *course* quizzes and is
-// deliberately NOT used here — the JAMB area is a separate product surface and
-// must not be wired to Supabase's quiz tables (no question bank, no answer
-// keys, no attempt rows shared with the LMS).
+// STATUS (2026-10): the backend does NOT expose a standalone exam API yet.
+// There are no `/api/exams/*` routes in wolidantech/Tech-hub-backend, and the
+// course endpoints (`/api/courses`, `/api/classroom/...`) deliberately do not
+// cover this product: the JAMB area must not be wired to the LMS quiz tables or
+// to Supabase quiz/answer tables at all.
 //
-// Until the exam endpoints land, every call below rejects with
-// `JambApiUnavailableError` after a real probe, and the UI says exactly that
-// instead of inventing questions. The paths are the expected contract; when
-// the backend ships them (or names them differently) only this file changes —
-// the engine (src/lib/jambEngine.js) and the pages stay untouched.
+// SO THIS FILE SHIPS WITH NO ENDPOINT PATHS. Nothing is guessed and nothing is
+// fetched until the real contract is agreed and handed to `configureJambApi()`
+// (or set through the `VITE_EXAM_API_*` env vars). Every call below rejects with
+// `JambApiUnavailableError` until then, and the UI says exactly that. When the
+// backend publishes the exam API, only this file (and the env) changes — the
+// engine (src/lib/jambEngine.js) and the pages stay untouched.
 //
-// Expected contract:
-//   GET  /api/exams/jamb/subjects                    → { subjects: [{id, name, question_count}] }
-//   POST /api/exams/jamb/attempts                    → body { subject_ids, mode, question_count }
-//                                                    → { attempt_id, duration_minutes, questions: [{id, text, options:[{id,text}]}] }
-//   POST /api/exams/jamb/attempts/:id/submit         → body { answers: [{question_id, option_id}] }
-//                                                    → { score, total, passed, per_question: [{question_id, correct, explanation}] }
-//   GET  /api/exams/jamb/attempts/mine               → { attempts: [...] }
+// WHAT THE AGREEMENT HAS TO COVER (recorded here so the gap is explicit):
+//   subjects   – the selectable subject list
+//   attempts   – issuing a paper: { id, questions:[{id,text,options:[{id,text}]}],
+//                duration_minutes } and NO answer keys
+//   submit     – server-side grading from the chosen option ids
+//   history    – the student's past attempts
+//   timer      – who owns the clock. The server should return a deadline
+//                (`expires_at`) so a paused/refreshed tab cannot extend it;
+//                until it does, the client clock is a DISPLAY timer and the UI
+//                labels it as such (see `resolveTimerSource`).
 //
-// SECURITY: question payloads never contain answer keys (see
-// `sanitizeQuestion` in jambEngine.js, which strips them defensively), and
-// grading is server-side — the browser only ever sends the option ids the
-// student chose.
+// SECURITY: no answer key may appear in a paper payload (`sanitizeQuestion` in
+// jambEngine.js strips key-like fields defensively), grading stays server-side,
+// and this layer only ever sends the option ids the student chose.
 // ============================================================
 import { apiFetch, ApiRequestError } from './api';
 
-export const JAMB_ENDPOINTS = {
-  subjects: '/exams/jamb/subjects',
-  attempts: '/exams/jamb/attempts',
-  submit: (attemptId) => `/exams/jamb/attempts/${encodeURIComponent(attemptId)}/submit`,
-  mine: '/exams/jamb/attempts/mine',
-};
-
-const NOT_READY = 'The JAMB exam service is not connected yet. The backend exam endpoints have not been published, so no papers can be issued.';
+export const NOT_READY =
+  'The JAMB exam service is not connected yet. The exam API and its server-side timer have '
+  + 'not been agreed, so no papers can be issued. Your access pass still applies once it is live.';
 
 export class JambApiUnavailableError extends Error {
-  constructor(message = NOT_READY, { status = 0, code = 'EXAM_API_UNAVAILABLE' } = {}) {
+  constructor(message = NOT_READY, { status = 0, code = 'EXAM_API_NOT_CONFIGURED' } = {}) {
     super(message);
     this.name = 'JambApiUnavailableError';
     this.status = status;
@@ -46,47 +44,106 @@ export class JambApiUnavailableError extends Error {
   }
 }
 
-const isMissingEndpoint = (err) =>
-  err instanceof ApiRequestError && (err.notImplemented || err.code === 'ROUTE_NOT_FOUND' || err.code === 'NOT_FOUND');
+const ENV_PATHS = {
+  subjectsPath: 'VITE_EXAM_API_SUBJECTS_PATH',
+  attemptsPath: 'VITE_EXAM_API_ATTEMPTS_PATH',
+  submitPath: 'VITE_EXAM_API_SUBMIT_PATH',
+  historyPath: 'VITE_EXAM_API_HISTORY_PATH',
+};
 
-/** Turn any failure into the honest "not available yet" state. */
-function toUnavailable(err) {
+const clean = (value) => {
+  const raw = String(value ?? '').trim();
+  return raw.startsWith('/') ? raw : '';
+};
+
+/**
+ * The agreed contract. `submitPath` may contain the `:attemptId` placeholder.
+ * Called from the app bootstrap (or filled in from env below); nothing else in
+ * the app knows these URLs.
+ */
+const config = {
+  subjectsPath: '',
+  attemptsPath: '',
+  submitPath: '',
+  historyPath: '',
+  configuredAt: null,
+};
+
+export function configureJambApi(next = {}) {
+  const incoming = { ...config, ...next };
+  const paths = ['subjectsPath', 'attemptsPath', 'submitPath', 'historyPath'];
+  paths.forEach((key) => {
+    const value = clean(incoming[key]);
+    if (incoming[key] && !value) {
+      throw new Error(`${key} must be an API-relative path such as "/exams/jamb/subjects".`);
+    }
+    config[key] = value;
+  });
+  config.configuredAt = paths.some((key) => config[key]) ? new Date().toISOString() : null;
+  return { ...config };
+}
+
+export const getJambApiConfig = () => ({ ...config });
+
+/**
+ * Clear the agreed contract (bootstrap + tests). After this the layer is back to
+ * "not agreed": every call rejects and nothing is fetched.
+ */
+export function resetJambApiConfig() {
+  config.subjectsPath = '';
+  config.attemptsPath = '';
+  config.submitPath = '';
+  config.historyPath = '';
+  config.configuredAt = null;
+  return { ...config };
+}
+
+// Optional env wiring: a deployment that has the agreed contract can set the
+// four paths at build time. Unset means "not agreed" — no fallback guessing.
+const envConfigured = (() => {
+  const env = import.meta.env || {};
+  const fromEnv = {};
+  Object.entries(ENV_PATHS).forEach(([key, varName]) => { if (env[varName]) fromEnv[key] = env[varName]; });
+  return Object.keys(fromEnv).length ? fromEnv : null;
+})();
+if (envConfigured) configureJambApi(envConfigured);
+
+/**
+ * `{ configured, missing }` — `missing` names the env vars still to be agreed,
+ * because that is what whoever deploys the contract has to set.
+ */
+export function getJambApiStatus() {
+  const missing = Object.keys(ENV_PATHS).filter((key) => !config[key]).map((key) => ENV_PATHS[key]);
+  return { configured: missing.length === 0, missing };
+}
+
+export const isJambApiConfigured = () => getJambApiStatus().configured;
+
+function requirePath(key) {
+  const status = getJambApiStatus();
+  if (status.configured) return;
+  throw new JambApiUnavailableError(
+    `${NOT_READY} (awaiting: ${status.missing.join(', ')})`,
+    { code: 'EXAM_API_NOT_CONFIGURED' },
+  );
+}
+
+function wrap(err) {
   if (err instanceof JambApiUnavailableError) return err;
-  if (isMissingEndpoint(err)) return new JambApiUnavailableError(NOT_READY, { status: err.status, code: err.code });
+  if (err instanceof ApiRequestError && (err.notImplemented || err.code === 'ROUTE_NOT_FOUND' || err.code === 'NOT_FOUND')) {
+    return new JambApiUnavailableError(NOT_READY, { status: err.status, code: err.code });
+  }
   if (err instanceof ApiRequestError && err.status === 0) {
     return new JambApiUnavailableError(`${NOT_READY} (the exam service could not be reached.)`, { status: 0, code: 'NETWORK_ERROR' });
   }
   return err;
 }
 
-let cachedStatus = null;
-
-/**
- * Probe the exam API once per page load. Returns
- * `{ available, reason, checkedAt }` — never throws.
- */
-export async function getJambApiStatus({ force = false } = {}) {
-  if (cachedStatus && !force) return cachedStatus;
-  try {
-    await apiFetch(JAMB_ENDPOINTS.subjects, { query: { limit: 1 } });
-    cachedStatus = { available: true, reason: '', checkedAt: new Date().toISOString() };
-  } catch (err) {
-    const unavailable = toUnavailable(err);
-    cachedStatus = {
-      available: false,
-      reason: unavailable.message || NOT_READY,
-      checkedAt: new Date().toISOString(),
-    };
-  }
-  return cachedStatus;
-}
-
-export const resetJambApiStatus = () => { cachedStatus = null; };
-
 /** Subject list for the selection screen. */
 export async function fetchJambSubjects() {
+  requirePath('subjectsPath');
   try {
-    const data = await apiFetch(JAMB_ENDPOINTS.subjects);
+    const data = await apiFetch(config.subjectsPath);
     const list = Array.isArray(data?.subjects) ? data.subjects : (Array.isArray(data) ? data : []);
     return list.map((s) => ({
       id: s.id,
@@ -95,7 +152,7 @@ export async function fetchJambSubjects() {
       questionCount: Number.isFinite(Number(s.question_count)) ? Number(s.question_count) : null,
     }));
   } catch (err) {
-    throw toUnavailable(err);
+    throw wrap(err);
   }
 }
 
@@ -105,32 +162,41 @@ export async function fetchJambSubjects() {
  * that slips through, so the browser can never hold the answers.
  */
 export async function startJambAttempt({ subjectIds = [], mode = 'practice', questionCount = 20 } = {}) {
+  requirePath('attemptsPath');
   if (!subjectIds.length) throw new Error('Choose at least one subject.');
   try {
-    const data = await apiFetch(JAMB_ENDPOINTS.attempts, {
+    return await apiFetch(config.attemptsPath, {
       body: { subject_ids: subjectIds, mode, question_count: questionCount },
     });
-    return data;
   } catch (err) {
-    throw toUnavailable(err);
+    throw wrap(err);
   }
 }
 
 /** Send the chosen option ids for grading. Server-side scoring only. */
 export async function submitJambAttempt(attemptId, submission) {
+  requirePath('submitPath');
   try {
-    return await apiFetch(JAMB_ENDPOINTS.submit(attemptId), { body: submission });
+    const path = config.submitPath.includes(':attemptId')
+      ? config.submitPath.replace(':attemptId', encodeURIComponent(attemptId))
+      : config.submitPath;
+    return await apiFetch(path, { body: submission, query: config.submitPath.includes(':attemptId') ? undefined : { attempt_id: attemptId } });
   } catch (err) {
-    throw toUnavailable(err);
+    throw wrap(err);
   }
 }
 
 /** Attempt history as stored by the exam service (when it exists). */
 export async function fetchJambAttemptHistory() {
+  requirePath('historyPath');
   try {
-    const data = await apiFetch(JAMB_ENDPOINTS.mine);
+    const data = await apiFetch(config.historyPath);
     return Array.isArray(data?.attempts) ? data.attempts : (Array.isArray(data) ? data : []);
   } catch (err) {
-    throw toUnavailable(err);
+    throw wrap(err);
   }
 }
+
+// The timer contract is implemented once, in the pure engine:
+// `resolveTimerSource(paper)` in src/lib/jambEngine.js.
+export { resolveTimerSource } from './jambEngine';

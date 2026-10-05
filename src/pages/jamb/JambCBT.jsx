@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   GraduationCap, Timer, ListChecks, History, AlertTriangle, RefreshCw, PlayCircle,
-  CheckCircle2, Trash2, ChevronRight, ServerCog,
+  CheckCircle2, Trash2, ChevronRight, ServerCog, Lock, BadgeCheck, Hourglass,
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import {
@@ -11,9 +11,14 @@ import {
 import {
   JAMB_MODES, QUESTION_COUNTS, createAttempt, loadHistory, clearHistory, saveActiveAttempt,
 } from '../../lib/jambEngine';
+import { useJambAccess } from '../../lib/useJambAccess';
+import { useAuth } from '../../context/AuthContext';
 
 export default function JambCBT() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  // Paid area: an approved payment on the published exam-access bundle.
+  const access = useJambAccess(user);
   const [status, setStatus] = useState(null);
   const [subjects, setSubjects] = useState([]);
   const [subjectError, setSubjectError] = useState('');
@@ -27,9 +32,12 @@ export default function JambCBT() {
   const load = useCallback(async () => {
     setChecking(true);
     setSubjectError('');
-    const probe = await getJambApiStatus({ force: true });
-    setStatus(probe);
-    if (probe.available) {
+    // No probe request: the exam contract is either configured or it is not.
+    // Guessing a URL would just 404 against a route that was never agreed.
+    const { configured, missing } = getJambApiStatus();
+    const next = { available: configured, missing };
+    setStatus(next);
+    if (configured) {
       try {
         setSubjects(await fetchJambSubjects());
       } catch (err) {
@@ -55,10 +63,13 @@ export default function JambCBT() {
   const toggleSubject = (id) => setSelected((prev) =>
     (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
 
-  const canStart = Boolean(status?.available) && selected.length > 0 && !starting;
+  const canStart = Boolean(status?.available) && access.entitled && selected.length > 0 && !starting;
 
   const start = async () => {
-    if (!canStart) return;
+    if (!canStart) {
+      if (!access.entitled) toast.error('The JAMB CBT area is a paid pass. Complete your payment first.');
+      return;
+    }
     setStarting(true);
     try {
       // The paper comes from the exam service — questions and options only,
@@ -111,18 +122,89 @@ export default function JambCBT() {
               <ServerCog className="h-6 w-6 text-amber-300 shrink-0" />
               <div className="flex-1 min-w-[240px]">
                 <h2 className="font-bold text-amber-200">Exam service not connected yet</h2>
-                <p className="mt-2 text-sm text-white/70">{status.reason}</p>
+                <p className="mt-2 text-sm text-white/70">
+                  The exam API and its server-side timer have not been agreed, so this client is not pointed at any
+                  endpoint — no route is guessed, and nothing is fetched.
+                  {status.missing?.length ? ` Awaiting the contract for: ${status.missing.join(', ')}.` : ''}
+                </p>
                 <ul className="mt-3 space-y-1.5 text-xs text-white/60 list-disc pl-5">
                   <li>Papers, grading and attempt history will come from the backend's standalone JAMB exam endpoints.</li>
                   <li>The CBT interface below (subject selection, practice/mock modes, question navigator, timer, saved answers, results and history) is ready and waiting.</li>
                   <li>Course quizzes are a different system — this area is deliberately not wired to them, and answer keys are never sent to your browser.</li>
                 </ul>
-                <button onClick={load} disabled={checking} className="mt-4 min-h-11 inline-flex items-center gap-2 px-4 rounded-full glass text-xs font-bold hover:bg-white/10 disabled:opacity-50">
+                <button onClick={() => { load(); access.reload(); }} disabled={checking} className="mt-4 min-h-11 inline-flex items-center gap-2 px-4 rounded-full glass text-xs font-bold hover:bg-white/10 disabled:opacity-50">
                   <RefreshCw className={`h-3.5 w-3.5 ${checking ? 'animate-spin' : ''}`} /> Re-check the exam service
                 </button>
-                {status.checkedAt && <p className="mt-2 text-[11px] text-white/35">Last checked {new Date(status.checkedAt).toLocaleTimeString()}</p>}
+                <p className="mt-2 text-[11px] text-white/35">
+                  Nothing is fetched until the contract is configured — no endpoint is guessed.
+                </p>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Paid gate — the JAMB area is a separate product from the courses. */}
+        {access.state !== 'loading' && !access.entitled && (
+          <div role="status" className="rounded-[24px] border border-cyan-500/25 bg-cyan-500/10 p-6">
+            <div className="flex flex-wrap items-start gap-4">
+              {access.state === 'granted' ? <BadgeCheck className="h-6 w-6 text-emerald-300 shrink-0" />
+                : access.state === 'pending' ? <Hourglass className="h-6 w-6 text-amber-300 shrink-0" />
+                  : <Lock className="h-6 w-6 text-cyan-300 shrink-0" />}
+              <div className="flex-1 min-w-[240px]">
+                {access.state === 'pending' ? (
+                  <>
+                    <h2 className="font-bold text-amber-200">Payment received — awaiting approval</h2>
+                    <p className="mt-2 text-sm text-white/70">
+                      Your {access.product?.title || 'JAMB CBT pass'} payment
+                      {access.payment?.reference ? ` (reference ${access.payment.reference})` : ''} is with our team.
+                      Access opens the moment an admin approves it — usually within a few hours.
+                    </p>
+                    <button onClick={access.reload} className="mt-4 min-h-11 inline-flex items-center gap-2 px-4 rounded-full glass text-xs font-bold hover:bg-white/10">
+                      <RefreshCw className="h-3.5 w-3.5" /> Re-check my access
+                    </button>
+                  </>
+                ) : access.state === 'no-product' ? (
+                  <>
+                    <h2 className="font-bold text-cyan-200">The JAMB pass is not on sale yet</h2>
+                    <p className="mt-2 text-sm text-white/70">
+                      No exam-access product has been published by an admin, so there is nothing to buy yet.
+                      This page will show the price and the payment steps as soon as it is published.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="font-bold text-cyan-200">JAMB CBT is a paid pass</h2>
+                    <p className="mt-2 text-sm text-white/70">
+                      Practice papers and full mocks are a separate product from your courses
+                      {access.product ? ` — ${access.product.title} is ₦${Number(access.product.price || 0).toLocaleString()}` : ''}.
+                      Pay by bank transfer, upload the receipt, and access opens once an admin approves it.
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {access.product && (
+                        <Link to={`/enroll/bundle/${access.product.id}`} className="min-h-11 inline-flex items-center gap-2 px-5 rounded-full bg-gradient-to-r from-cyan-400 to-blue-600 text-[#020617] text-xs font-black hover:opacity-90">
+                          <PlayCircle className="h-4 w-4" /> BUY THE JAMB PASS
+                        </Link>
+                      )}
+                      <Link to="/courses" className="min-h-11 inline-flex items-center gap-2 px-5 rounded-full glass text-xs font-bold hover:bg-white/10">
+                        BROWSE COURSES INSTEAD
+                      </Link>
+                    </div>
+                  </>
+                )}
+                {access.error && <p className="mt-2 text-[11px] text-rose-300">{access.error}</p>}
+                {!user && (
+                  <p className="mt-3 text-[11px] text-white/50">
+                    <Link to="/login" className="text-cyan-300 font-bold underline">Sign in</Link> to see the access you already have.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {access.entitled && (
+          <div className="flex items-center gap-2 text-[12px] text-emerald-300 font-bold">
+            <BadgeCheck className="h-4 w-4" /> JAMB pass active{access.product ? ` — ${access.product.title}` : ''}
           </div>
         )}
 

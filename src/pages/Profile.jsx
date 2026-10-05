@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { User, Mail, Phone, Lock, Award, BookOpen, Save, Camera, Share2, Eye } from 'lucide-react';
+import { User, Mail, Phone, Lock, Award, BookOpen, Save, Camera, Share2, Eye, IdCard, Fingerprint } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { copyText } from '../lib/utils';
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
+import { useStudentIdCard } from '../lib/useStudentIdCard';
+import StudentIdCard from '../components/student/StudentIdCard';
 import SignedFile from '../components/common/SignedFile';
+import { publicUrl } from '../lib/supabase';
 import { toast, Toaster } from 'sonner';
 
 export default function Profile() {
@@ -19,13 +22,13 @@ export default function Profile() {
     showCertificates: user?.showCertificates !== false, showProjects: user?.showProjects !== false,
   });
   const [pwd, setPwd] = useState({ current: '', next: '', confirm: '' });
+  const { card, status: cardStatus, error: cardError, issuing, issue } = useStudentIdCard(user);
 
   if (!user) return null;
   const enrollments = getUserEnrollments(user.id);
   const certs = getUserCertificates(user.id);
 
-  const handlePhoto = async (e) => {
-    const file = e.target.files[0];
+  const handlePhotoFile = async (file) => {
     if (!file) return;
     try {
       await updateProfile({ avatarFile: file });
@@ -33,6 +36,16 @@ export default function Profile() {
     } catch (err) {
       toast.error(err.message);
     }
+  };
+
+  const handlePhoto = async (e) => handlePhotoFile(e.target.files[0]);
+
+  // The ID card is issued by the database, so a photo has to exist first; the
+  // error text below comes from the server ("Upload a profile photo…").
+  const generateCard = async () => {
+    const issued = await issue();
+    if (issued) toast.success(`Student ID ${issued.cardNumber} issued ✅`);
+    else if (cardError) toast.error(cardError);
   };
 
   const handleSave = async (e) => {
@@ -66,7 +79,10 @@ export default function Profile() {
       <div className="mx-auto max-w-[1080px] px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
           <h1 className="font-display font-black text-[32px] leading-none">Profile Settings</h1>
-          <Link to={`/student/${user.id}`} className="px-5 py-2.5 rounded-full glass font-bold text-xs flex items-center gap-2"><Eye className="h-4 w-4" /> VIEW MY PORTFOLIO</Link>
+          <div className="flex flex-wrap gap-2">
+            <Link to="/security" className="px-5 py-2.5 rounded-full glass font-bold text-xs flex items-center gap-2"><Fingerprint className="h-4 w-4 text-cyan-300" /> SECURITY</Link>
+            <Link to={`/student/${user.id}`} className="px-5 py-2.5 rounded-full glass font-bold text-xs flex items-center gap-2"><Eye className="h-4 w-4" /> VIEW MY PORTFOLIO</Link>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-8">
@@ -90,6 +106,15 @@ export default function Profile() {
                 <div className="glass rounded-2xl p-3"><div className="font-black text-lg">{certs.length}</div><div className="text-[11px] text-white/40">Certs</div></div>
                 <div className="glass rounded-2xl p-3"><div className="font-black text-lg capitalize">{user.skillLevel?.split(' ')[0] || 'New'}</div><div className="text-[11px] text-white/40">Level</div></div>
               </div>
+            </div>
+
+            <div className="glass rounded-[24px] p-6 space-y-4">
+              <h3 className="font-bold flex items-center gap-2"><IdCard className="h-5 w-5 text-cyan-300" /> Student ID Card</h3>
+              <StudentIdCard
+                card={card} status={cardStatus} error={cardError} issuing={issuing}
+                onIssue={generateCard} onPhotoChange={handlePhotoFile}
+                photoUrl={user.avatar ? publicUrl('avatars', user.avatar) : null}
+              />
             </div>
 
             <div className="glass rounded-[24px] p-6 space-y-4">

@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { Sparkles, ArrowRight, Check } from 'lucide-react';
+import { Sparkles, ArrowRight, Check, Camera } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLMS } from '../context/LMSContext';
+import { useStudentIdCard } from '../lib/useStudentIdCard';
+import StudentIdCard from '../components/student/StudentIdCard';
+import { publicUrl } from '../lib/supabase';
 import { toast, Toaster } from 'sonner';
 
 const GOALS = ['Get a job in tech', 'Freelance & earn online', 'Grow my business', 'Create content', 'Build apps/websites', 'Learn AI skills', 'Go to university prepared', 'Start a tech career'];
@@ -15,6 +18,9 @@ export default function Onboarding() {
   const [interests, setInterests] = useState([]);
   const [skillLevel, setSkillLevel] = useState('Complete Beginner');
   const [goals, setGoals] = useState([]);
+  // Step 3 = the profile photo + student ID card step (the last step before the
+  // dashboard). `onboarded` is only set once the student leaves this wizard.
+  const { card, status: cardStatus, error: cardError, issuing, issue } = useStudentIdCard(user);
 
   if (!user) return <Navigate to="/login" />;
   if (user.onboarded) return <Navigate to="/dashboard" />;
@@ -23,7 +29,31 @@ export default function Onboarding() {
 
   const finish = async () => {
     try {
-      await updateProfile({ interests, skillLevel, careerGoals: goals, onboarded: true });
+      // Not flagged as onboarded yet: the photo/ID step still has to run.
+      await updateProfile({ interests, skillLevel, careerGoals: goals });
+      setStep(3);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const uploadPhoto = async (file) => {
+    try {
+      await updateProfile({ avatarFile: file });
+      toast.success('Photo uploaded 📸 Now generate your ID card.');
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const generateCard = async () => {
+    const issued = await issue();
+    if (issued) toast.success(`Student ID ${issued.cardNumber} issued ✅`);
+  };
+
+  const done = async () => {
+    try {
+      await updateProfile({ onboarded: true });
       toast.success('Welcome aboard! 🎉 Recommendations ready.');
       navigate('/dashboard');
     } catch (err) {
@@ -38,9 +68,13 @@ export default function Onboarding() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-[11px] font-bold tracking-widest"><Sparkles className="h-4 w-4 text-cyan-300" /> PERSONALIZE YOUR LEARNING</div>
           <h1 className="font-display font-black text-[32px] mt-3">Welcome, {user.fullName.split(' ')[0]}! 👋</h1>
-          <p className="text-white/60 mt-2">Answer 3 quick questions so we can recommend the perfect courses for you.</p>
+          <p className="text-white/60 mt-2">
+            {step === 3
+              ? 'Last step: add your photo so we can issue your digital student ID card.'
+              : 'Answer 3 quick questions so we can recommend the perfect courses for you.'}
+          </p>
           <div className="flex gap-2 justify-center mt-4">
-            {[0, 1, 2].map((i) => <div key={i} className={`h-2 w-16 rounded-full ${i <= step ? 'bg-gradient-to-r from-cyan-400 to-blue-600' : 'bg-white/10'}`} />)}
+            {[0, 1, 2, 3].map((i) => <div key={i} className={`h-2 w-16 rounded-full ${i <= step ? 'bg-gradient-to-r from-cyan-400 to-blue-600' : 'bg-white/10'}`} />)}
           </div>
         </div>
 
@@ -89,12 +123,37 @@ export default function Onboarding() {
             </div>
           )}
 
+          {step === 3 && (
+            <div className="space-y-4">
+              <h2 className="font-bold text-xl flex items-center gap-2"><Camera className="h-5 w-5 text-cyan-300" /> Your student ID</h2>
+              <p className="text-sm text-white/50">
+                {cardStatus === 'ready'
+                  ? `Done! Your card number is ${card?.cardNumber}. You can find it any time under Profile.`
+                  : 'Upload a clear headshot — the card is a photo ID, and our records system allocates the number.'}
+              </p>
+              <StudentIdCard
+                card={card} status={cardStatus} error={cardError} issuing={issuing}
+                onIssue={generateCard} onPhotoChange={uploadPhoto}
+                photoUrl={user.avatar ? publicUrl('avatars', user.avatar) : null}
+              />
+            </div>
+          )}
+
           <div className="flex justify-between mt-8">
-            <button onClick={() => (step === 0 ? navigate('/dashboard') : setStep(step - 1))} className="text-sm font-bold text-white/50 hover:text-white">{step === 0 ? 'SKIP FOR NOW' : '← BACK'}</button>
-            {step < 2 ? (
-              <button onClick={() => setStep(step + 1)} disabled={step === 0 && interests.length === 0} className="btn-primary !py-3 disabled:opacity-40">CONTINUE <ArrowRight className="h-4 w-4 ml-1" /></button>
+            {step === 3 ? (
+              <>
+                <button onClick={() => setStep(2)} className="text-sm font-bold text-white/50 hover:text-white">← BACK</button>
+                <button onClick={done} className="btn-primary !py-3">GO TO MY DASHBOARD <ArrowRight className="h-4 w-4 ml-1" /></button>
+              </>
             ) : (
-              <button onClick={finish} className="btn-primary !py-3">SHOW MY RECOMMENDATIONS 🎯</button>
+              <>
+                <button onClick={() => (step === 0 ? navigate('/dashboard') : setStep(step - 1))} className="text-sm font-bold text-white/50 hover:text-white">{step === 0 ? 'SKIP FOR NOW' : '← BACK'}</button>
+                {step < 2 ? (
+                  <button onClick={() => setStep(step + 1)} disabled={step === 0 && interests.length === 0} className="btn-primary !py-3 disabled:opacity-40">CONTINUE <ArrowRight className="h-4 w-4 ml-1" /></button>
+                ) : (
+                  <button onClick={finish} className="btn-primary !py-3">CONTINUE TO MY ID <ArrowRight className="h-4 w-4 ml-1" /></button>
+                )}
+              </>
             )}
           </div>
         </div>
