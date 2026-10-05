@@ -364,6 +364,22 @@ describe('JAMB area isolation', () => {
     expect(read('lib/useJambAccess.js')).toMatch(/fetchBundles|fetchMyPayments/);
   });
 
+  it('lets an admin publish the exam pass, and gates on an approved payment for it', () => {
+    // The pass is a real bundles row (kind = exam_access), so the existing
+    // bank-transfer + admin-approval flow is the only way in.
+    const form = read('pages/admin/BundlePathManager.jsx');
+    expect(form).toMatch(/exam_access/);
+    expect(form).toMatch(/JAMB CBT pass/);
+    expect(read('lib/store.js')).toMatch(/kind: input\.kind === 'exam_access' \? 'exam_access' : 'courses'/);
+
+    const gate = read('lib/useJambAccess.js');
+    expect(gate).toMatch(/kind === 'exam_access'/);
+    expect(gate).toMatch(/status === 'approved'/);
+    expect(gate).toMatch(/status === 'pending'/);
+    // …and the page routes the student to the existing checkout, not a new one.
+    expect(read('pages/jamb/JambCBT.jsx')).toMatch(/\/enroll\/bundle\//);
+  });
+
   it('labels the clock honestly: a display timer until the server issues a deadline', () => {
     // No deadline in the paper -> the browser clock is only a display.
     const clientTimed = createAttempt({ paper: PAPER, mode: 'mock', now: 0 });
