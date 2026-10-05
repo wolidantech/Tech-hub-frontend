@@ -1,22 +1,24 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { ArrowRight, Play, CheckCircle2, GraduationCap, Users, Monitor, Award, Sparkles, Zap, Globe, BookOpen, MessageCircle, Search, Map, Bot, Star, ChevronDown, Briefcase, FileText } from 'lucide-react';
-import { useCourses } from '../context/CourseContext';
+import { useCatalog } from '../context/CatalogContext';
 import { useLMS } from '../context/LMSContext';
 import CourseCard from '../components/course/CourseCard';
 import CatalogEmpty from '../components/common/CatalogEmpty';
 import { useNavigate } from 'react-router-dom';
-import { isCatalogCourse, resolvePathSteps } from '../lib/lms';
+import { resolvePathSteps } from '../lib/lms';
 
 export default function Home() {
-  const { courses, coursesLoading, coursesError } = useCourses();
+  // The homepage strip is the first page of the API catalogue (GET /api/courses)
+  // — the backend decides which courses exist and in which order.
+  const { courses, coursesLoading, coursesError } = useCatalog();
   const { learningPaths } = useLMS();
-  // Path steps resolve through the same visibility rule as the storefront, so a
-  // consolidated catalog (archived duplicates) cannot advertise dead steps.
+  // Path steps resolve against the same live catalogue, so a path can never
+  // advertise a course the API is not serving.
   const navigate = useNavigate();
   const [heroSearch, setHeroSearch] = useState('');
-  const live = courses.filter(isCatalogCourse);
-  const featured = [...live].sort((a, b) => (b.students || 0) - (a.students || 0)).slice(0, 6);
+  const live = courses;
+  const featured = courses.slice(0, 6);
   const visiblePaths = learningPaths
     .map((p) => ({ ...p, ...resolvePathSteps(p, live) }))
     .filter((p) => p.steps.length > 0)

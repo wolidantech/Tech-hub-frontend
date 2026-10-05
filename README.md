@@ -43,11 +43,66 @@ Optional integrations via `.env` (see `.env.example`):
 | `/enroll/:slug` (bank transfer + coupons) | Students (auth) |
 | `/verify-certificate` `/certificate/:id` | Public |
 | `/admin/login` `/admin/dashboard` | Admin |
+| `/jamb-cbt` `/jamb-cbt/exam` | Public — JAMB CBT practice (separate exam area) |
 | `/backend-status` | Public — **not** gated; diagnoses the backend connection |
 
 Admin tabs: Overview (analytics) • Courses (curriculum builder, thumbnails,
 publish, completion rules) • Students (360° control) • Quizzes • Assignments
 (review) • Coupons • AI Studio • Payments • Certificates • Notify • Audit • Settings.
+
+## Course catalogue & classroom API
+
+The storefront is **data-driven** — no course is named in frontend code. Categories
+come from the API and every filter round-trips to it:
+
+| Endpoint | Used for |
+|---|---|
+| `GET /api/course-categories` | Category filter chips on `/courses` |
+| `GET /api/courses?category_id=&search=&difficulty=&page=&limit=` | Catalogue grid, server-side filtering + pagination |
+| `GET /api/classroom/:idOrSlug/outline` | Public course outline on `/course/:slug` (titles + counts only) |
+| `GET /api/classroom/:idOrSlug` | Enrolled student's full classroom on `/learn/:slug` (bearer token; 403 without an ACTIVE/COMPLETED enrollment) |
+
+Rules that follow from this:
+
+- Publishing, renaming, re-categorising or archiving a course in the backend
+  changes the site on the next fetch — no frontend deploy, no seed file.
+- `Science & Laboratory` and `Art & Industrial Design` are pinned as category
+  filters. They are *category names* only: the courses shown under them are
+  whatever `category_id` (or the API's `category` name filter) returns.
+- Difficulty filters send the API's enum (`BEGINNER` / `INTERMEDIATE` / `ADVANCED`).
+- The public outline never carries lesson bodies, video URLs or quiz answers;
+  those only exist behind the authenticated classroom endpoint.
+- Requests carry the signed-in student's Supabase token as `Authorization: Bearer …`
+  (same credential the AI gateway uses), so the API enforces access per request.
+- If the classroom endpoint is unreachable, `/learn/:slug` falls back to the
+  RLS-gated Supabase read so an existing deployment keeps working.
+
+Set `VITE_API_URL` only when the API lives on a different origin; otherwise the
+app calls same-origin `/api` and `vite.config.js` proxies it in development.
+
+```bash
+npm run mock:api   # stand-in API on :8789 (catalogue + outline + gated classroom)
+npm run dev        # proxies /api → :8789, so the storefront works with no backend
+```
+
+## JAMB CBT area
+
+`/jamb-cbt` is a **separate** product surface from the course LMS:
+
+- Subject selection, practice vs full mock mode, question navigator, live timer
+  with auto-submit, answers saved as you go (survives a reload), server-graded
+  results and attempt history.
+- **Not wired to Supabase's quiz tables.** Course quizzes (`quizzes`,
+  `quiz_questions`, `quiz_attempts`) belong to the classroom; the JAMB area talks
+  only to a standalone exam API, which the backend does **not** expose yet
+  (`src/lib/jambApi.js` documents the expected contract). Until it lands the page
+  says "Exam service not connected yet" and refuses to start a paper rather than
+  inventing questions. `npm run mock:api` with `EXAMS=1` fakes it for UI work.
+- **Answer keys never reach the browser.** A paper carries
+  `{ id, text, options: [{ id, text }] }`; `sanitizeQuestion()` strips any
+  key-like field defensively, grading is server-side, and the client only ever
+  sends the option ids the student chose. Attempt history stores metadata
+  (score, mode, date) — no questions, no keys.
 
 ## Mobile (Android + iOS)
 
@@ -94,6 +149,10 @@ catalog) with the fix for each. It also has a **Copy report** button.
 ## Architecture notes
 
 - `src/context/AuthContext.jsx` — Supabase Auth session, profile load, roles, bans
+- `src/lib/api.js` — REST client for the course API (envelope unwrap, bearer auth, honest errors)
+- `src/lib/catalogApi.js` — categories, catalogue filters, public outline, gated classroom mappers
+- `src/context/CatalogContext.jsx` — catalogue state: categories + courses straight from the API
+- `src/lib/jambApi.js` / `src/lib/jambEngine.js` — JAMB CBT exam seam + key-free session logic
 - `src/context/CourseContext.jsx` — courses, enrollments, payments, progress, certificates
 - `src/context/LMSContext.jsx` — quizzes, assignments, coupons, AI drafts, audit, announcements
 - `src/lib/store.js` — the data-access layer; maps Postgres rows to camelCase at the boundary

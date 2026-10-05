@@ -24,6 +24,7 @@ export default function Navbar() {
     { to: '/courses', label: 'Skills Library' },
     { to: '/learning-paths', label: 'Paths' },
     { to: '/career-hub', label: 'Career' },
+    { to: '/jamb-cbt', label: 'JAMB CBT' },
     { to: '/cv-builder', label: 'CV Builder' },
     ...(user && !isAdmin ? [{ to: '/ai', label: 'AI' }] : []),
     { to: '/verify-certificate', label: 'Verify' },
