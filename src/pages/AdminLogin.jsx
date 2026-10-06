@@ -45,6 +45,7 @@ export default function AdminLogin() {
               <Shield className="h-8 w-8 text-white" />
             </div>
             <div>
+              <img src="/logo.svg" alt="DANQEL DIGITAL INSTITUTE" className="h-24 w-auto max-w-full mb-5" draggable={false} />
               <h1 className="font-display font-black text-[28px] leading-none">Admin Login</h1>
               <p className="mt-2 text-sm text-white/60">Secure access to the DANQEL DIGITAL INSTITUTE admin dashboard</p>
             </div>

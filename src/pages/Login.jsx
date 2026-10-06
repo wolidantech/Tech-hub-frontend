@@ -96,6 +96,7 @@ export default function Login() {
         <div className="w-full max-w-[420px] space-y-8">
           <div className="text-center space-y-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass text-[11px] font-bold tracking-widest"><Sparkles className="h-3 w-3 text-cyan-300" /> WELCOME BACK</div>
+            <img src="/logo.svg" alt="DANQEL DIGITAL INSTITUTE" className="h-24 w-auto max-w-full mb-5" draggable={false} />
             <h1 className="font-display font-black text-[32px] leading-none">Login to your account</h1>
             <p className="text-sm text-white/60">Continue your learning journey</p>
           </div>

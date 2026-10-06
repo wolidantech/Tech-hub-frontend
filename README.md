@@ -291,9 +291,13 @@ tutor is **DANQEL AI**. The single source of truth for the names is
 `src/lib/brand.js`; the retired brand appears nowhere user-facing, enforced by
 `src/tests/brand.test.jsx`.
 
-- The mark in `public/logo.svg`, `public/favicon.svg` and the generated PNG icons is
-  a **typographic placeholder**, not the final logo — see `docs/REBRAND_AUDIT.md`
-  §4. Regenerate icons with `node scripts/make-brand-icons.mjs`.
+- The logo is the school's official artwork (blue "D" + graduation-cap mark), rebuilt
+  as vector geometry so it can be rendered everywhere: `public/mark.svg` (the mark),
+  `public/logo.svg` (full lockup) and the PNG icons/favicon, all emitted by
+  `node scripts/make-brand-assets.mjs` (single geometry source, so vector and raster
+  never drift). It appears in the nav, footer, login/register/admin, the student ID
+  card and on certificates (on-screen and in the downloaded PNG). See
+  `docs/REBRAND_AUDIT.md` §4.
 - A few strings deliberately keep their old values because an external system
   expects them: the bank account name, the live `@wolidantech.com` mailboxes, the
   `WDTH-` student-ID prefix, and `wdth.*` local-storage keys. They are documented

@@ -99,7 +99,7 @@ export default function StudentIdCard({ card, status, error, issuing, onIssue, o
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(34,211,238,0.18),transparent_60%)]" />
         <div className="relative">
           <div className="flex items-center justify-between">
-            <div className="text-[10px] font-black tracking-[0.25em] text-cyan-300">DANQEL DIGITAL INSTITUTE</div>
+            <div className="flex items-center gap-2"><img src="/mark.svg" alt="" aria-hidden="true" className="h-6 w-6" draggable={false} /><div className="text-[10px] font-black tracking-[0.25em] text-cyan-300">DANQEL DIGITAL INSTITUTE</div></div>
             <div className="text-[9px] font-bold tracking-widest text-white/40">STUDENT ID</div>
           </div>
           <div className="mt-4 flex gap-4">
