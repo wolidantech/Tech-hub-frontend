@@ -364,7 +364,7 @@ Your voiceover is the **spine** of the video — visuals are cut to match it, ne
 
 Production order:
 1. Generate the full narration first.
-2. Listen and fix pronunciation (spell brand names phonetically, e.g. "Woli Dan" → "Woh-lee Dahn").
+2. Listen and fix pronunciation (spell brand names phonetically, e.g. "DANQEL" → "Dan-Kel").
 3. Drop it into CapCut on the audio track.
 4. Place clips over it, cutting each clip where the sentence breathes.
 

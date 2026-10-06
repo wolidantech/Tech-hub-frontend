@@ -1,12 +1,16 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Clock, BookOpen, BarChart3, User, Star, CheckCircle2, Play, Award, ArrowRight, Shield, Zap, Globe, AlertTriangle, FileText } from 'lucide-react';
+import {
+  Clock, BookOpen, BarChart3, User, Star, CheckCircle2, Play, Award, ArrowRight, Shield, Zap, Globe,
+  AlertTriangle, FileText, Lock, Layers, ChevronDown, ChevronUp, RefreshCw, GraduationCap,
+} from 'lucide-react';
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
+import { FACULTY_LABEL } from '../lib/brand';
 import { copyText, formatNaira, getCourseThumbnailGradient } from '../lib/utils';
+import { fetchClassroom, fetchCourseOutline } from '../lib/catalogApi';
 import CourseArt from '../components/course/CourseArt';
-import { isCatalogCourse } from '../lib/lms';
-import { useState, useEffect } from 'react';
 import { toast, Toaster } from 'sonner';
 
 function ReviewsSection({ course, user, enrolled }) {
@@ -14,7 +18,7 @@ function ReviewsSection({ course, user, enrolled }) {
   const [rating, setRating] = useState(5);
   const [text, setText] = useState('');
   const reviews = getCourseReviews(course.id);
-  const avg = getCourseRating(course.id, course.rating);
+  const avg = getCourseRating(course.id, course.rating ?? 4.8);
   const mine = user ? reviews.find((r) => r.userId === user.id) : null;
 
   useEffect(() => { ensureCourseReviews(course.id).catch(() => {}); }, [course.id, ensureCourseReviews]);
@@ -76,92 +80,159 @@ function ReviewsSection({ course, user, enrolled }) {
   );
 }
 
+/** One outline module: topics + lesson titles (never lesson content). */
+function OutlineModule({ mod, open, onToggle, unlocked }) {
+  return (
+    <div className="rounded-2xl border border-white/10 overflow-hidden">
+      <button aria-expanded={open} onClick={onToggle} className="w-full min-h-11 flex items-center justify-between gap-3 p-4 bg-white/[0.03] hover:bg-white/[0.05] transition text-left">
+        <div className="min-w-0">
+          <div className="font-bold break-words">{mod.title}</div>
+          {mod.description && <div className="text-xs text-white/40 break-words line-clamp-1">{mod.description}</div>}
+        </div>
+        <div className="shrink-0 flex items-center gap-3">
+          <span className="text-xs text-white/50">{mod.lessonsCount || mod.lessons.length} lessons</span>
+          {open ? <ChevronUp className="h-4 w-4 text-white/40" /> : <ChevronDown className="h-4 w-4 text-white/40" />}
+        </div>
+      </button>
+      {open && (
+        <div className="divide-y divide-white/5">
+          {mod.topics?.length > 0 && mod.topics.map((topic) => (
+            <div key={topic.id} className="px-4 py-2.5 text-[11px] font-black tracking-widest text-cyan-300/70 bg-white/[0.02] flex items-center gap-2">
+              <Layers className="h-3.5 w-3.5" /> {topic.title.toUpperCase()}
+              <span className="ml-auto text-white/30 font-bold normal-case tracking-normal">{topic.lessonsCount} lessons</span>
+            </div>
+          ))}
+          {(mod.lessons || []).length === 0 && (
+            <div className="p-4 text-xs text-white/40">No published lessons in this module yet.</div>
+          )}
+          {(mod.lessons || []).map((lesson) => (
+            <div key={lesson.id} className="min-h-11 flex items-center gap-3 p-4 text-sm">
+              <div className="h-8 w-8 rounded-full glass flex items-center justify-center shrink-0">
+                {lesson.type === 'video' ? <Play className="h-3.5 w-3.5" /> : <BookOpen className="h-3.5 w-3.5" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium break-words">{lesson.title}</div>
+                <div className="text-xs text-white/40 capitalize">{lesson.type} {lesson.duration ? `• ${lesson.duration}` : ''}</div>
+              </div>
+              {lesson.freePreview && <span className="text-[10px] font-black px-2 py-1 rounded-full bg-green-500/20 text-green-300">FREE PREVIEW</span>}
+              {!unlocked && !lesson.freePreview && <Lock className="h-4 w-4 text-white/25 shrink-0" aria-label="Locked until enrolled" />}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function CourseDetails() {
   const { slug } = useParams();
-  const { coursesLoading, coursesError, refreshCourses, accessKey, getCourseBySlug, isEnrolled, getManualPaymentByCourse, ensureCourseDetail } = useCourses();
-  const { trackView, getCourseQuizzes, getCourseAssignments, siteSettings } = useLMS();
-  const { user } = useAuth();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isEnrolled, getManualPaymentByCourse } = useCourses();
+  const { siteSettings } = useLMS();
+
+  // Public outline — GET /api/classroom/:slug/outline (titles only)
+  const [outline, setOutline] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [openModule, setOpenModule] = useState(null);
-  const [detailError, setDetailError] = useState('');
-  const [detailLoading, setDetailLoading] = useState(false);
+  // A 404 from the outline endpoint is the storefront's "not found" rule
+  // (archived/unpublished slugs are not part of the public catalogue), not a
+  // retryable failure — so it gets its own state instead of an error banner.
+  const [notFound, setNotFound] = useState(false);
 
-  const course = getCourseBySlug(slug);
+  // Enrolled students additionally load the gated classroom endpoint, which is
+  // the only place full lesson access is granted.
+  const [classroom, setClassroom] = useState(null);
+  const [classroomError, setClassroomError] = useState('');
 
-  useEffect(() => {
-    if (coursesLoading || !course?.id) return undefined;
-    let alive = true;
-    trackView(user?.id, course.id);
-    setDetailError('');
-    setDetailLoading(true);
-    ensureCourseDetail(course.id)
-      .catch((err) => { if (alive) setDetailError(err.message); })
-      .finally(() => { if (alive) setDetailLoading(false); });
-    return () => { alive = false; };
-    // Reload after identity/enrollment changes so RLS can return bodies/videos
-    // only when the database says this session has access.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug, course?.id, accessKey, coursesLoading]);
-
-  useEffect(() => {
-    if (course?.curriculum?.length && !openModule) setOpenModule(course.curriculum[0].id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [course?.curriculum]);
-
-  const refreshCurriculum = async () => {
-    if (!course?.id || detailLoading) return;
-    setDetailError('');
-    setDetailLoading(true);
+  const load = useCallback(async (signal) => {
+    setLoading(true);
+    setError('');
+    setNotFound(false);
     try {
-      await ensureCourseDetail(course.id);
+      const data = await fetchCourseOutline(slug, { signal });
+      setOutline(data);
+      setOpenModule((prev) => prev || data.modules?.[0]?.id || null);
     } catch (err) {
-      setDetailError(err.message);
+      if (err?.name === 'AbortError') return;
+      if (err?.status === 404) setNotFound(true);
+      else setError(err?.message || 'Could not load this course.');
     } finally {
-      setDetailLoading(false);
+      setLoading(false);
     }
-  };
+  }, [slug]);
 
-  if (coursesLoading) return <div role="status" className="min-h-[60vh] grid place-content-center p-6 text-center text-white/60">Loading course…</div>;
-  if (coursesError && !course) return <div role="alert" className="min-h-[60vh] grid place-content-center gap-4 p-6 text-center"><p>{coursesError}</p><button className="btn-primary min-h-11 mx-auto" onClick={refreshCourses}>Try again</button></div>;
-  if (!course) return <div className="min-h-[60vh] grid place-content-center gap-4 p-6 text-center"><p>Course not found.</p><Link className="btn-secondary min-h-11" to="/courses">Browse courses</Link></div>;
-  // Storefront visibility rule: an archived or unpublished slug is "not found"
-  // for everyone but an admin (who manages those rows in the dashboard).
-  // RLS hides the same rows from anonymous visitors; this stops a direct URL
-  // typed by a signed-in non-admin from opening an archived duplicate.
-  if (!isCatalogCourse(course) && user?.role !== 'admin') return <div className="min-h-[60vh] grid place-content-center gap-4 p-6 text-center"><p>Course not found.</p><Link className="btn-secondary min-h-11" to="/courses">Browse courses</Link></div>;
+  useEffect(() => {
+    const controller = new AbortController();
+    setOutline(null);
+    setClassroom(null);
+    setClassroomError('');
+    setNotFound(false);
+    load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
 
-  const enrolled = user ? isEnrolled(user.id, course.id) : false;
-  const manualPayment = user ? getManualPaymentByCourse(user.id, course.id) : null;
-  const totalLessons = course.curriculum
-    ? course.curriculum.reduce((acc, m) => acc + (m.lessons?.length || 0), 0)
-    : (course.lessonsCount || 0);
-  const quizCount = getCourseQuizzes(course.id).length;
-  const assignmentCount = getCourseAssignments(course.id).length;
-  const gradient = getCourseThumbnailGradient(course.thumbnail);
+  const course = outline?.course || null;
+  // Enrollment truth: the API's own enrollment record (it is attached to the
+  // outline for signed-in students), with the local enrollment row as backup.
+  const enrollmentStatus = String(outline?.enrollment?.status || '').toUpperCase();
+  const enrolled = ['ACTIVE', 'COMPLETED'].includes(enrollmentStatus)
+    || Boolean(user && course && isEnrolled(user.id, course.id));
+
+  useEffect(() => {
+    if (!enrolled || !course) return undefined;
+    const controller = new AbortController();
+    fetchClassroom(slug, { signal: controller.signal })
+      .then(setClassroom)
+      .catch((err) => {
+        if (err?.name === 'AbortError') return;
+        setClassroomError(err?.message || 'Could not open your classroom.');
+      });
+    return () => controller.abort();
+  }, [enrolled, course?.id, slug]);
+
+  const modules = useMemo(() => classroom?.curriculum?.length ? classroom.curriculum : (outline?.modules || []), [classroom, outline]);
+  const totalLessons = outline?.totalLessons ?? modules.reduce((n, m) => n + (m.lessons?.length || 0), 0);
+  const manualPayment = user && course ? getManualPaymentByCourse(user.id, course.id) : null;
+  const gradient = getCourseThumbnailGradient(course?.thumbnail);
+  const curriculumMessage = outline?.curriculumStatus?.message || '';
 
   const handleEnroll = () => {
-    if (!user) {
-      navigate('/register', { state: { from: `/course/${slug}` } });
-      return;
-    }
-    if (enrolled) {
-      navigate(`/learn/${course.slug}`);
-      return;
-    }
-    if (manualPayment?.status === 'pending') {
-      navigate('/my-payments');
-      return;
-    }
+    if (!user) { navigate('/register', { state: { from: `/course/${slug}` } }); return; }
+    if (enrolled) { navigate(`/learn/${course.slug}`); return; }
+    if (manualPayment?.status === 'pending') { navigate('/my-payments'); return; }
     navigate(`/enroll/${course.slug}`);
   };
 
-  const getEnrollButtonText = () => {
-    if (enrolled) return 'CONTINUE LEARNING';
-    if (manualPayment?.status === 'pending') return 'PAYMENT PENDING REVIEW';
-    if (manualPayment?.status === 'rejected') return `RETRY PAYMENT - ${formatNaira(course.price)}`;
-    return `ENROLL NOW - ${formatNaira(course.price)}`;
-  };
+  const enrollLabel = enrolled
+    ? 'CONTINUE LEARNING'
+    : manualPayment?.status === 'pending'
+      ? 'PAYMENT PENDING REVIEW'
+      : manualPayment?.status === 'rejected'
+        ? `RETRY PAYMENT - ${formatNaira(course?.price)}`
+        : `ENROLL NOW - ${formatNaira(course?.price)}`;
 
+  if (loading) return <div role="status" className="min-h-[60vh] grid place-content-center p-6 text-center text-white/60">Loading course…</div>;
+  if (notFound || (!loading && !error && !course)) {
+    return (
+      <div className="min-h-[60vh] grid place-content-center gap-4 p-6 text-center">
+        <p>Course not found.</p>
+        <Link className="btn-secondary min-h-11" to="/courses">Browse courses</Link>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div role="alert" className="min-h-[60vh] grid place-content-center gap-4 p-6 text-center">
+        <p>{error}</p>
+        <div className="flex flex-wrap justify-center gap-3">
+          <button className="btn-primary min-h-11" onClick={() => load()}>Try again</button>
+          <Link className="btn-secondary min-h-11" to="/courses">Browse courses</Link>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen max-w-full overflow-x-clip">
       <div className="relative border-b border-white/[0.06] overflow-hidden">
@@ -171,26 +242,49 @@ export default function CourseDetails() {
           <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-10 items-start">
             <div className="space-y-6">
               <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1 rounded-full glass text-[11px] font-bold tracking-widest">{course.category.toUpperCase()}</span>
-                <span className="px-3 py-1 rounded-full bg-green-500/20 border border-green-500/30 text-[11px] font-bold text-green-300 flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" /> BESTSELLER</span>
-                <span className="px-3 py-1 rounded-full glass text-[11px] font-bold">{course.level}</span>
+                <span className="px-3 py-1 rounded-full glass text-[11px] font-bold tracking-widest">{(course.category || 'Course').toUpperCase()}</span>
+                {course.level && <span className="px-3 py-1 rounded-full glass text-[11px] font-bold">{course.level}</span>}
+                {enrolled && (
+                  <span className="px-3 py-1 rounded-full bg-green-500/20 border border-green-500/30 text-[11px] font-bold text-green-300 flex items-center gap-1">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> ENROLLED
+                  </span>
+                )}
               </div>
 
               <h1 className="font-display font-black text-[30px] sm:text-[36px] md:text-[48px] leading-[1] sm:leading-[0.95] break-words">{course.title}</h1>
               <p className="text-base sm:text-[18px] text-white/70 leading-relaxed">{course.description}</p>
-              <p className="text-sm text-white/50 leading-relaxed">{course.longDescription}</p>
 
               <div className="flex flex-wrap items-center gap-4 text-sm">
-                <span className="flex items-center gap-2"><div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-bold text-xs">{(course.instructor || '?').charAt(0)}</div> {course.instructor} • {course.instructorRole}</span>
-                <span className="flex items-center gap-1.5 text-white/60"><Star className="h-4 w-4 text-yellow-400 fill-yellow-400" /> {course.rating} ({course.students} students)</span>
+                {course.instructor && (
+                  <span className="flex items-center gap-2">
+                    <span className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-bold text-xs">{course.instructor.charAt(0)}</span>
+                    {course.instructor}{course.instructorRole ? ` • ${course.instructorRole}` : ''}
+                  </span>
+                )}
+                {course.rating != null && (
+                  <span className="flex items-center gap-1.5 text-white/60"><Star className="h-4 w-4 text-yellow-400 fill-yellow-400" /> {course.rating}</span>
+                )}
               </div>
 
               <div className="flex flex-wrap gap-3 text-[13px]">
-                <span className="flex items-center gap-2 px-3 py-2 rounded-full glass"><Clock className="h-4 w-4" /> {course.duration}</span>
+                {course.duration && <span className="flex items-center gap-2 px-3 py-2 rounded-full glass"><Clock className="h-4 w-4" /> {course.duration}</span>}
                 <span className="flex items-center gap-2 px-3 py-2 rounded-full glass"><BookOpen className="h-4 w-4" /> {totalLessons} lessons</span>
-                <span className="flex items-center gap-2 px-3 py-2 rounded-full glass"><BarChart3 className="h-4 w-4" /> {course.level}</span>
+                <span className="flex items-center gap-2 px-3 py-2 rounded-full glass"><Layers className="h-4 w-4" /> {modules.length} modules</span>
+                <span className="flex items-center gap-2 px-3 py-2 rounded-full glass"><BarChart3 className="h-4 w-4" /> {course.level || 'All levels'}</span>
                 <span className="flex items-center gap-2 px-3 py-2 rounded-full glass"><Award className="h-4 w-4" /> Certificate</span>
               </div>
+
+              {enrolled && (
+                <div className="rounded-2xl bg-green-500/10 border border-green-500/20 p-4 flex flex-wrap gap-3 items-center">
+                  <GraduationCap className="h-5 w-5 text-green-300" />
+                  <div className="text-xs text-white/70 flex-1 min-w-[200px]">
+                    {classroomError
+                      ? `Your enrollment is active, but the classroom could not be opened: ${classroomError}`
+                      : 'Your enrollment is active — the full classroom (lessons, videos, quizzes) is unlocked.'}
+                  </div>
+                  <Link to={`/learn/${course.slug}`} className="min-h-11 inline-flex items-center gap-2 px-4 rounded-full bg-white text-black text-xs font-bold">OPEN CLASSROOM <ArrowRight className="h-4 w-4" /></Link>
+                </div>
+              )}
             </div>
 
             <div className="lg:sticky lg:top-[100px]">
@@ -198,13 +292,17 @@ export default function CourseDetails() {
                 <div className="rounded-[23px] bg-[#0a1a4a]/80 backdrop-blur-xl overflow-hidden">
                   <div className="relative">
                     <CourseArt course={course} className="h-[240px]" />
-                    <div className="absolute bottom-4 left-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 backdrop-blur text-xs font-bold"><Play className="h-3 w-3" /> PREVIEW COURSE</div>
+                    <div className="absolute bottom-4 left-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 backdrop-blur text-xs font-bold"><Play className="h-3 w-3" /> COURSE OUTLINE</div>
                   </div>
                   <div className="p-6 space-y-5">
                     <div className="flex flex-wrap items-baseline gap-3">
                       <div className="font-black text-[32px]">{formatNaira(course.price)}</div>
-                      <div className="text-sm line-through text-white/40">{formatNaira(course.originalPrice)}</div>
-                      <div className="sm:ml-auto px-2.5 py-1 rounded-full bg-green-500/20 text-green-300 text-xs font-bold">{Math.round((1 - course.price / course.originalPrice) * 100)}% OFF</div>
+                      {course.originalPrice > course.price && (
+                        <>
+                          <div className="text-sm line-through text-white/40">{formatNaira(course.originalPrice)}</div>
+                          <div className="sm:ml-auto px-2.5 py-1 rounded-full bg-green-500/20 text-green-300 text-xs font-bold">{Math.round((1 - course.price / course.originalPrice) * 100)}% OFF</div>
+                        </>
+                      )}
                     </div>
 
                     {manualPayment?.status === 'pending' && (
@@ -225,23 +323,21 @@ export default function CourseDetails() {
                     )}
 
                     <button onClick={handleEnroll} className={`w-full !py-4 !text-[15px] gap-2 inline-flex items-center justify-center rounded-full font-bold transition-all ${enrolled ? 'bg-white text-black hover:bg-white/90' : manualPayment?.status === 'pending' ? 'bg-amber-500/20 border border-amber-500/30 text-amber-300 cursor-pointer hover:bg-amber-500/30' : 'btn-primary'}`}>
-                      {getEnrollButtonText()} <ArrowRight className="h-4 w-4" />
+                      {enrollLabel} <ArrowRight className="h-4 w-4" />
                     </button>
-
-                    {enrolled && <div className="text-center text-xs text-green-300 flex items-center justify-center gap-1"><CheckCircle2 className="h-4 w-4" /> You are enrolled • Access granted after approval</div>}
 
                     <div className="space-y-3 text-[13px]">
                       <div className="font-bold text-white/80">This course includes:</div>
                       {[
-                        `${course.duration} on-demand video`,
-                        `${totalLessons} lessons`,
-                        quizCount > 0 ? `${quizCount} quizzes with auto-grading` : 'Quizzes & assessments',
-                        assignmentCount > 0 ? `${assignmentCount} practical assignments` : 'Practical assignments',
+                        course.duration ? `${course.duration} on-demand video` : 'On-demand video lessons',
+                        `${totalLessons} lessons across ${modules.length} modules`,
+                        outline?.counts?.quizzes ? `${outline.counts.quizzes} quizzes with auto-grading` : 'Quizzes & assessments',
+                        outline?.counts?.assignments ? `${outline.counts.assignments} practical assignments` : 'Practical assignments',
                         'Downloadable resources',
                         'Lifetime access',
                         'Certificate of completion',
-                        'WhatsApp community access'
-                      ].map(item => (
+                        'WhatsApp community access',
+                      ].map((item) => (
                         <div key={item} className="flex items-center gap-2 text-white/60"><CheckCircle2 className="h-4 w-4 text-cyan-400" /> {item}</div>
                       ))}
                     </div>
@@ -270,77 +366,58 @@ export default function CourseDetails() {
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-12 grid lg:grid-cols-[1.2fr_0.8fr] gap-10">
         <div className="space-y-10">
           <div className="rounded-[24px] glass p-6 md:p-8">
-            <h3 className="font-bold text-xl mb-6">What You Will Learn</h3>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {course.whatYouWillLearn.map((item, i) => (
-                <div key={i} className="flex gap-3 text-sm text-white/70"><CheckCircle2 className="h-5 w-5 text-cyan-400 shrink-0 mt-0.5" /> {item}</div>
-              ))}
-            </div>
-          </div>
-
-          {(course.requirements?.length > 0 || course.audience?.length > 0) && (
-            <div className="rounded-[24px] glass p-6 md:p-8 grid sm:grid-cols-2 gap-6">
-              {course.requirements?.length > 0 && (
-                <div>
-                  <h3 className="font-bold mb-4">Requirements</h3>
-                  <div className="space-y-2">{course.requirements.map((r, i) => <div key={i} className="flex gap-2 text-sm text-white/70"><AlertTriangle className="h-4 w-4 text-amber-300 shrink-0 mt-0.5" /> {r}</div>)}</div>
-                </div>
-              )}
-              {course.audience?.length > 0 && (
-                <div>
-                  <h3 className="font-bold mb-4">Who Is This For?</h3>
-                  <div className="space-y-2">{course.audience.map((a, i) => <div key={i} className="flex gap-2 text-sm text-white/70"><User className="h-4 w-4 text-green-300 shrink-0 mt-0.5" /> {a}</div>)}</div>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="rounded-[24px] glass p-6 md:p-8">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
               <div>
-                <h3 className="font-bold text-xl">Course Curriculum</h3>
-                <span className="mt-2 inline-flex text-xs px-3 py-1.5 rounded-full glass">{(course.curriculum || []).length} modules • {totalLessons} lessons</span>
+                <h3 className="font-bold text-xl">Course Outline</h3>
+                <span className="mt-2 inline-flex text-xs px-3 py-1.5 rounded-full glass">
+                  {modules.length} modules
+                  {outline?.counts?.topics ? ` • ${outline.counts.topics} topics` : ''}
+                  {' • '}
+                  {totalLessons} lessons
+                </span>
               </div>
-              <button disabled={detailLoading} onClick={refreshCurriculum} className="min-h-11 px-4 rounded-full glass text-xs font-bold hover:bg-white/10 disabled:opacity-50">
-                {detailLoading ? 'Refreshing…' : 'Refresh curriculum'}
+              <button onClick={() => load()} className="min-h-11 px-4 rounded-full glass text-xs font-bold hover:bg-white/10 inline-flex items-center gap-2">
+                <RefreshCw className="h-3.5 w-3.5" /> Refresh outline
               </button>
             </div>
-            {detailError && <div role="alert" className="text-sm text-red-300 mb-3">Couldn't load full curriculum: {detailError} <button className="min-h-11 px-3 font-bold underline" onClick={refreshCurriculum}>Retry</button></div>}
-            {!detailLoading && course.curriculum?.length === 0 && <div className="rounded-2xl bg-white/[0.03] p-5 text-sm text-white/60"><p className="font-bold text-white">No curriculum is available for this course yet.</p><p className="mt-1">Refresh if lessons were just published, or contact support before enrolling.</p></div>}
-            {detailLoading && !course.curriculum && !detailError && <div role="status" className="text-sm text-white/40 py-4">Loading curriculum…</div>}
-            <div className="space-y-3">
-              {(course.curriculum || []).map(mod => (
-                <div key={mod.id} className="rounded-2xl border border-white/10 overflow-hidden">
-                  <button aria-expanded={openModule === mod.id} onClick={() => setOpenModule(openModule === mod.id ? null : mod.id)} className="w-full min-h-11 flex items-center justify-between gap-3 p-4 bg-white/[0.03] hover:bg-white/[0.05] transition text-left">
-                    <div className="min-w-0 font-bold break-words">{mod.title}</div>
-                    <div className="shrink-0 text-xs text-white/50">{(mod.lessons || []).length} lessons</div>
-                  </button>
-                  {openModule === mod.id && (
-                    <div className="divide-y divide-white/5">
-                      {(mod.lessons || []).map(lesson => (
-                        <div key={lesson.id} className="min-h-11 flex items-center gap-3 p-4 text-sm">
-                          <div className="h-8 w-8 rounded-full glass flex items-center justify-center shrink-0">
-                            {lesson.type === 'video' ? <Play className="h-3.5 w-3.5" /> : <BookOpen className="h-3.5 w-3.5" />}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium break-words">{lesson.title}</div>
-                            <div className="text-xs text-white/40 capitalize">{lesson.type} • {lesson.duration}</div>
-                          </div>
-                          {!enrolled && <div className="h-5 w-5 rounded-full border border-white/20 flex items-center justify-center"><div className="h-2 w-2 rounded-full bg-white/20" /></div>}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+
+            {/* The API reports curriculum readiness so an unfinished course is
+                visible BEFORE payment instead of after. */}
+            {!outline?.curriculumComplete && curriculumMessage && (
+              <div className="mb-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 flex gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0" />
+                <div className="text-xs text-white/70">{curriculumMessage}</div>
+              </div>
+            )}
+
+            {modules.length === 0 ? (
+              <div className="rounded-2xl bg-white/[0.03] p-5 text-sm text-white/60">
+                <p className="font-bold text-white">No curriculum is available for this course yet.</p>
+                <p className="mt-1">Refresh if lessons were just published, or contact support before enrolling.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {modules.map((mod) => (
+                  <OutlineModule
+                    key={mod.id}
+                    mod={mod}
+                    unlocked={enrolled}
+                    open={openModule === mod.id}
+                    onToggle={() => setOpenModule(openModule === mod.id ? null : mod.id)}
+                  />
+                ))}
+              </div>
+            )}
+            <p className="mt-4 text-xs text-white/40">
+              Lesson videos, notes and quizzes unlock after your payment is approved. This outline is the public curriculum — no lesson content is shown here.
+            </p>
           </div>
 
           <div className="rounded-[24px] glass p-6 md:p-8 flex gap-4">
-            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-black text-xl shrink-0">{(course.instructor || '?').charAt(0)}</div>
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-black text-xl shrink-0">{(course.instructor || 'W').charAt(0)}</div>
             <div>
-              <div className="font-bold text-lg">{course.instructor}</div>
-              <div className="text-sm text-cyan-300">{course.instructorRole}</div>
+              <div className="font-bold text-lg">{course.instructor || FACULTY_LABEL}</div>
+              <div className="text-sm text-cyan-300">{course.instructorRole || 'Instructor'}</div>
               <p className="mt-2 text-sm text-white/60 leading-relaxed">Professional instructor with years of experience helping students build practical skills that generate income.</p>
             </div>
           </div>

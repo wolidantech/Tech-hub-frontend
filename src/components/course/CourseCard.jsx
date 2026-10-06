@@ -4,7 +4,9 @@ import { formatNaira } from '../../lib/utils';
 import CourseArt from './CourseArt';
 
 export default function CourseCard({ course, onEnroll }) {
-  const totalLessons = course.curriculum?.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) || course.lessonsCount || 0;
+  // The API catalogue does not serve lesson counts on the card, so an unknown
+  // count is hidden rather than rendered as a fake "0 lessons".
+  const totalLessons = course.curriculum?.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) || course.lessonsCount || null;
   return (
     <article className="group relative min-w-0 max-w-full rounded-[24px] glass-card overflow-hidden hover:border-white/[0.15] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(0,0,0,0.4),0_0_40px_rgba(14,165,233,0.15)] flex flex-col">
       {/* Premium 3D thumbnail */}
@@ -22,8 +24,10 @@ export default function CourseCard({ course, onEnroll }) {
           )}
         </div>
         {/* Level */}
-        <div className="absolute bottom-4 left-4 z-20 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur border border-white/10 text-[11px] font-semibold">
-          {course.level}
+        <div className="absolute bottom-4 left-4 z-20">
+          {course.level ? (
+            <span className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur border border-white/10 text-[11px] font-semibold">{course.level}</span>
+          ) : null}
         </div>
         {course.featured && (
           <div className="absolute bottom-4 right-4 z-20 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[11px] font-black">
@@ -42,14 +46,18 @@ export default function CourseCard({ course, onEnroll }) {
 
         <div className="mt-4 flex flex-wrap items-center gap-3 text-[12px] text-white/50">
           <span className="min-w-0 flex items-center gap-1"><User className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{course.instructor}</span></span>
-          <span className="h-1 w-1 rounded-full bg-white/20" />
-          <span className="flex items-center gap-1"><Star className="h-3.5 w-3.5 text-yellow-400 fill-yellow-400" /> {course.rating}</span>
+          {course.rating != null && (
+            <>
+              <span className="h-1 w-1 rounded-full bg-white/20" />
+              <span className="flex items-center gap-1"><Star className="h-3.5 w-3.5 text-yellow-400 fill-yellow-400" /> {course.rating}</span>
+            </>
+          )}
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] text-white/50">
           <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {course.duration}</span>
-          <span className="flex items-center gap-1.5"><BookOpen className="h-3.5 w-3.5" /> {totalLessons} lessons</span>
-          <span className="sm:ml-auto flex items-center gap-1 text-white/40"><span className="h-1.5 w-1.5 rounded-full bg-green-400" /> {course.students} students</span>
+          {totalLessons ? <span className="flex items-center gap-1.5"><BookOpen className="h-3.5 w-3.5" /> {totalLessons} lessons</span> : null}
+          {course.students != null && <span className="sm:ml-auto flex items-center gap-1 text-white/40"><span className="h-1.5 w-1.5 rounded-full bg-green-400" /> {course.students} students</span>}
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-2">

@@ -1,5 +1,5 @@
 -- ============================================================
--- WOLI DAN TECH HUB — Make the first administrator
+-- DANQEL DIGITAL INSTITUTE — Make the first administrator
 -- ------------------------------------------------------------
 -- WHY THIS FILE EXISTS
 --   The signup trigger (migration 003, handle_new_user) always creates

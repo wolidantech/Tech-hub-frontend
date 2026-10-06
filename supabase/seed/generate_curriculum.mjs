@@ -165,7 +165,7 @@ const sqlText = (v) => (v === null || v === undefined ? 'null' : q(v));
 
 push(
   '-- ============================================================',
-  '-- WOLI DAN TECH HUB — Seed: full curriculum (modules, lessons,',
+  '-- DANQEL DIGITAL INSTITUTE — Seed: full curriculum (modules, lessons,',
   '-- bodies, resources and lesson videos)',
   '-- GENERATED FILE — do not edit by hand.',
   '-- Regenerate: node supabase/seed/generate_curriculum.mjs',

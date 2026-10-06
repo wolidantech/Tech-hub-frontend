@@ -2,6 +2,7 @@
 // truth — every function below reads/writes Postgres (via RLS) or Storage.
 // Rows are mapped to the app's camelCase shapes at the boundary.
 import { requireSb, friendlyError, uploadFile } from './supabase';
+import { INSTITUTE_NAME, BRAND_DESCRIPTION, FACULTY_LABEL, BANK_ACCOUNT_NAME, SUPPORT_EMAIL } from './brand';
 
 const sb = () => requireSb();
 const num = (v, fb = 0) => { const n = Number(v); return Number.isFinite(n) ? n : fb; };
@@ -192,7 +193,17 @@ export const mapPath = (p) => p && {
 export const mapBundle = (b) => b && {
   id: b.id, title: b.title, description: b.description || '', courseIds: b.course_ids || [],
   price: num(b.price), originalPrice: num(b.original_price), badge: b.badge || '',
+  // 'courses' = a normal bundle; 'exam_access' = a pass for the standalone exam
+  // area (JAMB CBT). Same payment + approval flow, different entitlement.
+  kind: b.kind || 'courses',
   isPublished: !!b.is_published, published: !!b.is_published, createdAt: b.created_at,
+};
+
+/** Student ID card rows are issued by the database, never written by clients. */
+export const mapIdCard = (c) => c && {
+  id: c.id, userId: c.user_id, cardNumber: c.card_number, fullName: c.full_name,
+  photoPath: c.photo_path, programme: c.programme, issuedAt: c.issued_at,
+  status: c.status || 'active', revokedAt: c.revoked_at || null,
 };
 
 export const mapReview = (r) => r && {
@@ -231,17 +242,18 @@ export const mapConvo = (c) => c && {
 };
 
 export const DEFAULT_SITE_SETTINGS = {
-  siteName: 'WOLI DAN TECH HUB',
-  tagline: 'Learn • Build • Grow',
+  siteName: INSTITUTE_NAME,
+  tagline: 'Technology • Science • Digital Learning',
   whatsapp: '08159610509',
-  supportEmail: 'wolidantech@gmail.com',
+  supportEmail: SUPPORT_EMAIL,
   bankName: 'MONIEPOINT',
   accountNumber: '69852663361',
-  accountName: 'LUNA ENTRY SERVICES- WOLI DAN TECH HUB',
+  // Must match the bank-registered name exactly — see lib/brand.js.
+  accountName: BANK_ACCOUNT_NAME,
   dantechEnabled: true,
   allowRegistration: true,
   facebook: '', instagram: '', twitter: '', youtube: '',
-  metaDescription: 'WOLI DAN TECH HUB — Learn Digital Skills. Build Real Projects. Grow Your Future.',
+  metaDescription: BRAND_DESCRIPTION,
 };
 
 export const mapSettings = (row) => ({
@@ -359,7 +371,7 @@ export const adminCreateCourse = async (input) => {
     slug: input.slug, title: input.title,
     short_description: input.shortDescription || '', description: input.description || '',
     long_description: input.longDescription || '', category: input.category || 'General',
-    instructor: input.instructor || 'Woli Dan', instructor_role: input.instructorRole || '',
+    instructor: input.instructor || FACULTY_LABEL, instructor_role: input.instructorRole || '',
     duration: input.duration || '', level: input.level || 'Beginner',
     price: num(input.price), original_price: num(input.originalPrice),
     thumbnail_key: input.thumbnail || 'default', thumbnail_url: input.thumbnailUrl || null,
@@ -493,6 +505,26 @@ export const rejectPaymentRpc = async (paymentId, reason) =>
   one(sb().rpc('reject_payment', { p_payment_id: paymentId, p_reason: reason }));
 
 export const uploadReceipt = async (userId, file, onProgress = null) => uploadFile('receipts', userId, file, onProgress);
+
+// ============================================================ STUDENT ID CARDS
+// The card is minted by `issue_student_id_card()` (migration 011): it requires a
+// profile photo, allocates the number server-side and is idempotent. Clients can
+// only read their own row — there is no insert/update policy.
+export const fetchMyIdCard = async (userId) => {
+  const rows = await one(sb().from('student_id_cards').select('*').eq('user_id', userId).limit(1));
+  return rows.length ? mapIdCard(rows[0]) : null;
+};
+
+export const issueIdCardRpc = async () => {
+  const data = await one(sb().rpc('issue_student_id_card'));
+  return data && {
+    id: data.id, userId: data.userId, cardNumber: data.cardNumber, fullName: data.fullName,
+    photoPath: data.photoPath, programme: data.programme, issuedAt: data.issuedAt,
+    status: data.status || 'active', reissued: !!data.reissued,
+  };
+};
+
+export const revokeIdCardRpc = async (userId) => one(sb().rpc('revoke_student_id_card', { p_user_id: userId }));
 
 // ============================================================ COUPONS
 const couponResult = (code, r) => ({
@@ -935,6 +967,7 @@ export const adminSaveBundle = async (input, id = null) => {
   const row = {
     title: input.title, description: input.description || '', course_ids: input.courseIds || [],
     price: num(input.price), original_price: num(input.originalPrice), badge: input.badge || '',
+    kind: input.kind === 'exam_access' ? 'exam_access' : 'courses',
     is_published: input.published !== false && input.isPublished !== false,
   };
   const q = id

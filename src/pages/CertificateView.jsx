@@ -68,12 +68,12 @@ function AwardSeal({ className = '' }) {
       <circle cx="75" cy="75" r="38.5" fill="none" stroke={GOLD} strokeWidth="0.75" opacity=".5" />
       <path transform="translate(57 52) scale(1.5)" fill={GOLD_PALE}
         d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7-6.2-3.7-6.2 3.7 1.6-7L2 9.2l7.1-.6L12 2z" />
-      <text x="75" y="105" textAnchor="middle" fill={GOLD_LIGHT} fontSize="8" letterSpacing="2.5" fontFamily="Georgia, serif">WOLI DAN</text>
+      <text x="75" y="105" textAnchor="middle" fill={GOLD_LIGHT} fontSize="8" letterSpacing="2.5" fontFamily="Georgia, serif">DANQEL</text>
     </svg>
   );
 }
 
-// Brand monogram — the W mark from public/logo.svg redrawn in gold; used as
+// Brand monogram — the DANQEL mark in gold; used as
 // the fallback when the real logo asset cannot load.
 function Monogram({ className = '' }) {
   return (
@@ -147,12 +147,12 @@ const CertificateSheet = forwardRef(function CertificateSheet({ cert, name, qrUr
       )}
 
       <div className="relative flex h-full flex-col items-center px-[88px] pb-[38px] pt-[44px] text-center">
-        {/* masthead — the real brand asset from the repo (public/logo.svg),
+        {/* masthead — the real brand asset from the repo (public/logo.png),
             falling back to the gold-framed W monogram if it cannot load */}
         {logoBroken
           ? <Monogram className="h-[64px] w-[64px]" />
-          : <img src="/logo.svg" alt="WOLI DAN TECH HUB" className="h-[54px] w-auto" onError={() => setLogoBroken(true)} />}
-        <div className="mt-2 text-[9px] font-semibold tracking-[0.32em] text-white/40">LEARN • BUILD • GROW</div>
+          : <img src="/logo.png" alt="DANQEL DIGITAL INSTITUTE" className="h-[54px] w-auto" onError={() => setLogoBroken(true)} />}
+        <div className="mt-2 text-[9px] font-semibold tracking-[0.32em] text-white/40">TECHNOLOGY • SCIENCE • DIGITAL LEARNING</div>
 
         <h1 className="cert-serif cert-gold-text mt-5 text-[58px] font-bold leading-none">Certificate</h1>
         <div className="mt-2 text-[13px] font-semibold tracking-[0.5em] text-white/75">OF ACHIEVEMENT</div>
@@ -178,7 +178,7 @@ const CertificateSheet = forwardRef(function CertificateSheet({ cert, name, qrUr
           <div className="pb-2">
             <div className="cert-script text-[24px] leading-none" style={{ color: GOLD_PALE }}>Olowoake Daniel Ayomide</div>
             <div className="mx-auto mt-2 h-px w-[220px]" style={{ background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)` }} />
-            <div className="mt-2 text-[9px] font-bold tracking-[0.3em] text-white/45">DIRECTOR, WOLI DAN TECH HUB</div>
+            <div className="mt-2 text-[9px] font-bold tracking-[0.3em] text-white/45">DIRECTOR, DANQEL DIGITAL INSTITUTE</div>
           </div>
         </div>
 
@@ -278,9 +278,9 @@ export default function CertificateView() {
   const revoked = cert?.status === 'revoked';
 
   const share = async () => {
-    const text = `My WOLI DAN TECH HUB Certificate — ${cert?.courseName || ''} — verify: ${verifyUrl}`;
+    const text = `My DANQEL DIGITAL INSTITUTE Certificate — ${cert?.courseName || ''} — verify: ${verifyUrl}`;
     try {
-      if (navigator.share) await navigator.share({ title: 'My WOLI DAN TECH HUB Certificate', text, url: verifyUrl });
+      if (navigator.share) await navigator.share({ title: 'My DANQEL DIGITAL INSTITUTE Certificate', text, url: verifyUrl });
       else if (await copyText(`${text}\n${window.location.href}`)) { setCopied(true); setTimeout(() => setCopied(false), 2200); }
     } catch { /* user dismissed share sheet */ }
   };
@@ -299,8 +299,8 @@ export default function CertificateView() {
       const saved = await saveOrShareImage({
         ...shot,
         fileName: certificateFileName(cert?.certificateId),
-        title: 'My WOLI DAN TECH HUB Certificate',
-        text: `My WOLI DAN TECH HUB Certificate — ${cert?.courseName || ''} — verify: ${verifyUrl}`,
+        title: 'My DANQEL DIGITAL INSTITUTE Certificate',
+        text: `My DANQEL DIGITAL INSTITUTE Certificate — ${cert?.courseName || ''} — verify: ${verifyUrl}`,
       });
       if (saved === 'dismissed') { setImageState('idle'); return; } // sheet was closed, not an error
       next = saved === 'failed' ? 'failed' : 'saved';
@@ -382,7 +382,7 @@ export default function CertificateView() {
             <div className="flex justify-between gap-4"><dt className="text-white/40 shrink-0">Certificate ID</dt><dd className="font-mono text-[13px] text-cyan-300 text-right break-all">{cert.certificateId}</dd></div>
             <div className="flex justify-between gap-4"><dt className="text-white/40 shrink-0">Verification code</dt><dd className="font-mono text-[13px] text-[#e9cf8b] text-right break-all">{verifyCode}</dd></div>
           </dl>
-          <p className="mt-3 text-xs text-white/50">Signed by Olowoake Daniel Ayomide, Director, Woli Dan Tech Hub.</p>
+          <p className="mt-3 text-xs text-white/50">Signed by Olowoake Daniel Ayomide, Director, DANQEL DIGITAL INSTITUTE.</p>
         </div>
 
         <p className="no-print mt-6 text-center text-xs text-white/40">

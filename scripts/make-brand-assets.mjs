@@ -103,17 +103,15 @@ function encodePng(w, h, px) {
 
 /* ------------------------------------------------------- colour transform */
 const { w, h, px } = decodePng(readFileSync(SRC));
-const bg = [px[0], px[1], px[2]];
-const dist = (i) => Math.sqrt((px[i] - bg[0]) ** 2 + (px[i + 1] - bg[1]) ** 2 + (px[i + 2] - bg[2]) ** 2);
+// The artwork ships with a real alpha channel (transparent background), so the
+// dark-surface variant only needs to turn the near-black ink white and keep the
+// brand blue; alpha passes through untouched (anti-aliased edges stay smooth).
 const isBlue = (i) => px[i + 2] >= 120 && px[i + 2] - px[i] >= 40;
-
-// Dark-surface variant: bg → transparent (soft edge), dark ink → white, blue kept.
 const dark = Buffer.alloc(w * h * 4);
 for (let p = 0; p < w * h; p++) {
-  const i = p * 4, d = dist(i);
-  const a = d <= 40 ? 0 : d >= 90 ? 255 : Math.round(((d - 40) / 50) * 255);
-  dark[i + 3] = a;
-  if (a && !isBlue(i)) { dark[i] = 255; dark[i + 1] = 255; dark[i + 2] = 255; }
+  const i = p * 4;
+  dark[i + 3] = px[i + 3];
+  if (px[i + 3] && !isBlue(i)) { dark[i] = 255; dark[i + 1] = 255; dark[i + 2] = 255; }
   else { dark[i] = px[i]; dark[i + 1] = px[i + 1]; dark[i + 2] = px[i + 2]; }
 }
 
