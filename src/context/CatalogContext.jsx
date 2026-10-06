@@ -1,16 +1,20 @@
 // ============================================================
-// Catalogue state — fed entirely by the backend API.
+// Catalogue state — fed by the backend API, with a Supabase fallback.
 //
 // Categories come from GET /api/course-categories and courses from
 // GET /api/courses with `category_id` / `search` / `difficulty` filters, so
-// the storefront never carries a hard-coded course list. Changing a course,
-// its category or its price in the backend changes this page on the next
-// fetch — no deploy required.
+// the storefront never carries a hard-coded course list. When the API is
+// unreachable, serves the SPA fallback page, or returns nothing, the SAME
+// filters run against Supabase (public.categories + public.courses with the
+// published/archived storefront rule) so students still see the live
+// catalogue. `source` / `categoriesSource` report which layer served each
+// list ('api' | 'supabase'); /backend-status explains each layer's health.
 // ============================================================
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   buildCategoryFilters, fetchCategories, fetchCourses, DIFFICULTY_LEVELS,
 } from '../lib/catalogApi';
+import { fetchSupaCategories, fetchSupaCourses } from '../lib/supabaseCatalog';
 
 const CatalogContext = createContext(null);
 
@@ -30,11 +34,13 @@ export function CatalogProvider({ children }) {
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [categoriesError, setCategoriesError] = useState('');
+  const [categoriesSource, setCategoriesSource] = useState('api');
 
   const [filters, setFilters] = useState(emptyFilters);
   const [courses, setCourses] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [coursesError, setCoursesError] = useState('');
+  const [source, setSource] = useState('api');
   const [pagination, setPagination] = useState({ page: 1, limit: PAGE_SIZE, total: 0, totalPages: 0 });
   const [reloadKey, setReloadKey] = useState(0);
   const requestRef = useRef(0);
@@ -43,12 +49,40 @@ export function CatalogProvider({ children }) {
     setCategoriesLoading(true);
     try {
       const list = await fetchCategories();
-      setCategories(list);
+      if (list.length) {
+        setCategories(list);
+        setCategoriesSource('api');
+        setCategoriesError('');
+        return;
+      }
+      // The API answered but serves no categories — Supabase may still hold
+      // the live set (an empty answer here is never a successful filter; chips
+      // are unfiltered, so falling back cannot mislead).
+      const supa = await fetchSupaCategories().catch(() => []);
+      if (supa.length) {
+        console.info('[catalog] course API served no categories; showing Supabase categories instead.');
+        setCategories(supa);
+        setCategoriesSource('supabase');
+      } else {
+        setCategories([]);
+        setCategoriesSource('api');
+      }
       setCategoriesError('');
     } catch (err) {
-      // The two featured filters are always offered, so a category failure
-      // narrows the chips instead of emptying the page.
-      setCategoriesError(err?.message || 'Could not load course categories.');
+      let supa = [];
+      try {
+        supa = await fetchSupaCategories();
+      } catch { supa = []; }
+      if (supa.length) {
+        console.info('[catalog] course API unavailable (%s); showing Supabase categories instead.', err?.message || 'request failed');
+        setCategories(supa);
+        setCategoriesSource('supabase');
+        setCategoriesError('');
+      } else {
+        // The featured filters are always offered, so a category failure
+        // narrows the chips instead of emptying the page.
+        setCategoriesError(err?.message || 'Could not load course categories.');
+      }
     } finally {
       setCategoriesLoading(false);
     }
@@ -66,25 +100,60 @@ export function CatalogProvider({ children }) {
   const loadCourses = useCallback(async () => {
     const requestId = ++requestRef.current;
     setCoursesLoading(true);
-    try {
-      const { courses: list, pagination: page } = await fetchCourses({
-        categoryId: filters.categoryId,
-        category: filters.category,
-        search: debouncedSearch,
-        difficulty: filters.difficulty,
-        page: filters.page,
-        limit: PAGE_SIZE,
-      });
-      // Ignore anything that resolves after a newer request started.
-      if (requestRef.current !== requestId) return;
+    const args = {
+      categoryId: filters.categoryId,
+      category: filters.category,
+      search: debouncedSearch,
+      difficulty: filters.difficulty,
+      page: filters.page,
+      limit: PAGE_SIZE,
+    };
+    // Ignore anything that resolves after a newer request started.
+    const alive = () => requestRef.current === requestId;
+    const useResult = (list, page, src) => {
+      if (!alive()) return;
       setCourses(list);
       setPagination(page);
+      setSource(src);
       setCoursesError('');
+    };
+    try {
+      const { courses: list, pagination: page } = await fetchCourses(args);
+      if (!alive()) return;
+      if (list.length) {
+        useResult(list, page, 'api');
+        return;
+      }
+      // The API answered but serves nothing for these filters. Re-run the
+      // SAME filters against Supabase: a genuine no-match stays empty, while
+      // an API/contract outage still shows the live catalogue.
+      try {
+        const supa = await fetchSupaCourses(args);
+        if (!alive()) return;
+        if (supa.courses.length) {
+          console.info('[catalog] course API served no courses; showing the Supabase catalogue instead.');
+          useResult(supa.courses, supa.pagination, 'supabase');
+        } else {
+          useResult(list, page, 'api');
+        }
+      } catch {
+        if (!alive()) return;
+        useResult(list, page, 'api');
+      }
     } catch (err) {
-      if (requestRef.current !== requestId) return;
-      setCoursesError(err?.message || 'Could not load the course catalogue.');
+      if (!alive()) return;
+      // API unreachable or broken — same filters against Supabase.
+      try {
+        const supa = await fetchSupaCourses(args);
+        if (!alive()) return;
+        console.info('[catalog] course API unavailable (%s); showing the Supabase catalogue instead.', err?.message || 'request failed');
+        useResult(supa.courses, supa.pagination, 'supabase');
+      } catch {
+        if (!alive()) return;
+        setCoursesError(err?.message || 'Could not load the course catalogue.');
+      }
     } finally {
-      if (requestRef.current === requestId) setCoursesLoading(false);
+      if (alive()) setCoursesLoading(false);
     }
   }, [filters.categoryId, filters.category, filters.difficulty, filters.page, debouncedSearch]);
 
@@ -107,7 +176,12 @@ export function CatalogProvider({ children }) {
     setFilter({ categoryId: category.id || null, category: category.id ? null : category.name });
   }, [setFilter]);
 
-  const categoryFilters = useMemo(() => buildCategoryFilters(categories), [categories]);
+  // Legacy pin names only exist in the API contract; the Supabase category set
+  // is complete on its own, so pinning them there would render dead chips.
+  const categoryFilters = useMemo(
+    () => buildCategoryFilters(categories, categoriesSource === 'supabase' ? [] : undefined),
+    [categories, categoriesSource],
+  );
   const activeCategory = useMemo(() => {
     if (!filters.categoryId && !filters.category) return null;
     return categoryFilters.find((c) =>
@@ -122,13 +196,15 @@ export function CatalogProvider({ children }) {
   const value = useMemo(() => ({
     // categories
     categories, categoryFilters, activeCategory, categoriesLoading, categoriesError, refreshCategories,
+    categoriesSource,
     // courses
-    courses, coursesLoading, coursesError, pagination, refreshCourses,
+    courses, coursesLoading, coursesError, pagination, refreshCourses, source,
     // filters
     filters, setFilter, selectCategory, difficultyLevels: DIFFICULTY_LEVELS, filtering,
   }), [
     categories, categoryFilters, activeCategory, categoriesLoading, categoriesError, refreshCategories,
-    courses, coursesLoading, coursesError, pagination, refreshCourses,
+    categoriesSource,
+    courses, coursesLoading, coursesError, pagination, refreshCourses, source,
     filters, setFilter, selectCategory, filtering,
   ]);
 

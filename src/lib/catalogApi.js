@@ -281,14 +281,16 @@ export async function fetchClassroom(idOrSlug, { signal } = {}) {
 }
 
 /**
- * Category filter chip list: whatever the API returned, with the two featured
+ * Category filter chip list: whatever the source returned, with the featured
  * filters pinned first. Chips keep their backend `id` when one exists so the
  * catalogue can be re-fetched with `category_id` (an exact filter) rather than
- * a name match.
+ * a name match. Pass `featured = []` when the source has its own complete
+ * category set (the Supabase fallback) so legacy pin names — which match no
+ * row there — don't render as dead chips.
  */
-export function buildCategoryFilters(categories = []) {
+export function buildCategoryFilters(categories = [], featured = FEATURED_CATEGORIES) {
   const byName = new Map(categories.map((c) => [String(c.name || '').toLowerCase(), c]));
-  const featured = FEATURED_CATEGORIES.map((name) => byName.get(name.toLowerCase()) || { id: null, name });
-  const rest = categories.filter((c) => !FEATURED_CATEGORIES.includes(c.name));
-  return [...featured, ...rest];
+  const pinned = featured.map((name) => byName.get(name.toLowerCase()) || { id: null, name });
+  const rest = categories.filter((c) => !featured.includes(c.name));
+  return [...pinned, ...rest];
 }
