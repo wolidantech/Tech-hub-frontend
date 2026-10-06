@@ -267,3 +267,19 @@ npm run verify:seed   # exact 12-course curriculum seed chain (43 assertions)
 ```
 
 Both run in throwaway Postgres (PGlite), so they need no Supabase project.
+
+### Migration ownership
+
+- **This project's migration 011** (`011_student_identity_and_exam_access.sql`)
+  owns `student_id_cards`, `issue_student_id_card()`, `revoke_student_id_card()`
+  and `bundles.kind`. The backend's `018_student_id_and_quiz_security.sql` covers
+  the same ground on its side and must **not** be applied to this project — two
+  owners of one table is how a card number gets forged or duplicated.
+- The backend's `npm run migrate:frontend` applies *its* frontend migrations
+  (012 catalogue expansion + the JAMB engine) and skips 001–018. Use it only once
+  **this project's migrations 001–011 are already applied** and production
+  credentials are configured securely; its preflight refuses to run against a
+  schema that is missing the catalogue, bundle or ID-card columns.
+- The seeded JAMB pass and the seeded course shells stay **unpublished** until the
+  content is reviewed and the questions are licensed or written in-house, so
+  nothing is sold before it is ready.
