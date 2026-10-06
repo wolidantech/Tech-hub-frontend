@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { FACULTY_LABEL } from '../lib/brand';
 import { copyText, formatNaira, getCourseThumbnailGradient } from '../lib/utils';
 import { fetchClassroom, fetchCourseOutline } from '../lib/catalogApi';
+import { fetchSupaOutlineBySlug } from '../lib/supabaseCatalog';
 import CourseArt from '../components/course/CourseArt';
 import { toast, Toaster } from 'sonner';
 
@@ -139,7 +140,10 @@ export default function CourseDetails() {
   // A 404 from the outline endpoint is the storefront's "not found" rule
   // (archived/unpublished slugs are not part of the public catalogue), not a
   // retryable failure — so it gets its own state instead of an error banner.
+  // (A 404 can ALSO mean "no backend route deployed" — Supabase is checked
+  // before concluding not-found, see load().)
   const [notFound, setNotFound] = useState(false);
+  const [outlineSource, setOutlineSource] = useState('api');
 
   // Enrolled students additionally load the gated classroom endpoint, which is
   // the only place full lesson access is granted.
@@ -150,14 +154,42 @@ export default function CourseDetails() {
     setLoading(true);
     setError('');
     setNotFound(false);
+    const useSupaOutline = async (why) => {
+      const supa = await fetchSupaOutlineBySlug(slug);
+      if (signal?.aborted) return true;
+      if (!supa) {
+        // Neither source has this slug — it is genuinely not found.
+        setNotFound(true);
+        return true;
+      }
+      console.info('[catalog] course outline served from Supabase (%s).', why);
+      setOutline(supa);
+      setOutlineSource('supabase');
+      setOpenModule((prev) => prev || supa.modules?.[0]?.id || null);
+      return true;
+    };
     try {
       const data = await fetchCourseOutline(slug, { signal });
-      setOutline(data);
-      setOpenModule((prev) => prev || data.modules?.[0]?.id || null);
+      if (data?.course) {
+        setOutline(data);
+        setOutlineSource('api');
+        setOpenModule((prev) => prev || data.modules?.[0]?.id || null);
+        return;
+      }
+      // The API answered without a course (undeployed route / SPA fallback
+      // page parsed to null) — same slug against Supabase.
+      await useSupaOutline('course API had no such course');
     } catch (err) {
-      if (err?.name === 'AbortError') return;
-      if (err?.status === 404) setNotFound(true);
-      else setError(err?.message || 'Could not load this course.');
+      if (err?.name === 'AbortError' || signal?.aborted) return;
+      try {
+        await useSupaOutline(err?.status === 404 ? 'course API 404' : `course API unavailable: ${err?.message || 'request failed'}`);
+      } catch {
+        // Supabase failed too — the API error stands.
+        if (!signal?.aborted) {
+          if (err?.status === 404) setNotFound(true);
+          else setError(err?.message || 'Could not load this course.');
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -169,6 +201,7 @@ export default function CourseDetails() {
     setClassroom(null);
     setClassroomError('');
     setNotFound(false);
+    setOutlineSource('api');
     load(controller.signal);
     return () => controller.abort();
   }, [load]);
@@ -182,6 +215,10 @@ export default function CourseDetails() {
 
   useEffect(() => {
     if (!enrolled || !course) return undefined;
+    // A Supabase-served outline means the API is down: there is no classroom
+    // endpoint to call, and Learn.jsx reads the enrolled curriculum from
+    // Supabase directly — so skip the call instead of flashing an error.
+    if (outlineSource !== 'api') return undefined;
     const controller = new AbortController();
     fetchClassroom(slug, { signal: controller.signal })
       .then(setClassroom)
@@ -190,7 +227,7 @@ export default function CourseDetails() {
         setClassroomError(err?.message || 'Could not open your classroom.');
       });
     return () => controller.abort();
-  }, [enrolled, course?.id, slug]);
+  }, [enrolled, course?.id, slug, outlineSource]);
 
   const modules = useMemo(() => classroom?.curriculum?.length ? classroom.curriculum : (outline?.modules || []), [classroom, outline]);
   const totalLessons = outline?.totalLessons ?? modules.reduce((n, m) => n + (m.lessons?.length || 0), 0);

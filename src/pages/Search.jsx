@@ -15,7 +15,8 @@ export default function Search() {
   const { learningPaths, posts, categories } = useLMS();
   const hydrated = useRef(false);
   // Course hits come from the catalogue API's own search filter
-  // (GET /api/courses?search=…), not from a client-side scan.
+  // (GET /api/courses?search=…), falling back to the Supabase catalogue rows
+  // already in memory when the API is down or serves nothing.
   const [apiCourses, setApiCourses] = useState([]);
 
   useEffect(() => {
@@ -41,7 +42,9 @@ export default function Search() {
   const results = useMemo(() => {
     if (!q) return null;
     const pub = courses.filter(isCatalogCourse);
-    const matchCourses = apiCourses;
+    const matchCourses = apiCourses.length
+      ? apiCourses
+      : pub.filter((c) => `${c.title} ${c.shortDescription || ''} ${c.category}`.toLowerCase().includes(q));
     const lessons = [];
     const resources = [];
     pub.forEach((c) => {
