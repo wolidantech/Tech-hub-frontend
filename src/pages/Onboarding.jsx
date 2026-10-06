@@ -37,10 +37,15 @@ export default function Onboarding() {
     }
   };
 
+  // The ID card is issued straight after the authenticated profile photo is
+  // saved — no separate button to forget. If email confirmation is on, this step
+  // only ever runs for a signed-in student, i.e. after they confirmed.
   const uploadPhoto = async (file) => {
     try {
       await updateProfile({ avatarFile: file });
-      toast.success('Photo uploaded 📸 Now generate your ID card.');
+      toast.success('Photo saved 📸 Issuing your student ID…');
+      const issued = await issue();
+      if (issued) toast.success(`Student ID ${issued.cardNumber} issued ✅`);
     } catch (err) {
       toast.error(err.message);
     }

@@ -4,11 +4,12 @@ import {
   Timer, Flag, ChevronLeft, ChevronRight, Send, RotateCcw, CheckCircle2, XCircle, AlertTriangle, Loader2,
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
-import { submitJambAttempt } from '../../lib/jambApi';
+import { JambAccessDeniedError, saveJambAnswers, submitJambAttempt, supportsAutosave } from '../../lib/jambApi';
 import {
-  buildSubmission, clearActiveAttempt, currentQuestion, formatClock, goTo, loadActiveAttempt,
-  loadHistory, nextQuestion, normalizeResult, prevQuestion, recordHistory, saveActiveAttempt, saveAnswer,
-  secondsLeft, toHistoryEntry, toggleFlag, unansweredIds, answeredCount, JAMB_MODES,
+  buildAutosave, buildSubmission, clearActiveAttempt, currentQuestion, formatClock, goTo,
+  isServerAttempt, loadActiveAttempt, loadHistory, nextQuestion, normalizeResult, prevQuestion,
+  recordHistory, saveActiveAttempt, saveAnswer, secondsLeft, toHistoryEntry, toggleFlag,
+  unansweredIds, answeredCount, JAMB_MODES,
 } from '../../lib/jambEngine';
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -22,13 +23,40 @@ export default function JambExam() {
   const [error, setError] = useState('');
   const [confirming, setConfirming] = useState(false);
   const [history, setHistory] = useState([]);
+  const [saveState, setSaveState] = useState('idle');   // idle | saving | saved | error
+  const [savedAt, setSavedAt] = useState(null);
   const submittedRef = useRef(false);
 
-  // Persist every answer as it is chosen, so a refresh, a phone call or a
-  // browser crash never loses work.
+  // 1 — Persist every answer to this device as it is chosen, so a refresh, a
+  // phone call or a browser crash never loses work.
   useEffect(() => {
     if (attempt && !result) saveActiveAttempt(attempt);
   }, [attempt, result]);
+
+  // 2 — Server autosave (debounced) when the exam service offers it. We only
+  // claim "saved to your account" when the PUT actually succeeded; otherwise the
+  // UI says the answers live on this device.
+  const autosaveOn = supportsAutosave() && isServerAttempt(attempt) && !result;
+  const answersKey = attempt ? JSON.stringify(attempt.answers || {}) : '';
+  useEffect(() => {
+    if (!autosaveOn || !attempt) return undefined;
+    const payload = buildAutosave(attempt);
+    if (!payload.length) return undefined;
+    setSaveState('saving');
+    const handle = setTimeout(async () => {
+      try {
+        await saveJambAnswers(attempt.attemptId, payload);
+        setSaveState('saved');
+        setSavedAt(new Date());
+      } catch (err) {
+        setSaveState('error');
+        if (err instanceof JambAccessDeniedError) toast.error(err.message);
+      }
+    }, 1200);
+    return () => clearTimeout(handle);
+    // Re-run only when the chosen answers change, not on every navigation tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [answersKey, autosaveOn]);
 
   useEffect(() => {
     if (!attempt || result) return undefined;
@@ -70,7 +98,9 @@ export default function JambExam() {
       toast.success(auto ? 'Paper submitted automatically.' : 'Paper submitted — results are in.');
     } catch (err) {
       submittedRef.current = false;
-      setError(err?.message || 'Could not submit your paper.');
+      setError(err instanceof JambAccessDeniedError
+        ? `${err.message} Your answers are still saved on this device.`
+        : (err?.message || 'Could not submit your paper.'));
     } finally {
       setSubmitting(false);
     }
@@ -187,6 +217,15 @@ export default function JambExam() {
               {attempt.mode === 'mock' ? 'Mock exam' : 'Practice'} • {answered}/{attempt.questions.length} answered
               {attempt.subjects?.length > 0 ? ` • ${attempt.subjects.join(', ')}` : ''}
               {attempt.timerSource === 'server' ? ' • server-timed' : ' • display timer'}
+            </div>
+            {/* Honest about where the answers actually live. */}
+            <div className="text-[10px] font-bold tracking-wider mt-0.5">
+              {saveState === 'saving' && <span className="text-cyan-300">Saving to your account…</span>}
+              {saveState === 'saved' && <span className="text-emerald-300">Saved to your account{savedAt ? ` • ${savedAt.toLocaleTimeString()}` : ''}</span>}
+              {saveState === 'error' && <span className="text-amber-300">Server save failed — kept on this device</span>}
+              {saveState === 'idle' && (autosaveOn
+                ? <span className="text-white/35">Answers kept on this device until the first save</span>
+                : <span className="text-white/35">Answers saved on this device only</span>)}
             </div>
           </div>
           {/* The clock is only the referee when the exam server issued a deadline.

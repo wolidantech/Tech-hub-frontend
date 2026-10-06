@@ -101,12 +101,38 @@ npm run dev        # proxies /api → :8789, so the storefront works with no bac
 - Subject selection, practice vs full mock mode, question navigator, timer,
   answers saved as you go (survives a reload), server-graded results and attempt
   history.
-- **No invented endpoints.** The backend exposes no exam API today, and
-  `src/lib/jambApi.js` therefore ships with **no endpoint paths at all** — it does
-  not guess a URL and issues no probe request. The contract is injected once it
-  is agreed (`configureJambApi()` or the `VITE_EXAM_API_*` vars); until then every
-  call rejects and the page says "Exam service not connected yet".
-  `npm run mock:api` with `EXAMS=1` fakes the contract for UI work.
+- **The exam contract, as agreed with the backend**
+  (`wolidantech/Tech-hub-backend` @ `46025db`). `src/lib/jambApi.js` calls exactly
+  these paths, relative to `/api`:
+
+  | Path | Purpose |
+  |---|---|
+  | `GET /jamb/subjects` | public subject list; `code` is stable and drives mode rules |
+  | `POST /jamb/attempts` | `{ subject_ids, mode, question_count }` → paper + `expires_at` |
+  | `PUT /jamb/attempts/:attemptId/answers` | debounced autosave `{ answers: [{ attempt_item_id, option_id }] }` |
+  | `POST /jamb/attempts/:attemptId/submit` | `{ answers: [{ question_id, option_id }] }` → verdicts + score |
+  | `GET /jamb/attempts` | attempt history, merged with device-only runs |
+
+  They stay **configuration**, never guesses: the four required paths come from
+  `VITE_EXAM_API_SUBJECTS_PATH`, `VITE_EXAM_API_ATTEMPTS_PATH`,
+  `VITE_EXAM_API_SUBMIT_PATH`, `VITE_EXAM_API_HISTORY_PATH`
+  (`VITE_EXAM_API_ANSWERS_PATH` is optional). If one is missing the page reports
+  "Exam service not connected yet", keeps the attempt on device and calls nothing.
+  `npm run mock:api` with `EXAMS=1` implements the whole contract for UI work.
+- **Selection rules are mirrored client-side** so a student learns them before a
+  request goes out: practice takes **exactly one subject**, and a mock must include
+  **Use of English**. The server re-checks both
+  (`JAMB_SUBJECT_SELECTION_INVALID`, `JAMB_REQUIRED_SUBJECT_MISSING`).
+- **Server states are shown as states, not bugs.**
+  `409 JAMB_PAPER_TEMPLATE_UNAVAILABLE` renders as *"That paper is not published
+  yet"* — no paper is invented and nothing is charged;
+  `403 JAMB_ACCESS_REQUIRED` re-checks the paid gate. **Frontend gating is UX only:
+  the server decides**, via `JAMB_ACCESS_MODE=bundle` +
+  `JAMB_ACCESS_BUNDLE_TITLE="JAMB CBT pass"` (its defaults) against approved
+  `manual_payments` rows on that bundle.
+- **Saved answers mean what they say.** With the answers path configured the page
+  autosaves (debounced 1.2s) and reports "Saved to your account"; without it the
+  copy says "Answers saved on this device only" and no request is sent.
 - **The timer belongs to the server.** If the issued paper carries an absolute
   `expires_at`, the countdown is server-owned and survives a refresh
   (`timerSource: 'server'`). Without one the clock is a *display* timer and the UI
@@ -158,11 +184,18 @@ insert/update/delete policy, so a student cannot mint or edit an identity docume
 — the PGlite harness proves it with real non-owner roles.
 
 On the frontend: registration leads into the onboarding photo step
-(`/onboarding`, step 4), `src/lib/useStudentIdCard.js` drives the states, and
-`src/components/student/StudentIdCard.jsx` renders either the issued card or the
-honest pending state — **"Upload a photo to generate your ID"** when the profile
-has no photo, "Generate my student ID" when it does. The same panel is on
-`/profile`.
+(`/onboarding`, step 4). Saving that photo stores it on the profile **and then
+calls `issue_student_id_card()` automatically** — one action, no extra click —
+so the new student's card appears immediately. `src/lib/useStudentIdCard.js`
+drives the states (and keeps an issued card when the profile reload races the
+insert), and `src/components/student/StudentIdCard.jsx` renders either the issued
+card or the honest pending state — **"Upload a photo to generate your ID"** when
+the profile has no photo, "Generate my student ID" when it does. The same panel
+is on `/profile`.
+
+The card is only minted **after** the authenticated photo is saved, and after
+email confirmation when the project requires it — a student who has not
+confirmed simply sees the pending state until they do.
 
 ## Mobile (Android + iOS)
 

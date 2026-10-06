@@ -6,10 +6,12 @@ import {
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import {
-  fetchJambSubjects, getJambApiStatus, startJambAttempt,
+  JambAccessDeniedError, JambContentNotReadyError, fetchJambAttemptHistory,
+  fetchJambSubjects, getJambApiStatus, startJambAttempt, supportsAutosave,
 } from '../../lib/jambApi';
 import {
-  JAMB_MODES, QUESTION_COUNTS, createAttempt, loadHistory, clearHistory, saveActiveAttempt,
+  JAMB_MODES, QUESTION_COUNTS, createAttempt, loadHistory, clearHistory, mergeHistory,
+  saveActiveAttempt, validateSelection,
 } from '../../lib/jambEngine';
 import { useJambAccess } from '../../lib/useJambAccess';
 import { useAuth } from '../../context/AuthContext';
@@ -26,23 +28,41 @@ export default function JambCBT() {
   const [mode, setMode] = useState('practice');
   const [questionCount, setQuestionCount] = useState(JAMB_MODES.practice.defaultQuestions);
   const [history, setHistory] = useState([]);
+  const [historySource, setHistorySource] = useState('device');
   const [starting, setStarting] = useState(false);
   const [checking, setChecking] = useState(false);
+  // 409 JAMB_PAPER_TEMPLATE_UNAVAILABLE: the content for that combination is not
+  // reviewed/published yet. Shown inline, not as a toast that disappears.
+  const [paperError, setPaperError] = useState('');
 
   const load = useCallback(async () => {
     setChecking(true);
     setSubjectError('');
+    setPaperError('');
     // No probe request: the exam contract is either configured or it is not.
-    // Guessing a URL would just 404 against a route that was never agreed.
-    const { configured, missing } = getJambApiStatus();
-    const next = { available: configured, missing };
-    setStatus(next);
+    const { configured, missing, autosave } = getJambApiStatus();
+    setStatus({ available: configured, missing, autosave });
+
+    // Attempt history is the exam service's when it answers, with this device's
+    // own records merged underneath and labelled as such.
+    const device = loadHistory();
     if (configured) {
       try {
-        setSubjects(await fetchJambSubjects());
+        const [subjectList, serverRows] = await Promise.all([
+          fetchJambSubjects(),
+          fetchJambAttemptHistory().catch(() => null),
+        ]);
+        setSubjects(subjectList);
+        if (serverRows) { setHistory(mergeHistory(serverRows, device)); setHistorySource('server'); }
+        else { setHistory(device); setHistorySource('device'); }
       } catch (err) {
         setSubjectError(err?.message || 'Could not load the JAMB subject list.');
+        setHistory(device);
+        setHistorySource('device');
       }
+    } else {
+      setHistory(device);
+      setHistorySource('device');
     }
     setChecking(false);
   }, []);
@@ -60,27 +80,42 @@ export default function JambCBT() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
-  const toggleSubject = (id) => setSelected((prev) =>
-    (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
+  // Practice mode is one subject at a time (the server requires it), so picking
+  // another replaces the choice instead of adding to it.
+  const toggleSubject = (id) => setSelected((prev) => {
+    if (mode === 'practice') return prev.includes(id) ? [] : [id];
+    return prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id];
+  });
 
-  const canStart = Boolean(status?.available) && access.entitled && selected.length > 0 && !starting;
+  // Mirror the server's rules before sending anything.
+  const selection = validateSelection({ selected, mode, subjects });
+  const canStart = Boolean(status?.available) && access.entitled && selection.ok && !starting;
 
   const start = async () => {
+    setPaperError('');
     if (!canStart) {
       if (!access.entitled) toast.error('The JAMB CBT area is a paid pass. Complete your payment first.');
+      else if (!selection.ok) toast.error(selection.reason);
       return;
     }
     setStarting(true);
     try {
       // The paper comes from the exam service — questions and options only,
-      // never answer keys.
+      // never answer keys. The server also issues `expires_at`, which owns the clock.
       const paper = await startJambAttempt({ subjectIds: selected, mode, questionCount });
       const attempt = createAttempt({ paper, mode });
       if (!attempt.questions.length) throw new Error('The exam service returned an empty paper.');
       saveActiveAttempt(attempt);
       navigate('/jamb-cbt/exam');
     } catch (err) {
-      toast.error(err?.message || 'Could not start the paper.');
+      if (err instanceof JambContentNotReadyError) {
+        setPaperError(err.message);
+      } else if (err instanceof JambAccessDeniedError) {
+        toast.error(err.message);
+        access.reload();
+      } else {
+        toast.error(err?.message || 'Could not start the paper.');
+      }
     } finally {
       setStarting(false);
     }
@@ -213,7 +248,15 @@ export default function JambCBT() {
             {/* 1 — Subjects */}
             <section className="rounded-[24px] glass p-6">
               <h2 className="font-bold text-lg flex items-center gap-2"><span className="h-6 w-6 rounded-full bg-cyan-400 text-black text-xs font-black grid place-content-center">1</span> Choose subjects</h2>
+              <p className="mt-1 text-xs text-white/45">
+                {mode === 'practice'
+                  ? 'Practice mode is one subject at a time.'
+                  : 'A full mock always includes Use of English, plus the electives the paper sets.'}
+              </p>
               {subjectError && <p role="alert" className="mt-3 text-xs text-amber-300">{subjectError}</p>}
+              {selected.length > 0 && !selection.ok && (
+                <p role="alert" className="mt-3 text-xs text-amber-300">{selection.reason}</p>
+              )}
               {status?.available ? (
                 subjects.length ? (
                   <div className="mt-4 flex flex-wrap gap-2">
@@ -279,8 +322,24 @@ export default function JambCBT() {
                 ))}
               </div>
               <p className="mt-3 text-xs text-white/45">
-                Time allowed: about {Math.round((config.secondsPerQuestion * questionCount) / 60)} minutes, or whatever the exam service sets on the paper.
+                The exam service sets the real time limit on the paper it issues. The question count must match a
+                published paper — if it does not, we will say so rather than inventing questions.
               </p>
+              {paperError && (
+                <div role="alert" className="mt-4 rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-amber-300 shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-sm font-bold text-amber-200">That paper is not published yet</div>
+                      <p className="mt-1 text-xs text-white/70">{paperError}</p>
+                      <p className="mt-2 text-[11px] text-white/45">
+                        Papers are released once their questions have been reviewed and licensed. Try another
+                        subject/length combination, or check back later.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               <button
                 onClick={start}
                 disabled={!canStart}
@@ -289,6 +348,8 @@ export default function JambCBT() {
                 {starting ? 'REQUESTING PAPER…' : 'START PAPER'} <ChevronRight className="h-4 w-4" />
               </button>
               {!status?.available && <p className="mt-2 text-[11px] text-white/40">Disabled until the exam service is connected.</p>}
+              {status?.available && !access.entitled && <p className="mt-2 text-[11px] text-white/40">Disabled until your JAMB pass is approved.</p>}
+              {status?.available && access.entitled && !selection.ok && <p className="mt-2 text-[11px] text-white/40">{selection.reason}</p>}
             </section>
           </div>
 
@@ -296,6 +357,11 @@ export default function JambCBT() {
           <aside className="space-y-6">
             <section className="rounded-[24px] glass p-6">
               <h3 className="font-bold flex items-center gap-2"><History className="h-4 w-4 text-cyan-300" /> Attempt history</h3>
+              <p className="mt-1 text-[11px] text-white/45">
+                {historySource === 'server'
+                  ? 'From your exam record on the server, with anything this device saved merged in.'
+                  : 'Saved on this device only — the exam service could not be reached for your server history.'}
+              </p>
               {best && (
                 <div className="mt-3 rounded-2xl bg-white/[0.04] border border-white/10 p-4">
                   <div className="text-[11px] font-black tracking-widest text-white/40">BEST SCORE</div>
@@ -304,7 +370,7 @@ export default function JambCBT() {
                 </div>
               )}
               {history.length === 0 ? (
-                <p className="mt-3 text-sm text-white/50">No attempts on this device yet.</p>
+                <p className="mt-3 text-sm text-white/50">No attempts yet.</p>
               ) : (
                 <>
                   <ul className="mt-3 space-y-2 max-h-[320px] overflow-auto">
@@ -315,14 +381,18 @@ export default function JambCBT() {
                           <span className={`text-xs font-black ${entry.passed ? 'text-green-300' : 'text-amber-300'}`}>{entry.percentage}%</span>
                         </div>
                         <div className="text-[11px] text-white/45 mt-1">
-                          {entry.score}/{entry.total} • {entry.mode === 'mock' ? 'Mock exam' : 'Practice'} • {new Date(entry.completedAt).toLocaleString()}
+                          {entry.inProgress ? 'in progress' : `${entry.score}/${entry.total}`} • {entry.mode === 'mock' ? 'Mock exam' : 'Practice'} • {new Date(entry.completedAt).toLocaleString()}
+                          {entry.source === 'device' ? ' • saved on this device' : ''}
                         </div>
                         {entry.subjects?.length > 0 && <div className="text-[11px] text-white/35 mt-0.5">{entry.subjects.join(', ')}</div>}
                       </li>
                     ))}
                   </ul>
-                  <button onClick={() => setHistory(clearHistory())} className="mt-3 min-h-11 inline-flex items-center gap-2 px-3 rounded-full glass text-[11px] font-bold hover:bg-white/10">
-                    <Trash2 className="h-3.5 w-3.5" /> Clear history
+                  {/* Only the device-local copy is deletable — the server's own
+                      attempt record belongs to the student's exam history. */}
+                  <button onClick={() => { setHistory((prev) => prev.filter((r) => r.source === 'server')); clearHistory(); }}
+                    className="mt-3 min-h-11 inline-flex items-center gap-2 px-3 rounded-full glass text-[11px] font-bold hover:bg-white/10">
+                    <Trash2 className="h-3.5 w-3.5" /> Clear history saved on this device
                   </button>
                 </>
               )}

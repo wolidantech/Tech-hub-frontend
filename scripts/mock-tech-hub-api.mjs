@@ -20,18 +20,21 @@
 //   GET /api/courses?category_id=&category=&search=&difficulty=&page=&limit=
 //   GET /api/classroom/:idOrSlug/outline        public outline (titles only)
 //   GET /api/classroom/:idOrSlug                gated classroom (needs a bearer)
-//   GET /api/exams/jamb/*                       404 — deliberately NOT served:
-//                                               the JAMB area must show its
+//   /api/jamb/*                                 404 unless EXAMS=1 — the JAMB
+//                                               area must be able to show its
 //                                               honest "not connected" state.
 //
 // Nothing here is shipped to the browser bundle; the storefront never imports
-// this file. Set EXAMS=1 to also serve a fake exam service (paper WITHOUT
-// answer keys + server-side grading) for CBT interface work.
+// this file. EXAMS=1 serves the agreed JAMB contract (papers WITHOUT answer keys,
+// debounced autosave, server-side grading, attempt history); JAMB_LOCKED=1 also
+// forces 403 JAMB_ACCESS_REQUIRED so the paid gate can be exercised.
 // ============================================================
 import http from 'node:http';
+import { randomUUID } from 'node:crypto';
 
 const PORT = Number(process.env.PORT || 8789);
 const EXAMS = process.env.EXAMS === '1';
+const JAMB_LOCKED = process.env.JAMB_LOCKED === '1';
 
 const c = { dim: '\x1b[2m', cy: '\x1b[36m', gr: '\x1b[32m', am: '\x1b[33m', rd: '\x1b[31m', off: '\x1b[0m' };
 
@@ -59,6 +62,25 @@ const COURSES = [
   { id: 'crs-business-1', slug: 'microsoft-excel', title: 'Microsoft Excel for Business', category: 'cat-business', difficulty: 'BEGINNER', price: 5000, duration: '8 hours' },
   { id: 'crs-business-2', slug: 'financial-accounting-basics', title: 'Financial Accounting Basics', category: 'cat-business', difficulty: 'INTERMEDIATE', price: 7000, duration: '9 hours' },
   { id: 'crs-business-3', slug: 'digital-marketing-commerce', title: 'Digital Marketing for Commerce', category: 'cat-business', difficulty: 'BEGINNER', price: 6000, duration: '7 hours' },
+];
+
+// JAMB fixtures. `id`s are opaque UUIDs like the real ones; `code` drives the
+// mode rules (practice = one subject, mock must include Use of English).
+const JAMB_SUBJECTS = [
+  { id: '11111111-1111-4111-8111-111111111111', code: 'USE-OF-ENGLISH', name: 'Use of English', description: 'Comprehension, summary and grammar.' },
+  { id: '22222222-2222-4222-8222-222222222222', code: 'MATHEMATICS', name: 'Mathematics', description: 'Algebra, geometry and statistics.' },
+  { id: '33333333-3333-4333-8333-333333333333', code: 'PHYSICS', name: 'Physics', description: 'Mechanics, waves and electricity.' },
+  { id: '44444444-4444-4444-8444-444444444444', code: 'CHEMISTRY', name: 'Chemistry', description: 'Physical, inorganic and organic chemistry.' },
+  { id: '55555555-5555-4555-8555-555555555555', code: 'BIOLOGY', name: 'Biology', description: 'Cell biology, ecology and genetics.' },
+];
+
+// Published, reviewed templates. A selection that does not match one of these
+// returns 409 JAMB_PAPER_TEMPLATE_UNAVAILABLE, exactly like the real service.
+const JAMB_TEMPLATES = [
+  { slug: 'practice-english-20', title: 'Use of English practice (20)', mode: 'practice', minutes: 20, sections: [{ code: 'USE-OF-ENGLISH', count: 20 }] },
+  { slug: 'practice-maths-20', title: 'Mathematics practice (20)', mode: 'practice', minutes: 20, sections: [{ code: 'MATHEMATICS', count: 20 }] },
+  { slug: 'practice-physics-20', title: 'Physics practice (20)', mode: 'practice', minutes: 20, sections: [{ code: 'PHYSICS', count: 20 }] },
+  { slug: 'mock-2026-60', title: 'JAMB mock 2026 (60)', mode: 'mock', minutes: 75, sections: [{ code: 'USE-OF-ENGLISH', count: 20 }, { code: 'MATHEMATICS', count: 20 }, { code: 'PHYSICS', count: 20 }] },
 ];
 
 const MODULES = {
@@ -262,65 +284,170 @@ const server = http.createServer((req, res) => {
     return send(res, 200, { success: true, data: classroom(course) });
   }
 
-  // ---- Standalone JAMB exam API ----
-  // Off by default: the real backend does not serve these yet, and the
-  // frontend must show its "exam service not connected" state.
-  if (pathname.startsWith('/api/exams/jamb')) {
+  // ---- JAMB exam API (mirrors Tech-hub-backend @ 46025db) ----
+  // Off by default so the frontend's honest "exam service not connected" state
+  // stays verifiable. EXAMS=1 serves the agreed contract:
+  //   GET  /api/jamb/subjects
+  //   POST /api/jamb/attempts                     { subject_ids, mode, question_count }
+  //   PUT  /api/jamb/attempts/:id/answers         { answers: [{ attempt_item_id, option_id }] }
+  //   POST /api/jamb/attempts/:id/submit          { answers: [{ question_id, option_id }] }
+  //   GET  /api/jamb/attempts                     attempt history
+  // JAMB_LOCKED=1 additionally forces 403 JAMB_ACCESS_REQUIRED, so the paid gate
+  // can be exercised without a payment row.
+  if (pathname.startsWith('/api/jamb')) {
     if (!EXAMS) {
       log('exam endpoints are not served (run with EXAMS=1 to fake them)', c.am);
       return send(res, 404, { success: false, error: { code: 'ROUTE_NOT_FOUND', message: `Route not found: ${req.method} ${pathname}` } });
     }
-    if (pathname === '/api/exams/jamb/subjects' && req.method === 'GET') {
-      return send(res, 200, {
-        success: true,
-        data: {
-          subjects: [
-            { id: 'sub-maths', name: 'Mathematics', question_count: 40 },
-            { id: 'sub-english', name: 'Use of English', question_count: 40 },
-            { id: 'sub-physics', name: 'Physics', question_count: 30 },
-            { id: 'sub-chemistry', name: 'Chemistry', question_count: 30 },
-            { id: 'sub-biology', name: 'Biology', question_count: 30 },
-          ],
-        },
-      });
+    // The real server authenticates AND re-checks the paid pass on every attempt.
+    if (!req.headers.authorization) {
+      return send(res, 401, { success: false, error: { code: 'UNAUTHENTICATED', message: 'Authentication required' } });
     }
-    if (pathname === '/api/exams/jamb/attempts' && req.method === 'POST') {
+    if (JAMB_LOCKED) {
+      return send(res, 403, { success: false, error: { code: 'JAMB_ACCESS_REQUIRED', message: 'Purchase the JAMB CBT pass before starting an exam' } });
+    }
+
+    if (pathname === '/api/jamb/subjects' && req.method === 'GET') {
+      return send(res, 200, { success: true, data: { subjects: JAMB_SUBJECTS.map(({ id, code, name, description }) => ({ id, code, name, description, is_active: true, syllabus_versions: [{ exam_year: 2026, version_label: '2026 syllabus', is_current: true }] })) } });
+    }
+
+    if (pathname === '/api/jamb/attempts' && req.method === 'POST') {
       return readBody(req).then((body) => {
-        const count = Math.min(60, Number(body?.question_count) || 20);
-        // The KEY is kept server-side only and is never part of the response.
-        const questions = Array.from({ length: count }, (_, i) => ({
-          id: `q-${i + 1}`,
-          subject: (body?.subject_ids || ['sub-maths'])[i % (body?.subject_ids || ['sub-maths']).length],
-          text: `Mock question ${i + 1} — which option is correct?`,
-          options: [
-            { id: 'a', text: 'Option A' }, { id: 'b', text: 'Option B' },
-            { id: 'c', text: 'Option C' }, { id: 'd', text: 'Option D' },
-          ],
-        }));
-        const keys = Object.fromEntries(questions.map((q, i) => [q.id, ['a', 'b', 'c', 'd'][i % 4]]));
-        papers.set('attempt-1', { keys, mode: body?.mode || 'practice' });
+        const subjectIds = Array.isArray(body?.subject_ids) ? body.subject_ids : [];
+        const mode = body?.mode === 'mock' ? 'mock' : 'practice';
+        const questionCount = Number(body?.question_count) || 0;
+        if (!subjectIds.length) return send(res, 400, { success: false, error: { code: 'BAD_REQUEST', message: 'Choose at least one subject' } });
+        if (mode === 'practice' && subjectIds.length !== 1) {
+          return send(res, 400, { success: false, error: { code: 'JAMB_SUBJECT_SELECTION_INVALID', message: 'Choose one subject for practice mode' } });
+        }
+        const codes = subjectIds.map((id) => (JAMB_SUBJECTS.find((x) => x.id === id) || {}).code).filter(Boolean);
+        if (mode === 'mock' && !codes.includes('USE-OF-ENGLISH')) {
+          return send(res, 400, { success: false, error: { code: 'JAMB_REQUIRED_SUBJECT_MISSING', message: 'A JAMB mock must include Use of English' } });
+        }
+
+        // Same rule as the server: the selection must match a PUBLISHED template
+        // whose sections add up to exactly the requested question count.
+        const template = JAMB_TEMPLATES.find((t) => {
+          if (t.mode !== mode) return false;
+          if (t.sections.reduce((sum, s2) => sum + s2.count, 0) !== questionCount) return false;
+          const sectionCodes = t.sections.map((s2) => s2.code);
+          if (t.mode === 'practice') return sectionCodes.length === 1 && sectionCodes[0] === codes[0];
+          return t.sections.every((s2) => codes.includes(s2.code)) && codes.length === sectionCodes.length;
+        });
+        if (!template) {
+          return send(res, 409, {
+            success: false,
+            error: {
+              code: 'JAMB_PAPER_TEMPLATE_UNAVAILABLE',
+              message: 'No reviewed paper matches those subjects and question count. Choose an available combination or contact the school.',
+            },
+          });
+        }
+
+        const attemptId = randomUUID();
+        const questions = [];
+        const keys = {};
+        template.sections.forEach((section) => {
+          const subject = JAMB_SUBJECTS.find((x) => x.code === section.code);
+          for (let i = 0; i < section.count; i += 1) {
+            const options = ['A', 'B', 'C', 'D'].map((letter) => ({ id: randomUUID(), text: `Option ${letter}` }));
+            const qid = randomUUID();
+            keys[qid] = options[(questions.length + i) % 4].id;   // key stays server-side
+            questions.push({
+              id: qid,                                     // == the attempt item id
+              subject: subject.name,
+              text: `${subject.name} question ${i + 1} — which option is correct?`,
+              options,
+            });
+          }
+        });
+        const expiresAt = new Date(Date.now() + template.minutes * 60 * 1000).toISOString();
+        papers.set(attemptId, { keys, mode, template, answers: {}, status: 'IN_PROGRESS', expiresAt, codes, startedAt: new Date().toISOString() });
         return send(res, 201, {
           success: true,
-          data: { attempt_id: 'attempt-1', duration_minutes: 20, subjects: body?.subject_ids || [], questions },
+          message: 'JAMB paper started',
+          data: {
+            id: attemptId,
+            attempt_id: attemptId,
+            title: template.title,
+            mode,
+            subjects: [...new Set(questions.map((q) => q.subject))],
+            questions,
+            duration_minutes: template.minutes,
+            expires_at: expiresAt,
+            total_questions: questions.length,
+          },
         });
       });
     }
-    const submitMatch = pathname.match(/^\/api\/exams\/jamb\/attempts\/([^/]+)\/submit$/);
+
+    if (pathname === '/api/jamb/attempts' && req.method === 'GET') {
+      const attempts = [...papers.entries()].map(([id, p]) => ({
+        id,
+        exam_id: `exam-${p.template.slug}`,
+        status: p.status,
+        started_at: p.startedAt,
+        expires_at: p.expiresAt,
+        submitted_at: p.submittedAt || null,
+        total_questions: Object.keys(p.keys).length,
+        correct_count: p.status === 'IN_PROGRESS' ? null : p.correct,
+        score: p.status === 'IN_PROGRESS' ? null : p.percent,
+        selected_subject_codes: p.codes,
+        created_at: p.startedAt,
+        exam: { id: `exam-${p.template.slug}`, slug: p.template.slug, title: p.template.title, mode: p.template.mode.toUpperCase(), syllabus_year: 2026 },
+      }));
+      return send(res, 200, { success: true, data: { attempts } });
+    }
+
+    const answersMatch = pathname.match(/^\/api\/jamb\/attempts\/([^/]+)\/answers$/);
+    if (answersMatch && req.method === 'PUT') {
+      return readBody(req).then((body) => {
+        const paper = papers.get(answersMatch[1]);
+        if (!paper) return send(res, 404, { success: false, error: { code: 'JAMB_ATTEMPT_NOT_FOUND', message: 'JAMB attempt not found' } });
+        const rows = Array.isArray(body?.answers) ? body.answers : [];
+        rows.forEach((a) => { if (a?.attempt_item_id) paper.answers[a.attempt_item_id] = a.option_id; });
+        return send(res, 200, { success: true, message: 'Answers saved', data: { result: { saved: rows.length } } });
+      });
+    }
+
+    const submitMatch = pathname.match(/^\/api\/jamb\/attempts\/([^/]+)\/submit$/);
     if (submitMatch && req.method === 'POST') {
       return readBody(req).then((body) => {
         const paper = papers.get(submitMatch[1]);
-        if (!paper) return send(res, 404, { success: false, error: { code: 'NOT_FOUND', message: 'Attempt not found' } });
-        const answers = body?.answers || [];
-        const perQuestion = answers.map((a) => ({
-          question_id: a.question_id,
-          correct: paper.keys[a.question_id] === a.option_id,
-          explanation: paper.mode === 'practice' ? 'Server-side explanation.' : undefined,
+        if (!paper) return send(res, 404, { success: false, error: { code: 'JAMB_ATTEMPT_NOT_FOUND', message: 'JAMB attempt not found' } });
+        if (paper.status !== 'IN_PROGRESS') {
+          return send(res, 409, { success: false, error: { code: 'JAMB_ATTEMPT_CLOSED', message: 'This attempt has already been submitted or expired' } });
+        }
+        (Array.isArray(body?.answers) ? body.answers : []).forEach((a) => {
+          if (a?.question_id) paper.answers[a.question_id] = a.option_id;
+        });
+        const perQuestion = Object.keys(paper.keys).map((qid) => ({
+          question_id: qid,
+          subject: paper.template.title,
+          correct: paper.answers[qid] === paper.keys[qid],
+          explanation: paper.mode === 'practice' ? 'Server-side explanation.' : '',
         }));
-        const score = perQuestion.filter((q) => q.correct).length;
-        const total = Object.keys(paper.keys).length;
+        const correct = perQuestion.filter((q) => q.correct).length;
+        const total = perQuestion.length;
+        const percent = total ? (correct / total) * 100 : 0;
+        paper.status = 'SUBMITTED';
+        paper.submittedAt = new Date().toISOString();
+        paper.correct = correct;
+        paper.percent = Math.round(percent);
         return send(res, 200, {
           success: true,
-          data: { attempt_id: submitMatch[1], score, total, pass_mark: 50, passed: (score / total) * 100 >= 50, per_question: perQuestion },
+          message: 'JAMB exam submitted',
+          data: {
+            attempt_id: submitMatch[1],
+            mode: paper.mode,
+            score: correct,
+            total,
+            score_percent: percent,
+            pass_mark: 50,
+            passed: percent >= 50,
+            graded_at: paper.submittedAt,
+            per_question: perQuestion,
+          },
         });
       });
     }
@@ -333,6 +460,8 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`${c.cy}[mock-tech-hub-api]${c.off} http://localhost:${PORT}/api/courses`);
   console.log(`${c.dim}  next: npm run dev  (the vite dev server proxies /api to this port)${c.off}`);
-  const examLine = EXAMS ? 'faked (EXAMS=1) — paper + server-side grading' : '404 — the frontend shows "exam service not connected"';
+  const examLine = EXAMS
+    ? `served (EXAMS=1) — subjects, papers, autosave, grading, history${JAMB_LOCKED ? ', LOCKED (403)' : ''}`
+    : '404 — the frontend shows "exam service not connected"';
   console.log(`${c.dim}  JAMB exam endpoints: ${examLine}${c.off}`);
 });

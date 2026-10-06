@@ -34,6 +34,7 @@ const mocks = vi.hoisted(() => {
       loginWithPasskey: vi.fn(),
       needsSecondFactor: vi.fn(),
       completeTotpLogin: vi.fn(),
+      updateProfile: vi.fn(),
     },
   };
 });
@@ -45,6 +46,7 @@ vi.mock('../lib/supabase', () => ({
 }));
 vi.mock('../lib/store', () => mocks.store);
 vi.mock('../context/AuthContext', () => ({ useAuth: () => mocks.authCtx }));
+vi.mock('../context/LMSContext', () => ({ useLMS: () => ({ categories: ['Web Development', 'Graphic Design'] }) }));
 
 import {
   PASSKEY_PRIVACY_NOTE, deviceLabel, isPasskeySupported, listPasskeys, registerPasskey, signInWithPasskey,
@@ -72,7 +74,12 @@ function sourceFiles(dir = 'src') {
 beforeEach(() => {
   cleanup();
   vi.clearAllMocks();
-  mocks.authCtx.user = { id: 'student-1', fullName: 'Ada Lovelace', email: 'ada@example.com', avatar: null };
+  mocks.authCtx.user = { id: 'student-1', fullName: 'Ada Lovelace', email: 'ada@example.com', avatar: null, onboarded: false };
+  mocks.authCtx.updateProfile.mockReset();
+  mocks.authCtx.updateProfile.mockImplementation(async (patch) => {
+    if (patch?.avatarFile) mocks.authCtx.user = { ...mocks.authCtx.user, avatar: 'student-1/avatar.png' };
+    return mocks.authCtx.user;
+  });
 });
 afterEach(() => { delete window.PublicKeyCredential; });
 
@@ -352,6 +359,34 @@ describe('student ID card', () => {
     await waitFor(() => expect(view.getByTestId('status').textContent).toBe('need-photo'));
     expect(view.getByTestId('error').textContent).toMatch(/Upload a profile photo/);
     expect(mocks.store.issueIdCardRpc).toHaveBeenCalled();
+  });
+
+  it('issues the card as soon as the signup photo is saved', async () => {
+    mocks.store.fetchMyIdCard.mockResolvedValue(null);
+    mocks.store.issueIdCardRpc.mockResolvedValue({
+      id: 'card-1', cardNumber: 'WDTH-2026-481902', fullName: 'Ada Lovelace',
+      photoPath: 'student-1/avatar.png', programme: 'Digital Skills', status: 'active', reissued: true,
+    });
+    const Onboarding = (await import('../pages/Onboarding')).default;
+    render(<MemoryRouter><Onboarding /></MemoryRouter>);
+
+    // Walk the three personalisation steps to reach the photo step.
+    fireEvent.click(await screen.findByText('Web Development'));
+    fireEvent.click(screen.getByRole('button', { name: /CONTINUE/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /CONTINUE/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /CONTINUE TO MY ID/ }));
+
+    // The honest pending state is on screen before any upload.
+    expect(await screen.findByText('Upload a photo to generate your ID')).toBeTruthy();
+    expect(mocks.store.issueIdCardRpc).not.toHaveBeenCalled();
+
+    const file = new File(['photo'], 'me.jpg', { type: 'image/jpeg' });
+    fireEvent.change(screen.getByLabelText ? document.querySelector('input[type="file"]') : document.querySelector('input[type="file"]'), { target: { files: [file] } });
+
+    // Saving the photo stores it on the profile AND mints the card — no extra click.
+    await waitFor(() => expect(mocks.authCtx.updateProfile).toHaveBeenCalledWith({ avatarFile: file }));
+    await waitFor(() => expect(mocks.store.issueIdCardRpc).toHaveBeenCalled());
+    expect(await screen.findByText('WDTH-2026-481902')).toBeTruthy();
   });
 
   it('asks for the photo during onboarding, right after registration', () => {

@@ -25,13 +25,16 @@ export function useJambAccess(user) {
     try {
       const [bundles, payments] = await Promise.all([fetchBundles(), fetchMyPayments(user.id)]);
       const examProducts = (bundles || []).filter((b) => b.kind === 'exam_access');
-      const published = examProducts.find((b) => b.isPublished) || examProducts[0] || null;
+      // Only a PUBLISHED pass can be bought: the seeded one stays unpublished
+      // until its price and content are reviewed, and selling it early would
+      // contradict that. The server re-checks entitlement anyway.
+      const published = examProducts.find((b) => b.isPublished) || null;
       setProduct(published);
       const mine = (payments || []).filter((p) => published && p.bundleId === published.id);
       const approved = mine.find((p) => p.status === 'approved');
       const pending = mine.find((p) => p.status === 'pending');
       setPayment(approved || pending || null);
-      if (!published) setState('no-product');
+      if (!published) setState('no-product');   // includes "exists but unpublished"
       else if (approved) setState('granted');
       else if (pending) setState('pending');
       else setState('locked');

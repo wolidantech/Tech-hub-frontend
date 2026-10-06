@@ -51,6 +51,31 @@ const readSession = (key, fallback) => {
 };
 
 /**
+ * Client-side mirror of the server's paper rules, so the student is told before
+ * a request is sent rather than by a 400:
+ *   practice → exactly ONE subject
+ *   mock     → must include Use of English, then the template's electives
+ * The question count still has to match a published template; only the server
+ * knows those, so a 409 JAMB_PAPER_TEMPLATE_UNAVAILABLE stays possible.
+ */
+export const MOCK_REQUIRED_SUBJECT_CODE = 'USE-OF-ENGLISH';
+
+export function validateSelection({ selected = [], mode = 'practice', subjects = [] } = {}) {
+  const chosen = subjects.filter((s) => selected.includes(s.id));
+  if (!chosen.length) return { ok: false, reason: 'Choose at least one subject.' };
+  if (mode === 'practice' && chosen.length !== 1) {
+    return { ok: false, reason: 'Practice mode is one subject at a time. Pick a single subject, or switch to a full mock.' };
+  }
+  if (mode === 'mock') {
+    const hasEnglish = chosen.some((s) => String(s.code || '').toUpperCase() === MOCK_REQUIRED_SUBJECT_CODE);
+    if (!hasEnglish) {
+      return { ok: false, reason: 'Every JAMB mock includes Use of English. Add it to your selection.' };
+    }
+  }
+  return { ok: true, reason: '' };
+}
+
+/**
  * Defensive paper sanitiser. Even if a future endpoint accidentally included a
  * key, the CBT client refuses to keep it — the browser must never hold answers.
  */
@@ -189,6 +214,21 @@ export function buildSubmission(attempt, now = Date.now()) {
 }
 
 /**
+ * Autosave payload for `PUT /jamb/attempts/:attemptId/answers`. A paper's
+ * question id IS the attempt item id (the server issues it that way), so the
+ * same value answers both endpoints — the server never sees anything but ids.
+ */
+export function buildAutosave(attempt) {
+  return (attempt?.questions || [])
+    .filter((q) => attempt.answers[String(q.id)] != null)
+    .map((q) => ({ attempt_item_id: String(q.id), option_id: String(attempt.answers[String(q.id)]) }));
+}
+
+/** Is this attempt backed by the exam server (so autosave/history apply)? */
+export const isServerAttempt = (attempt) =>
+  Boolean(attempt?.attemptId) && !String(attempt.attemptId).startsWith('local-');
+
+/**
  * Normalise whatever the grading endpoint returns into one shape the UI can
  * render. Only the server's verdict per question is used — never a key.
  */
@@ -203,7 +243,11 @@ export function normalizeResult(graded = {}, attempt = {}) {
     ? Number(graded.total ?? attempt?.questions?.length)
     : perQuestion.length;
   const score = Number.isFinite(Number(graded.score)) ? Number(graded.score) : perQuestion.filter((q) => q.correct).length;
-  const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+  // The server sends `score_percent`; use it verbatim when present so the score
+  // the student sees is the one the exam service recorded.
+  const percentage = Number.isFinite(Number(graded.score_percent))
+    ? Math.round(Number(graded.score_percent))
+    : (total > 0 ? Math.round((score / total) * 100) : 0);
   const subjects = {};
   perQuestion.forEach((row) => {
     if (!row.subject) return;
@@ -240,6 +284,49 @@ export function toHistoryEntry(result = {}, attempt = {}) {
     answered: answeredCount(attempt),
     completedAt: result.gradedAt || new Date().toISOString(),
   };
+}
+
+/**
+ * Map one row from `GET /jamb/attempts` onto the same shape the UI already
+ * renders, so server history and device-local history sit in one list.
+ * `score` is the server's percentage; `correct_count`/`total_questions` are the
+ * raw marks. In-progress attempts are graded as null, not as a zero.
+ */
+export function mapServerAttempt(row = {}) {
+  const submitted = String(row.status || '').toUpperCase() !== 'IN_PROGRESS';
+  const total = Number.isFinite(Number(row.total_questions)) ? Number(row.total_questions) : null;
+  const correct = submitted && Number.isFinite(Number(row.correct_count)) ? Number(row.correct_count) : null;
+  const percent = submitted && Number.isFinite(Number(row.score))
+    ? Math.round(Number(row.score))
+    : (submitted && total ? Math.round(((correct || 0) / total) * 100) : null);
+  return {
+    attemptId: row.id,
+    title: row.exam?.title || 'JAMB CBT paper',
+    mode: String(row.exam?.mode || '').toLowerCase() || null,
+    subjects: row.selected_subject_codes || [],
+    score: correct,
+    total,
+    percentage: percent,
+    passed: percent == null ? null : percent >= 50,
+    inProgress: !submitted,
+    completedAt: row.submitted_at || row.created_at || row.started_at || new Date().toISOString(),
+    source: 'server',
+  };
+}
+
+/**
+ * Merge server history (authoritative) with what this device recorded, dropping
+ * device rows the server already knows about.
+ */
+export function mergeHistory(serverRows = [], deviceRows = []) {
+  const server = (serverRows || []).map(mapServerAttempt);
+  const known = new Set(server.map((r) => String(r.attemptId)));
+  const device = (deviceRows || [])
+    .filter((r) => !known.has(String(r.attemptId)))
+    .map((r) => ({ ...r, source: 'device' }));
+  return [...server, ...device].sort(
+    (a, b) => new Date(b.completedAt || 0) - new Date(a.completedAt || 0),
+  );
 }
 
 export function loadHistory() {
