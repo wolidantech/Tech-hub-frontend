@@ -21,13 +21,13 @@ export const BRAND_SHORT = 'DANQEL';
 /** The AI tutor/assistant, everywhere it is named. */
 export const AI_ASSISTANT_NAME = 'DANQEL AI';
 
-export const BRAND_TAGLINE = 'Learn • Build • Grow';
+export const BRAND_TAGLINE = 'Technology • Science • Digital Learning';
 
 /** Instructor credit used when a course record has no instructor of its own. */
 export const FACULTY_LABEL = 'DANQEL Faculty';
 
 /** `<title>` / og:title for the marketing shell. */
-export const BRAND_TITLE = `${INSTITUTE_NAME} | ${BRAND_TAGLINE} — Digital Skills Training`;
+export const BRAND_TITLE = `${INSTITUTE_NAME} | ${BRAND_TAGLINE}`;
 
 /** Meta description used by the shell and as the site-settings default. */
 export const BRAND_DESCRIPTION =

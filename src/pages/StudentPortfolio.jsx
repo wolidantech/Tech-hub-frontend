@@ -127,7 +127,7 @@ export default function StudentPortfolio() {
         )}
 
         <div className="mt-10 text-center text-xs text-white/30 flex items-center justify-center gap-1">
-          <MapPin className="h-3 w-3" /> Verified student work • DANQEL DIGITAL INSTITUTE • Learn • Build • Grow
+          <MapPin className="h-3 w-3" /> Verified student work • DANQEL DIGITAL INSTITUTE • Technology • Science • Digital Learning
         </div>
       </div>
     </div>

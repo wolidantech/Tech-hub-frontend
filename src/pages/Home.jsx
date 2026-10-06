@@ -48,7 +48,7 @@ export default function Home() {
                   <span className="block text-gradient">DIGITAL INSTITUTE</span>
                 </h1>
                 <div className="flex items-center gap-3 text-sm font-bold tracking-[0.2em] text-white/60">
-                  <span>LEARN</span><span className="h-1 w-1 rounded-full bg-cyan-400" /><span>BUILD</span><span className="h-1 w-1 rounded-full bg-cyan-400" /><span>GROW</span>
+                  <span>TECHNOLOGY</span><span className="h-1 w-1 rounded-full bg-cyan-400" /><span>SCIENCE</span><span className="h-1 w-1 rounded-full bg-cyan-400" /><span>DIGITAL LEARNING</span>
                 </div>
               </div>
 

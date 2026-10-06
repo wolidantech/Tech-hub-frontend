@@ -243,7 +243,7 @@ export const mapConvo = (c) => c && {
 
 export const DEFAULT_SITE_SETTINGS = {
   siteName: INSTITUTE_NAME,
-  tagline: 'Learn • Build • Grow',
+  tagline: 'Technology • Science • Digital Learning',
   whatsapp: '08159610509',
   supportEmail: SUPPORT_EMAIL,
   bankName: 'MONIEPOINT',

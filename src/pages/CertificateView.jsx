@@ -152,7 +152,7 @@ const CertificateSheet = forwardRef(function CertificateSheet({ cert, name, qrUr
         {logoBroken
           ? <Monogram className="h-[64px] w-[64px]" />
           : <img src="/logo.svg" alt="DANQEL DIGITAL INSTITUTE" className="h-[54px] w-auto" onError={() => setLogoBroken(true)} />}
-        <div className="mt-2 text-[9px] font-semibold tracking-[0.32em] text-white/40">LEARN • BUILD • GROW</div>
+        <div className="mt-2 text-[9px] font-semibold tracking-[0.32em] text-white/40">TECHNOLOGY • SCIENCE • DIGITAL LEARNING</div>
 
         <h1 className="cert-serif cert-gold-text mt-5 text-[58px] font-bold leading-none">Certificate</h1>
         <div className="mt-2 text-[13px] font-semibold tracking-[0.5em] text-white/75">OF ACHIEVEMENT</div>

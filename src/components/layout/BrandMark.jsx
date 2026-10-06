@@ -72,7 +72,7 @@ export function BrandFullLockup({ subline = true }) {
           DIGITAL INSTITUTE
         </span>
         {subline && (
-          <span className="block text-[10px] tracking-[0.22em] text-white/50 leading-none mt-1.5">
+          <span className="block text-[10px] tracking-[0.18em] text-white/50 leading-snug mt-1.5">
             {BRAND_TAGLINE.toUpperCase()}
           </span>
         )}

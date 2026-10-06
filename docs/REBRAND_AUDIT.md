@@ -14,6 +14,7 @@ Nothing was replaced blindly; each group below was classified first.
 | Full institutional name (formal: certificates, ID card, footer, legal, metadata) | `DANQEL DIGITAL INSTITUTE` |
 | Short brand (nav, mobile, compact UI, `short_name`) | `DANQEL` |
 | AI assistant | `DANQEL AI` |
+| Strapline / tagline (hero, lockups, metadata, certificate footer) | `Technology • Science • Digital Learning` (supersedes `Learn • Build • Grow`) |
 
 Forbidden anywhere user-facing: `WOLI DAN TECH HUB`, `Woli Dan Tech Hub`,
 `WOLIDAN TECH HUB`, `WoliDan`, `WOLI DAN`, `DANQEL ACADEMY`, `DANQEL SCHOOL`,
