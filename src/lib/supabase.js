@@ -21,23 +21,9 @@ const SUPABASE_ANON_KEY = cleanEnv(import.meta.env?.VITE_SUPABASE_ANON_KEY);
 
 export const isSupabaseConfigured = () => Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
-/**
- * Shared client (null when unconfigured — SetupGate prevents reaching here).
- *
- * ONLY the anon/publishable key belongs here. The service-role key bypasses
- * row-level security and must never appear in frontend code, `.env`, or a build
- * artifact — `src/tests/security.test.js` fails the suite if it does. Anything
- * that genuinely needs it lives in `server/` (see server/README.md).
- *
- * `experimental.passkey` switches on `auth.signInWithPasskey()`,
- * `auth.registerPasskey()` and `auth.passkey.*` (WebAuthn). Without the flag the
- * client throws at call time. The flag only enables client methods: no biometric
- * data ever leaves the device — Supabase stores a credential id + public key.
- */
+/** Shared client (null when unconfigured — SetupGate prevents reaching here). */
 export const supabase = isSupabaseConfigured()
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { experimental: { passkey: true } },
-  })
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
 export function requireSb() {

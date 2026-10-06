@@ -4,8 +4,6 @@ import {
   fetchMyProfile, fetchProfiles, updateProfileRow, adminSetBanned as banRow,
   adminSetRole as roleRow, touchLastLogin, uploadAvatar, fetchSettings,
 } from '../lib/store';
-import { signInWithPasskey } from '../lib/passkeys';
-import { assuranceLevel, verifyTotp } from '../lib/mfa';
 
 const AuthContext = createContext(null);
 
@@ -126,33 +124,6 @@ export const AuthProvider = ({ children }) => {
     return profile;
   };
 
-  // ---- Passkey (WebAuthn) sign-in --------------------------------------
-  // The browser runs the ceremony (fingerprint / Face ID / device PIN / security
-  // key); Supabase verifies the assertion. No biometric data reaches this app.
-  const loginWithPasskey = async () => {
-    const { data, error } = await signInWithPasskey();
-    if (error) throw error;
-    if (!data?.user) throw new Error('Passkey sign-in did not return a session. Please use your password.');
-    const profile = await loadProfile(data.user.id);
-    touchLastLogin(profile.id);
-    return profile;
-  };
-
-  // ---- Optional second factor (Google Authenticator TOTP) --------------
-  // Called after a password sign-in when the account has a verified TOTP factor
-  // and the session is still at AAL1.
-  const needsSecondFactor = async () => {
-    try { return (await assuranceLevel()).needsSecondFactor; } catch { return false; }
-  };
-
-  const completeTotpLogin = async (code) => {
-    const { user: authUser } = await verifyTotp(code);
-    if (!authUser?.id) throw new Error('That code did not start a session. Please try again.');
-    const profile = await loadProfile(authUser.id);
-    touchLastLogin(profile.id);
-    return profile;
-  };
-
   const adminLogin = async (email, password) => {
     const sb = requireSb();
     const { data, error } = await sb.auth.signInWithPassword({
@@ -243,9 +214,6 @@ export const AuthProvider = ({ children }) => {
       loading,
       register,
       login,
-      loginWithPasskey,
-      needsSecondFactor,
-      completeTotpLogin,
       adminLogin,
       logout,
       adminLogout,

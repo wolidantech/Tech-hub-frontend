@@ -4,19 +4,13 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-const mocks = vi.hoisted(() => ({
-  courses: {}, lms: {}, user: { id: 'student', role: 'student' },
-  // The authenticated classroom endpoint is the primary source; it fails by
-  // default here so the database fallback path is what most tests exercise.
-  catalog: { fetchClassroom: vi.fn(() => Promise.reject(new Error('Exam API offline'))) },
-}));
+const mocks = vi.hoisted(() => ({ courses: {}, lms: {}, user: { id: 'student', role: 'student' } }));
 vi.mock('../context/CourseContext', () => ({ useCourses: () => mocks.courses }));
 vi.mock('../context/LMSContext', () => ({ useLMS: () => mocks.lms }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ user: mocks.user }) }));
 vi.mock('../components/learn/Discussions', () => ({ default: () => null }));
 vi.mock('../components/learn/AssignmentPanel', () => ({ default: () => null }));
 vi.mock('../components/learn/QuizTaker', () => ({ default: () => null }));
-vi.mock('../lib/catalogApi', () => ({ fetchClassroom: (...args) => mocks.catalog.fetchClassroom(...args) }));
 import Learn from '../pages/Learn';
 let course;
 const app = () => <MemoryRouter initialEntries={['/learn/test']}><Routes><Route path="/learn/:slug" element={<Learn />} /><Route path="/course/:slug" element={<p>Enrollment required</p>} /></Routes></MemoryRouter>;
@@ -29,7 +23,6 @@ beforeEach(() => {
     getProgress: () => ({ progress: 0, completedLessons: [] }), isEnrolled: () => true,
     getUserCertificates: () => [], markLessonStarted: vi.fn(), markLessonComplete: vi.fn().mockResolvedValue(),
   };
-  mocks.catalog.fetchClassroom = vi.fn(() => Promise.reject(new Error('API offline')));
   mocks.lms = { refreshCourseAssessments: vi.fn().mockResolvedValue(), getCourseQuizzes: () => [], getCourseAssignments: () => [], getUserQuizAverage: () => null, countApprovedAssignments: () => 0, isFinalProjectApproved: () => false, completionRules: {}, quizAttempts: [], submissions: [], getUpcomingClasses: () => [], aiContent: [] };
 });
 describe('Classroom regression coverage', () => {
@@ -53,7 +46,7 @@ describe('Classroom regression coverage', () => {
     mocks.courses.getProgress = () => ({ progress: 100, completedLessons: ['lesson'] });
     render(app());
     await screen.findByText('Backend supplied theory text');
-    expect(screen.queryByText('Your DANQEL DIGITAL INSTITUTE certificate is ready.')).toBeNull();
+    expect(screen.queryByText('Your WOLI DAN TECH HUB certificate is ready.')).toBeNull();
   });
   it('shows empty curriculum and can refresh it from the database', async () => {
     course.curriculum = [];
@@ -94,25 +87,5 @@ describe('Classroom regression coverage', () => {
     mocks.courses.isEnrolled = () => false;
     render(app());
     expect(await screen.findByText('Enrollment required')).toBeTruthy();
-  });
-  it('uses the authenticated classroom endpoint for enrolled students', async () => {
-    mocks.catalog.fetchClassroom = vi.fn().mockResolvedValue({
-      course: { id: 'course', title: 'Test course', slug: 'test' },
-      curriculum: [{
-        id: 'module', title: 'Module',
-        lessons: [{ id: 'lesson', title: 'Reading', type: 'text', textContent: 'Classroom API lesson body', content: 'Classroom API lesson body', resources: [] }],
-      }],
-      enrollment: { status: 'ACTIVE' },
-    });
-    render(app());
-    expect(await screen.findByText('Classroom API lesson body')).toBeTruthy();
-    expect(mocks.catalog.fetchClassroom).toHaveBeenCalledWith('test');
-    // the API classroom wins, so the direct database read is skipped
-    expect(mocks.courses.ensureCourseDetail).not.toHaveBeenCalled();
-  });
-  it('falls back to the database curriculum when the classroom API is unreachable', async () => {
-    render(app());
-    expect(await screen.findByText('Backend supplied theory text')).toBeTruthy();
-    expect(mocks.courses.ensureCourseDetail).toHaveBeenCalledWith('course');
   });
 });

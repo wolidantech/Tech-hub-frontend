@@ -1,4 +1,4 @@
-# Supabase setup — DANQEL DIGITAL INSTITUTE
+# Supabase setup — WOLI DAN TECH HUB
 
 The frontend has **no** offline mode. Supabase is the only source of truth for
 accounts, courses, payments and certificates, and `SetupGate` blocks every route

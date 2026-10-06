@@ -70,14 +70,14 @@ export default function SiteSettingsPanel() {
       <div className="space-y-3">
         <div className="font-bold text-sm flex items-center gap-2"><Bot className="h-4 w-4 text-purple-300" /> FEATURES & AI</div>
         <label className="flex items-center justify-between rounded-2xl bg-white/[0.03] border border-white/10 p-4 text-sm">
-          <span><span className="font-bold">DANQEL AI assistant</span><span className="block text-xs text-white/40">Floating "Ask DANQEL AI" chat for students</span></span>
+          <span><span className="font-bold">DanTECH AI assistant</span><span className="block text-xs text-white/40">Floating "Ask DanTECH AI" chat for students</span></span>
           <input type="checkbox" checked={!!form.dantechEnabled} onChange={(e) => setForm({ ...form, dantechEnabled: e.target.checked })} className="h-5 w-5" />
         </label>
         <label className="flex items-center justify-between rounded-2xl bg-white/[0.03] border border-white/10 p-4 text-sm">
           <span><span className="font-bold">Allow new registrations</span><span className="block text-xs text-white/40">Turn off to close signups temporarily</span></span>
           <input type="checkbox" checked={!!form.allowRegistration} onChange={(e) => setForm({ ...form, allowRegistration: e.target.checked })} className="h-5 w-5" />
         </label>
-        <div className="text-xs text-white/40 leading-relaxed">Cloud AI: set <span className="font-mono">VITE_DANTECH_ENDPOINT</span> to connect DANQEL AI to your secure AI backend (API keys stay server-side — never in the browser). Without it, the built-in on-device tutor is used.</div>
+        <div className="text-xs text-white/40 leading-relaxed">Cloud AI: set <span className="font-mono">VITE_DANTECH_ENDPOINT</span> to connect DanTECH AI to your secure AI backend (API keys stay server-side — never in the browser). Without it, the built-in on-device tutor is used.</div>
       </div>
 
       <button onClick={save} className="w-full btn-primary !py-3.5 gap-2"><Save className="h-4 w-4" /> SAVE SETTINGS</button>

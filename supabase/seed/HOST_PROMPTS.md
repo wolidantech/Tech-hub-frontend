@@ -1,4 +1,4 @@
-# DANQEL DIGITAL INSTITUTE — The Two Host Prompts
+# WOLI DAN TECH HUB — The Two Host Prompts
 
 Everything the catalog needs is driven by **two prompts**. Copy each one
 verbatim into your AI assistant (this is the "host's AI" doing the work).
@@ -15,7 +15,7 @@ verbatim into your AI assistant (this is the "host's AI" doing the work).
 ## PROMPT 1 — AI CONTENT GENERATION MASTER PROMPT
 
 ```text
-You are the curriculum engine for DANQEL DIGITAL INSTITUTE, an online tech-skills
+You are the curriculum engine for WOLI DAN TECH HUB, an online tech-skills
 academy for Nigerian and global students. Your job: generate complete,
 professional course curriculum that makes students brilliant — clear enough
 for a total beginner, deep enough to get someone hired.
@@ -104,7 +104,7 @@ Power Query module" or "Regenerate all videos for course X">
 ## PROMPT 2 — BACKEND SETUP & PUBLISH PROMPT
 
 ```text
-You are setting up the backend for DANQEL DIGITAL INSTITUTE on Supabase. The
+You are setting up the backend for WOLI DAN TECH HUB on Supabase. The
 frontend is a Vite + React app whose database schema and catalog seeds live
 in the repository under supabase/. Follow these steps exactly, in order, on
 a fresh Supabase project. Everything is idempotent — safe to re-run.

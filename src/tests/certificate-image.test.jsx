@@ -81,13 +81,13 @@ afterEach(() => {
 
 describe('certificateFileName', () => {
   it('uses the certificate ID exactly as the owner specified', () => {
-    expect(certificateFileName('WDTH-2026-93E108')).toBe('DANQEL-certificate-WDTH-2026-93E108.png');
+    expect(certificateFileName('WDTH-2026-93E108')).toBe('WOLI-DAN-TECH-HUB-certificate-WDTH-2026-93E108.png');
   });
 
   it('sanitises hostile/legacy IDs so the download cannot escape a folder', () => {
-    expect(certificateFileName('../../etc/passwd')).toBe('DANQEL-certificate-etc-passwd.png');
-    expect(certificateFileName('  WDTH 2026/01  ')).toBe('DANQEL-certificate-WDTH-2026-01.png');
-    expect(certificateFileName('')).toBe('DANQEL-certificate-certificate.png');
+    expect(certificateFileName('../../etc/passwd')).toBe('WOLI-DAN-TECH-HUB-certificate-etc-passwd.png');
+    expect(certificateFileName('  WDTH 2026/01  ')).toBe('WOLI-DAN-TECH-HUB-certificate-WDTH-2026-01.png');
+    expect(certificateFileName('')).toBe('WOLI-DAN-TECH-HUB-certificate-certificate.png');
     expect(certificateFileName(undefined).length).toBeLessThan(110);
   });
 });
@@ -224,7 +224,7 @@ describe('captureCertificatePng', () => {
 /* -------------------------------------------------------------- save/share */
 
 describe('saveOrShareImage', () => {
-  const shot = () => ({ blob: dataUrlToBlob(PNG_DATA_URL), dataUrl: PNG_DATA_URL, fileName: 'DANQEL-certificate-WDTH-2026-93E108.png' });
+  const shot = () => ({ blob: dataUrlToBlob(PNG_DATA_URL), dataUrl: PNG_DATA_URL, fileName: 'WOLI-DAN-TECH-HUB-certificate-WDTH-2026-93E108.png' });
 
   it('shares a real File on phones so the sheet offers Save to Photos', async () => {
     const share = vi.fn().mockResolvedValue(undefined);
@@ -233,7 +233,7 @@ describe('saveOrShareImage', () => {
     const result = await saveOrShareImage({ ...shot(), title: 'T', text: 'B' });
     expect(result).toBe('shared');
     const payload = share.mock.calls[0][0];
-    expect(payload.files[0].name).toBe('DANQEL-certificate-WDTH-2026-93E108.png');
+    expect(payload.files[0].name).toBe('WOLI-DAN-TECH-HUB-certificate-WDTH-2026-93E108.png');
     expect(payload.files[0].type).toBe('image/png');
     expect(payload.files[0].size).toBe(4000);
     expect(payload.title).toBe('T');
@@ -257,7 +257,7 @@ describe('saveOrShareImage', () => {
     });
     const result = await saveOrShareImage(shot());
     expect(result).toBe('saved');
-    expect(seen.download).toBe('DANQEL-certificate-WDTH-2026-93E108.png');
+    expect(seen.download).toBe('WOLI-DAN-TECH-HUB-certificate-WDTH-2026-93E108.png');
     expect(seen.href).toMatch(/^(blob:|data:image\/png)/);
   });
 
@@ -302,7 +302,7 @@ describe('Certificate page download action', () => {
     expect(screen.getByText('Downloading…')).toBeTruthy(); // label while it renders
 
     await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
-    expect(share.mock.calls[0][0].files[0].name).toBe('DANQEL-certificate-WDTH-2026-93E108.png');
+    expect(share.mock.calls[0][0].files[0].name).toBe('WOLI-DAN-TECH-HUB-certificate-WDTH-2026-93E108.png');
     expect(await screen.findByText('Saved ✓')).toBeTruthy();
 
     // what was handed to the rasteriser is the card and nothing else

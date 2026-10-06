@@ -19,7 +19,7 @@ const read = (f) => readFileSync(join(here, f), 'utf8').trim();
 const parts = ['seed_12_courses.sql', 'seed_curriculum.sql', 'publish_courses.sql', 'seed_learning_paths.sql'];
 
 const header = `-- ============================================================
--- DANQEL DIGITAL INSTITUTE — ONE-STEP CATALOG SETUP
+-- WOLI DAN TECH HUB — ONE-STEP CATALOG SETUP
 -- GENERATED FILE — do not edit by hand.
 -- Regenerate: node supabase/seed/generate_setup.mjs
 --

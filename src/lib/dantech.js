@@ -1,5 +1,5 @@
 // ============================================================
-// DANQEL AI — official AI learning assistant of DANQEL DIGITAL INSTITUTE
+// DanTECH AI — official AI learning assistant of WOLI DAN TECH HUB
 // ------------------------------------------------------------
 // Secure architecture:
 //   1. If VITE_DANTECH_ENDPOINT is set -> POST { message, context,
@@ -12,7 +12,7 @@
 import { aiAuthHeaders } from './supabase';
 
 const ENDPOINT = import.meta.env?.VITE_DANTECH_ENDPOINT || '';
-export const DANTECH_NAME = 'DANQEL AI';
+export const DANTECH_NAME = 'DanTECH AI';
 
 export function isCloudDanTechEnabled() {
   return Boolean(ENDPOINT);
@@ -206,7 +206,7 @@ export function generateLocalReply(message, { context = {}, index = [], course =
 }
 
 // ============================================================
-// Cloud call — the DANQEL AI gateway protocol
+// Cloud call — the DanTECH AI gateway protocol
 // ------------------------------------------------------------
 // Shape sent to VITE_DANTECH_ENDPOINT (see server/ai-gateway.example.mjs and
 // supabase/README.md#ai-gateway):
@@ -414,7 +414,7 @@ export async function askDanTech(message, opts = {}) {
       return { ...r, provider: 'secure-backend', degraded: false, online: true };
     } catch (err) {
       if (err?.name === 'AbortError') throw err; // Stop button pressed: no fake answer
-      console.warn('[DANQEL AI] cloud gateway unavailable, answering on this device:', err.code, err.message);
+      console.warn('[DanTECH AI] cloud gateway unavailable, answering on this device:', err.code, err.message);
       const local = generateLocalReply(message, opts);
       return {
         ...local,

@@ -142,10 +142,8 @@ describe('mobile keyboards and autofill', () => {
       const tags = (read(f).match(/<input\b[\s\S]*?\/>/g) || []).filter((t) => /placeholder=/.test(t));
       expect(tags.length, `${f} should contain auth inputs`).toBeGreaterThan(0);
       for (const tag of tags) {
-        // `one-time-code` is the OTP field (the Google Authenticator step on
-        // login): an explicit, safe autofill hint, so it belongs in the allowlist.
         expect(tag, `${f}: an input has no autoComplete`).toMatch(
-          /autoComplete="(username|email|name|tel|current-password|new-password|one-time-code|off)"/
+          /autoComplete="(username|email|name|tel|current-password|new-password|off)"/
         );
       }
     }

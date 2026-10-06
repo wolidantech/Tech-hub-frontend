@@ -21,7 +21,7 @@ export default function SetupGate({ children }) {
           <div>
             <h1 className="font-display font-black text-2xl">Backend Setup Required</h1>
             <p className="mt-2 text-sm text-white/60 leading-relaxed">
-              DANQEL DIGITAL INSTITUTE runs on a secure Supabase database. Logins, courses and
+              WOLI DAN TECH HUB runs on a secure Supabase database. Logins, courses and
               payments all come from it, so the administrator must connect it before the
               app can start.
             </p>

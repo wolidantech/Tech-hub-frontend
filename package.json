@@ -12,8 +12,7 @@
     "verify:seed:bench": "node supabase/verify/bench-seed.mjs",
     "seed:generate": "node supabase/seed/generate_curriculum.mjs && node supabase/seed/generate_setup.mjs",
     "test": "vitest run",
-    "mock:ai": "node scripts/mock-dantech-gateway.mjs",
-    "mock:api": "node scripts/mock-tech-hub-api.mjs"
+    "mock:ai": "node scripts/mock-dantech-gateway.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

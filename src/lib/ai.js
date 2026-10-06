@@ -1,5 +1,5 @@
 // ============================================================
-// DANQEL DIGITAL INSTITUTE — Modular AI Service
+// WOLI DAN TECH HUB — Modular AI Service
 // ------------------------------------------------------------
 // Provider-independent architecture:
 //
@@ -187,7 +187,7 @@ function buildExercise(input) {
 
 function buildNotes(input) {
   const { topic = 'Lesson' } = input;
-  return { markdown: `# 📝 Revision Notes: ${topic}\n\n## Key points\n\n- Core idea of ${topic} in one sentence.\n- The 3-step workflow: understand → demo → practice.\n- Common beginner mistake and how to avoid it.\n\n## Remember\n\n- Save every exercise for your portfolio.\n- Quality check before submitting.\n\n> [!TIP] Ask DANQEL AI to test you on this topic!` };
+  return { markdown: `# 📝 Revision Notes: ${topic}\n\n## Key points\n\n- Core idea of ${topic} in one sentence.\n- The 3-step workflow: understand → demo → practice.\n- Common beginner mistake and how to avoid it.\n\n## Remember\n\n- Save every exercise for your portfolio.\n- Quality check before submitting.\n\n> [!TIP] Ask DanTECH AI to test you on this topic!` };
 }
 
 function buildFlashcards(input) {
@@ -216,7 +216,7 @@ const CV_ACTION_VERBS = {
 function buildCVImprove(input) {
   const { text = '', field = 'summary' } = input;
   const original = String(text).trim();
-  if (!original) throw new Error('Write a few words first — DANQEL AI improves YOUR information, it never invents it.');
+  if (!original) throw new Error('Write a few words first — DanTECH AI improves YOUR information, it never invents it.');
   const firstPerson = /\b(i|my|me|we|our)\b/i.test(original);
   // Split into sentence-ish units, clean first person.
   const units = original
@@ -246,7 +246,7 @@ function buildCVImprove(input) {
       strong.length > 1 ? 'Structured into clear, scannable points.' : null,
       'No facts were added — verify every detail is yours before sending.',
     ].filter(Boolean),
-    honestyNote: 'DANQEL AI only rewrote the information you supplied. It never invents qualifications, employers, degrees or achievements.',
+    honestyNote: 'DanTECH AI only rewrote the information you supplied. It never invents qualifications, employers, degrees or achievements.',
   };
 }
 

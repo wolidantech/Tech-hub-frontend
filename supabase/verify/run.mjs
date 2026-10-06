@@ -1,4 +1,4 @@
-// PGlite behavioral verification for migrations 001-011.
+// PGlite behavioral verification for migrations 001-010.
 // Most fixtures run as the database owner; H26 creates and switches to genuine
 // non-owner anon/authenticated roles so PostgreSQL enforces the catalog/content
 // RLS policies and catches is_admin() recursion on a fresh database.
@@ -19,12 +19,11 @@ const migrations = [
   '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql',
   '007_classroom_upgrade.sql', '008_cv_builder_and_study_tools.sql',
   '009_fix_is_admin_recursion.sql', '010_certificate_fullname.sql',
-  '011_student_identity_and_exam_access.sql',
 ];
 for (const f of migrations) {
   await db.exec(readFileSync(`${MIG}/${f}`, 'utf8'));
 }
-console.log('migrations 001-011 applied clean');
+console.log('migrations 001-010 applied clean');
 
 const ADMIN = '11111111-1111-1111-1111-111111111111';
 const STU = '22222222-2222-2222-2222-222222222222';
@@ -665,130 +664,6 @@ await t('H27 migration 010: backfills empty verification codes, keeps them stabl
   const byCode = await one(`select verify_certificate('${again.verification_code}') r`);
   assert(byCode.r.found === true && byCode.r.certificateId === 'WDTH-2026-BACKFILL',
     'verify by backfilled code broken: ' + JSON.stringify(byCode.r));
-});
-
-
-// ---------- H29: migration 011 — student ID cards are issued server-side ----------
-await t('H29 ID cards require a photo, are idempotent, and revoke/re-issue cleanly', async () => {
-  // Re-applying 011 models a project that already ran it.
-  await db.exec(readFileSync(`${MIG}/011_student_identity_and_exam_access.sql`, 'utf8'));
-
-  await as(STU);
-  // No photo yet -> the database refuses to mint an identity document.
-  await tErr('H29a issuance without a profile photo is rejected', async () => {
-    await one(`select issue_student_id_card() r`);
-  }, 'Upload a profile photo');
-
-  await q(`update profiles set avatar_url = '${STU}/avatar.png' where id = '${STU}'`);
-  const issued = (await one(`select issue_student_id_card() r`)).r;
-  assert(/^WDTH-\d{4}-\d{6}$/.test(issued.cardNumber), 'card number format wrong: ' + issued.cardNumber);
-  assert(issued.fullName === 'Ada Lovelace', 'card name mismatch: ' + issued.fullName);
-  assert(issued.photoPath === `${STU}/avatar.png`, 'card photo mismatch');
-
-  const again = (await one(`select issue_student_id_card() r`)).r;
-  assert(again.cardNumber === issued.cardNumber && again.reissued === false,
-    'issuance is not idempotent: ' + JSON.stringify(again));
-
-  // Issuance is audited.
-  const audit = await one(`select action from audit_logs where entity_type='student_id_card' and action='id_card.issue'`);
-  assert(audit?.action === 'id_card.issue', 'issuance was not audited');
-
-  // Clients get read-only RLS: exactly one SELECT policy, scoped to the caller.
-  const pols = await db.query(`select cmd from pg_policies where schemaname='public' and tablename='student_id_cards'`);
-  const cmds = pols.rows.map(r => r.cmd);
-  assert(cmds.length === 1 && cmds[0] === 'SELECT', 'expected a single SELECT policy, got: ' + cmds.join(','));
-  const qual = (await db.query(`select qual from pg_policies where policyname='id cards own read'`)).rows[0].qual;
-  assert(String(qual).includes('auth.uid()') && String(qual).includes('is_admin'), 'ID card policy is not user-scoped');
-
-  // Revocation is admin-only; a re-issue then allocates a fresh number.
-  await as(STU);
-  await tErr('H29b a student cannot revoke a card', async () => {
-    await one(`select revoke_student_id_card('${STU}'::uuid) r`);
-  }, 'Admin only');
-  await as(ADMIN);
-  const revoked = (await one(`select revoke_student_id_card('${STU}'::uuid) r`)).r;
-  assert(revoked.ok === true, 'revocation failed');
-  await as(STU);
-  const reissued = (await one(`select issue_student_id_card() r`)).r;
-  assert(reissued.reissued === true && reissued.cardNumber !== issued.cardNumber,
-    're-issue did not allocate a new number: ' + reissued.cardNumber);
-  await anon();
-});
-
-// ---------- H30: migration 011 — RLS enforced for real (non-owner roles) ----------
-await t('H30 ID cards: no client writes, own-row reads only, admin sees all', async () => {
-  const idDb = new PGlite();
-  try {
-    await idDb.exec(readFileSync(join(here, 'stubs.sql'), 'utf8'));
-    for (const f of migrations) await idDb.exec(readFileSync(`${MIG}/${f}`, 'utf8'));
-    const A = '73000000-0000-0000-0000-000000000001';
-    const B = '73000000-0000-0000-0000-000000000002';
-    const ADM = '73000000-0000-0000-0000-000000000003';
-    await idDb.exec(`
-      insert into auth.users (id, email, raw_user_meta_data) values
-        ('${A}', 'id-a@example.test', '{"full_name":"ID Student A"}'),
-        ('${B}', 'id-b@example.test', '{"full_name":"ID Student B"}'),
-        ('${ADM}', 'id-admin@example.test', '{"full_name":"ID Admin"}');
-      update public.profiles set role='admin' where id='${ADM}';
-      update public.profiles set avatar_url='photo-a.png' where id='${A}';
-      update public.profiles set avatar_url='photo-b.png' where id='${B}';
-      create role id_verify_authenticated nologin;
-      grant usage on schema public, auth to id_verify_authenticated;
-      grant select on public.profiles, public.student_id_cards to id_verify_authenticated;
-      grant insert, update, delete on public.student_id_cards to id_verify_authenticated;
-    `);
-    // Issue A's card as the owner (the RPC path is covered by H29).
-    await idDb.exec(`set app.session_uid='${A}';`);
-    await idDb.query(`select public.issue_student_id_card()`);
-    await idDb.exec(`set app.session_uid='${B}';`);
-    await idDb.query(`select public.issue_student_id_card()`);
-
-    // Non-owner role: RLS is genuinely enforced from here.
-    await idDb.exec(`reset role; set app.session_uid='${A}'; set role id_verify_authenticated;`);
-    const mine = (await idDb.query(`select card_number from public.student_id_cards`)).rows;
-    assert(mine.length === 1, `student should see exactly their own card, saw ${mine.length}`);
-
-    let insertBlocked = false;
-    try {
-      await idDb.query(`insert into public.student_id_cards (user_id, card_number, full_name, photo_path)
-        values ('${B}', 'WDTH-0000-000000', 'Forged', 'x.png')`);
-    } catch (e) { insertBlocked = /row-level security|permission denied/i.test(String(e.message || e)); }
-    assert(insertBlocked, 'a student was able to insert an ID card row directly');
-
-    // UPDATE with no policy is a silent no-op rather than an error, so assert
-    // the stored value is untouched (checked as the owner below).
-    await idDb.query(`update public.student_id_cards set full_name='Hacked'`);
-    let deleteBlocked = false;
-    try { const del = await idDb.query(`delete from public.student_id_cards`); deleteBlocked = (del.affectedRows || 0) === 0; }
-    catch (e) { deleteBlocked = /row-level security|permission denied/i.test(String(e.message || e)); }
-    assert(deleteBlocked, 'a student was able to delete an ID card row');
-
-    await idDb.exec(`reset role; set app.session_uid='${A}';`);
-    const untouched = (await idDb.query(`select full_name from public.student_id_cards where user_id='${A}'`)).rows[0];
-    assert(untouched.full_name === 'ID Student A',
-      `a student edited their own ID card through the client: ${untouched.full_name}`);
-    const stillThere = (await idDb.query(`select count(*)::int n from public.student_id_cards`)).rows[0].n;
-    assert(stillThere === 2, 'a student deleted ID card rows');
-
-    await idDb.exec(`reset role; set app.session_uid='${ADM}'; set role id_verify_authenticated;`);
-    const all = (await idDb.query(`select card_number from public.student_id_cards`)).rows;
-    assert(all.length === 2, `admin should see every card, saw ${all.length}`);
-    await idDb.exec('reset role;');
-  } finally {
-    await idDb.close();
-  }
-});
-
-// ---------- H31: migration 011 — exam-access products ----------
-await t('H31 bundles carry a kind so exam passes are distinguishable from course bundles', async () => {
-  const examPass = await one(`insert into bundles (title, price, kind, course_ids)
-    values ('JAMB CBT Pass', 5000, 'exam_access', '{}') returning id, kind`);
-  assert(examPass.kind === 'exam_access', 'exam-access kind not stored');
-  const legacy = await one(`select kind from bundles where id = '${BUNDLE}'`);
-  assert(legacy.kind === 'courses', 'existing bundles did not default to kind=courses');
-  await tErr('H31a an unknown product kind is rejected', async () => {
-    await one(`insert into bundles (title, price, kind) values ('Bad', 1, 'subscription') returning id`);
-  }, 'check');
 });
 
 console.log(`\n==== RESULT: ${pass} passed, ${fail} failed ====`);

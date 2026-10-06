@@ -1,5 +1,5 @@
 -- ============================================================
--- DANQEL DIGITAL INSTITUTE — LEARNING PATHS SEED
+-- WOLI DAN TECH HUB — LEARNING PATHS SEED
 -- ============================================================
 -- Guided step-by-step routes through the REAL published catalog.
 --

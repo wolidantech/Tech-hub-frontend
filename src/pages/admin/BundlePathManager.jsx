@@ -12,26 +12,21 @@ export function BundleManager() {
   const { bundles, createBundle, updateBundle, deleteBundle } = useLMS();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
-  // kind: 'courses' = a course bundle; 'exam_access' = the paid JAMB CBT pass
-  // (migration 011). An exam pass carries no courses, so the 2-course rule does
-  // not apply to it.
-  const EMPTY_FORM = { title: '', description: '', courseIds: [], price: 15000, originalPrice: 30000, badge: '', kind: 'courses' };
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState({ title: '', description: '', courseIds: [], price: 15000, originalPrice: 30000, badge: '' });
 
   const toggleCourse = (id) => setForm({ ...form, courseIds: form.courseIds.includes(id) ? form.courseIds.filter((x) => x !== id) : [...form.courseIds, id] });
 
-  const startEdit = (b) => { setEditing(b.id); setForm({ title: b.title, description: b.description || '', courseIds: b.courseIds || [], price: b.price, originalPrice: b.originalPrice || b.price, badge: b.badge || '', kind: b.kind === 'exam_access' ? 'exam_access' : 'courses' }); setShowForm(true); };
+  const startEdit = (b) => { setEditing(b.id); setForm({ title: b.title, description: b.description || '', courseIds: b.courseIds || [], price: b.price, originalPrice: b.originalPrice || b.price, badge: b.badge || '' }); setShowForm(true); };
 
   const save = async () => {
     if (!form.title.trim()) { toast.error('Title required'); return; }
-    const isExamPass = form.kind === 'exam_access';
-    if (!isExamPass && form.courseIds.length < 2) { toast.error('Select at least 2 courses'); return; }
-    const payload = { title: form.title, description: form.description, courseIds: isExamPass ? [] : form.courseIds, price: Number(form.price), originalPrice: Number(form.originalPrice), badge: form.badge, kind: form.kind };
+    if (form.courseIds.length < 2) { toast.error('Select at least 2 courses'); return; }
+    const payload = { title: form.title, description: form.description, courseIds: form.courseIds, price: Number(form.price), originalPrice: Number(form.originalPrice), badge: form.badge };
     try {
       if (editing) { await updateBundle(editing, payload, user); toast.success('Bundle updated'); }
       else { await createBundle(payload, user); toast.success('Bundle created 🎁'); }
       setShowForm(false); setEditing(null);
-      setForm(EMPTY_FORM);
+      setForm({ title: '', description: '', courseIds: [], price: 15000, originalPrice: 30000, badge: '' });
     } catch (err) {
       toast.error(err.message);
     }
@@ -49,21 +44,6 @@ export function BundleManager() {
           <div className="flex justify-between"><h4 className="font-bold">{editing ? 'Edit' : 'Create'} Bundle</h4><button onClick={() => { setShowForm(false); setEditing(null); }}><X className="h-5 w-5" /></button></div>
           <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Bundle title (e.g. Complete AI Creator Bundle)" className="w-full h-11 rounded-full glass px-4 text-sm" />
           <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Bundle description" className="w-full rounded-2xl glass p-4 text-sm h-20" />
-          <div className="space-y-2">
-            <div className="text-[11px] font-bold tracking-widest text-white/40">PRODUCT TYPE</div>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {[
-                { id: 'courses', label: 'Course bundle', hint: 'Unlocks the courses ticked below.' },
-                { id: 'exam_access', label: 'JAMB CBT pass', hint: 'Unlocks the paid JAMB exam area. No courses attached.' },
-              ].map((opt) => (
-                <button key={opt.id} type="button" onClick={() => setForm({ ...form, kind: opt.id })}
-                  className={`p-3 rounded-2xl border text-left ${form.kind === opt.id ? 'border-cyan-400 bg-cyan-500/10' : 'border-white/10 bg-white/[0.03]'}`}>
-                  <div className="text-sm font-bold">{opt.label}</div>
-                  <div className="text-[11px] text-white/50 mt-0.5">{opt.hint}</div>
-                </button>
-              ))}
-            </div>
-          </div>
           <div className="grid sm:grid-cols-3 gap-3">
             <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="Bundle price" className="h-11 rounded-full glass px-4 text-sm" />
             <input type="number" value={form.originalPrice} onChange={(e) => setForm({ ...form, originalPrice: e.target.value })} placeholder="Original total" className="h-11 rounded-full glass px-4 text-sm" />
@@ -90,9 +70,6 @@ export function BundleManager() {
             <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-2xl shrink-0">🎁</div>
             <div className="flex-1 min-w-0 sm:min-w-[200px]">
               <div className="font-bold flex items-center gap-2 flex-wrap">{b.title}
-                {b.kind === 'exam_access'
-                  ? <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-bold">JAMB PASS</span>
-                  : <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/50 text-[10px] font-bold">COURSES</span>}
                 {b.badge && <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold">{b.badge}</span>}
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${b.published !== false ? 'bg-green-500/20 text-green-300' : 'bg-white/10 text-white/50'}`}>{b.published !== false ? 'LIVE' : 'HIDDEN'}</span>
               </div>

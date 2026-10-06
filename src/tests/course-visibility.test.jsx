@@ -1,7 +1,5 @@
-// Storefront visibility guard: the course page is served by the API outline
-// endpoint, which only returns PUBLISHED courses. An archived or unpublished
-// slug therefore behaves like "not found" for everyone — students AND admins —
-// and course management happens in the admin dashboard instead.
+// Storefront visibility guard: an archived (or unpublished) slug must behave
+// like "not found" for students, while an admin can still open it to manage it.
 // @vitest-environment jsdom
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -15,27 +13,7 @@ vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ user: mocks.user })
 
 import CourseDetails from '../pages/CourseDetails';
 
-const json = (body, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
-
-// The backend resolves the slug with `requirePublished: true`, so anything
-// archived/unpublished comes back as NOT_FOUND.
-const OUTLINE = {
-  course: {
-    id: 'course', slug: 'test', title: 'Visible course', description: 'desc', price: 5000,
-    duration: '6 hours', difficulty_level: 'BEGINNER', is_published: true,
-    course_categories: { id: 'cat-1', name: 'Design' },
-  },
-  modules: [{ id: 'm1', title: 'Module one', description: null, order_number: 1, topics: [], lessons: [{ id: 'l1', module_id: 'm1', title: 'First lesson', lesson_type: 'VIDEO', duration: '10:00', order_number: 1, is_free_preview: false }], topics_count: 0, lessons_count: 1 }],
-  total_lessons: 1,
-  counts: { modules: 1, topics: 0, lessons: 1, quizzes: 0, assignments: 0, assessments: 0 },
-  curriculum_complete: true,
-  curriculum_status: { complete: true, message: 'Curriculum ready — 1 module(s), 1 published lesson(s)' },
-  enrollment: null,
-  progress: null,
-  has_access: false,
-};
-
-let visible;
+let course;
 const app = () => (
   <MemoryRouter initialEntries={['/course/test']}>
     <Routes><Route path="/course/:slug" element={<CourseDetails />} /></Routes>
@@ -44,55 +22,46 @@ const app = () => (
 
 beforeEach(() => {
   cleanup();
-  visible = true;
+  course = {
+    id: 'course', slug: 'test', title: 'Archivable course', category: 'Design', level: 'Beginner',
+    description: 'desc', longDescription: 'long', price: 5000, originalPrice: 10000,
+    rating: 5, students: 1, duration: '6 hours', instructor: 'Woli Dan', instructorRole: 'Tutor',
+    whatYouWillLearn: ['x'], requirements: [], audience: [], thumbnail: 'design',
+  };
   mocks.user = { id: 'student', role: 'student' };
-  global.fetch = vi.fn(async () => (visible
-    ? json({ success: true, data: OUTLINE })
-    : json({ success: false, error: { code: 'NOT_FOUND', message: 'Course not found' } }, 404)));
   mocks.courses = {
-    isEnrolled: () => false, getManualPaymentByCourse: () => null,
+    coursesLoading: false, coursesError: null, accessKey: 'student',
+    getCourseBySlug: () => course, isEnrolled: () => false,
+    getManualPaymentByCourse: () => null, ensureCourseDetail: vi.fn().mockResolvedValue(course),
+    refreshCourses: vi.fn(),
   };
   mocks.lms = {
+    trackView: vi.fn(), getCourseQuizzes: () => [], getCourseAssignments: () => [],
     siteSettings: {}, addReview: vi.fn(), getCourseReviews: () => [],
     getCourseRating: () => 5, ensureCourseReviews: vi.fn().mockResolvedValue(),
   };
 });
 
-describe('Course storefront visibility (API-served outline)', () => {
-  it('renders a published course for a student', async () => {
+describe('Course storefront visibility', () => {
+  it('renders a visible course for a student', async () => {
     render(app());
-    expect(await screen.findByText('Visible course')).toBeTruthy();
-    expect(screen.getByText('ENROLL NOW - ₦5,000')).toBeTruthy();
+    expect(await screen.findByText('Archivable course')).toBeTruthy();
   });
-
   it('answers "not found" when a student opens an archived slug', async () => {
-    visible = false; // backend: archived row is not part of the public catalogue
+    course.archived = true;
     render(app());
     expect(await screen.findAllByText('Course not found.')).toBeTruthy();
-    expect(screen.queryByText(/ENROLL NOW/)).toBeNull();
+    expect(screen.queryByText('ENROLL NOW - ₦5,000')).toBeNull();
   });
-
   it('answers "not found" when a student opens an unpublished slug', async () => {
-    visible = false;
+    course.published = false;
     render(app());
     expect(await screen.findAllByText('Course not found.')).toBeTruthy();
   });
-
-  it('keeps archived courses out of the storefront for admins too — the dashboard manages them', async () => {
-    visible = false;
+  it('still lets an admin open an archived course to manage it', async () => {
+    course.archived = true;
     mocks.user = { id: 'admin', role: 'admin' };
     render(app());
-    expect(await screen.findAllByText('Course not found.')).toBeTruthy();
-    // Admins still get a way back to the catalogue (and manage rows in
-    // /admin/dashboard, which edits courses directly rather than via the
-    // public outline endpoint).
-    expect(screen.getByRole('link', { name: 'Browse courses' })).toBeTruthy();
-  });
-
-  it('surfaces a backend failure with a retry instead of a blank page', async () => {
-    global.fetch = vi.fn(async () => { throw new TypeError('Failed to fetch'); });
-    render(app());
-    expect(await screen.findByText(/Cannot reach the course server/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
+    expect(await screen.findByText('Archivable course')).toBeTruthy();
   });
 });

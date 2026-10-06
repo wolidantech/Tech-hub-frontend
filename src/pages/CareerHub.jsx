@@ -25,7 +25,7 @@ export default function CareerHub() {
       <div className="border-b border-white/[0.06] bg-gradient-to-br from-[#061236] to-[#020a1f]">
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-12 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-[11px] font-bold tracking-widest"><Briefcase className="h-4 w-4 text-cyan-300" /> FROM LEARNING → EARNING</div>
-          <h1 className="font-display font-black text-[36px] md:text-[52px] leading-none mt-4">DANQEL CAREER HUB</h1>
+          <h1 className="font-display font-black text-[36px] md:text-[52px] leading-none mt-4">WOLI DAN CAREER HUB</h1>
           <p className="mt-3 text-white/60 max-w-[620px] mx-auto">Skills pay the bills only when the world can see them. Build your portfolio, brand, and income systems here.</p>
           <div className="mt-6 flex gap-3 justify-center flex-wrap">
             <Link to="/cv-builder" className="btn-primary !py-3">CREATE YOUR PROFESSIONAL CV</Link>
@@ -41,7 +41,7 @@ export default function CareerHub() {
           <div className="text-center md:text-left">
             <div className="text-[10px] font-black tracking-widest text-cyan-300">FREE CV BUILDER • NO ACCOUNT NEEDED</div>
             <h2 className="font-black text-2xl mt-1">Build a job-ready CV in minutes</h2>
-            <p className="text-sm text-white/60 mt-2 max-w-[560px]">Pick from 350+ occupations, fill in your details step by step, choose one of 6 professional templates and polish your wording with DANQEL AI — then download a print-ready PDF.</p>
+            <p className="text-sm text-white/60 mt-2 max-w-[560px]">Pick from 350+ occupations, fill in your details step by step, choose one of 6 professional templates and polish your wording with DanTECH AI — then download a print-ready PDF.</p>
           </div>
           <Link to="/cv-builder" className="shrink-0 btn-primary !py-4 !px-8 whitespace-nowrap">CREATE MY CV NOW</Link>
         </div>
@@ -59,7 +59,7 @@ export default function CareerHub() {
 
         <div className="glass rounded-[24px] p-6 md:p-8">
           <h2 className="font-bold text-xl flex items-center gap-2"><BadgeCheck className="h-5 w-5 text-green-400" /> Student Project Showcase</h2>
-          <p className="text-sm text-white/50 mt-1">Real work by DANQEL DIGITAL INSTITUTE students. Your approved projects can appear here too.</p>
+          <p className="text-sm text-white/50 mt-1">Real work by WOLI DAN TECH HUB students. Your approved projects can appear here too.</p>
           {showcase === null ? (
             <div className="mt-6 text-center py-10 text-white/40 text-sm">Loading showcase…</div>
           ) : showcase.length === 0 ? (

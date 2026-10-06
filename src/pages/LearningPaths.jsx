@@ -2,17 +2,13 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Map, CheckCircle2, ArrowRight, Play } from 'lucide-react';
 import { useCourses } from '../context/CourseContext';
-import { useCatalog } from '../context/CatalogContext';
 import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
 import CourseArt from '../components/course/CourseArt';
 import { resolvePathSteps } from '../lib/lms';
 
 export default function LearningPaths() {
-  const { isEnrolled, getProgress } = useCourses();
-  // Path steps resolve against the SAME catalogue the storefront serves, so a
-  // roadmap can never link to a slug the course API does not publish.
-  const { courses } = useCatalog();
+  const { courses, isEnrolled, getProgress } = useCourses();
   const { learningPaths } = useLMS();
   const { user } = useAuth();
 

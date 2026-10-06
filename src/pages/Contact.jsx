@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { MessageCircle, Mail, Phone, MapPin, Send, Clock, Users } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
-import { CONTACT_EMAIL } from '../lib/brand';
 
 export default function Contact() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
@@ -18,7 +17,7 @@ export default function Contact() {
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-[720px] mx-auto text-center space-y-4 mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-[11px] font-bold tracking-widest"><MessageCircle className="h-4 w-4 text-cyan-300" /> CONTACT US</div>
-          <h1 className="font-display font-black text-[36px] md:text-[52px] leading-[0.9]">Get in Touch with <span className="text-gradient">DANQEL DIGITAL INSTITUTE</span></h1>
+          <h1 className="font-display font-black text-[36px] md:text-[52px] leading-[0.9]">Get in Touch with <span className="text-gradient">WOLI DAN TECH HUB</span></h1>
           <p className="text-white/60">Have questions? Chat with us on WhatsApp for fastest response. We're here to help you start your digital skills journey.</p>
         </div>
 
@@ -35,7 +34,7 @@ export default function Contact() {
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
                   <div className="h-12 w-12 rounded-2xl glass flex items-center justify-center"><Mail className="h-5 w-5" /></div>
-                  <div><div className="text-xs text-white/40">Email</div><div className="font-bold">{CONTACT_EMAIL}</div></div>
+                  <div><div className="text-xs text-white/40">Email</div><div className="font-bold">info@wolidantech.com</div></div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="h-12 w-12 rounded-2xl glass flex items-center justify-center"><MapPin className="h-5 w-5" /></div>
@@ -57,7 +56,7 @@ export default function Contact() {
               <h4 className="font-bold mb-3">Why WhatsApp?</h4>
               <ul className="space-y-2 text-sm text-white/60 list-disc pl-5">
                 <li>Fastest response - under 2 hours</li>
-                <li>Direct support from DANQEL</li>
+                <li>Direct support from Woli Dan</li>
                 <li>Voice notes & screen sharing</li>
                 <li>Join community of 100+ learners</li>
               </ul>

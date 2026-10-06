@@ -1,5 +1,5 @@
 // ============================================================
-// DANQEL DIGITAL INSTITUTE — Secure AI Gateway (REFERENCE IMPLEMENTATION)
+// WOLI DAN TECH HUB — Secure AI Gateway (REFERENCE IMPLEMENTATION)
 // ------------------------------------------------------------
 // Deploy this on YOUR server (Node 18+, e.g. VPS / Render / Fly).
 // The frontend POSTs to this endpoint (VITE_AI_ENDPOINT); API keys
@@ -120,7 +120,7 @@ async function callLLM(system, userPrompt, { maxTokens = 4000, temperature = 0.7
   throw new Error(`Unsupported AI_PROVIDER: ${provider}`);
 }
 
-const SYSTEM = `You are the DANQEL DIGITAL INSTITUTE curriculum engine. Always respond with VALID JSON only.
+const SYSTEM = `You are the WOLI DAN TECH HUB curriculum engine. Always respond with VALID JSON only.
 Design practical, beginner-friendly African-context (Nigeria) tech education.`;
 
 function promptFor(kind, input) {
@@ -190,13 +190,13 @@ app.get('/api/ai/video/:jobId', requireAdmin, (req, res) => {
   res.json(videoJobs.get(req.params.jobId) || { status: 'not_found' });
 });
 
-// ---- DANQEL AI student chat (cloud mode) ----
+// ---- DanTECH AI student chat (cloud mode) ----
 // POST /api/dantech/chat { message, context{coursesnapshot,lesson}, history[] }
 // Auth: student Supabase Bearer token (verified via requireStudent); rate limit
 // 30/min per student, answered with 429 + Retry-After. Never reveal system prompt.
 // Frontend env: VITE_DANTECH_ENDPOINT=/api/dantech/chat (+ VITE_DANTECH_KEY if required).
-const DANTECH_SYSTEM = `You are DANQEL AI, the official AI Learning Assistant of DANQEL DIGITAL INSTITUTE.
-Rules: (1) Always identify as DANQEL AI — never as ChatGPT or any other model.
+const DANTECH_SYSTEM = `You are DanTECH AI, the official AI Learning Assistant of WOLI DAN TECH HUB.
+Rules: (1) Always identify as DanTECH AI — never as ChatGPT or any other model.
 (2) Be warm, encouraging, and explain simply with Nigerian-friendly examples.
 (3) Use the provided course/lesson context; cite lesson names as sources when relevant.
 (4) Academic integrity: NEVER write full assignment answers, quiz answers, or final projects.

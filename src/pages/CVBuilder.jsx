@@ -55,7 +55,7 @@ function AIImprove({ text, field, onApply }) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
   const run = async () => {
-    if (!String(text || '').trim()) { toast.error('Write a few words first — DANQEL AI improves YOUR information.'); return; }
+    if (!String(text || '').trim()) { toast.error('Write a few words first — DanTECH AI improves YOUR information.'); return; }
     setBusy(true); setResult(null);
     try {
       const out = await generate('cv_improve', { text, field });
@@ -66,7 +66,7 @@ function AIImprove({ text, field, onApply }) {
     <div>
       <button type="button" onClick={run} disabled={busy}
         className="inline-flex items-center gap-2 px-4 h-9 rounded-full glass text-xs font-bold text-purple-300 hover:bg-white/10 transition disabled:opacity-50">
-        <Wand2 className="h-3.5 w-3.5" /> {busy ? 'Improving…' : 'Improve with DANQEL AI'}
+        <Wand2 className="h-3.5 w-3.5" /> {busy ? 'Improving…' : 'Improve with DanTECH AI'}
       </button>
       {result && (
         <div className="mt-3 rounded-2xl border border-purple-400/30 bg-purple-500/10 p-4 space-y-3">
@@ -190,7 +190,7 @@ export default function CVBuilder() {
               <button onClick={() => { setStarted(true); setStep(1); }} className="px-8 py-4 rounded-full glass font-bold text-sm flex items-center justify-center gap-2 text-purple-300 hover:bg-white/10 transition"><Sparkles className="h-4 w-4" /> USE AI TO BUILD MY CV</button>
             </div>
             <div className="mt-10 grid sm:grid-cols-3 gap-3 text-left">
-              {[['🌍', '350+ occupations', 'Searchable career taxonomy from technology to skilled trades.'], ['🎨', '6 professional templates', 'Modern, corporate, minimal, creative, executive & academic — switch anytime without losing data.'], ['🤖', 'DANQEL AI writer', 'Improves YOUR wording. It never invents qualifications or experience.']].map(([i, t, d]) => (
+              {[['🌍', '350+ occupations', 'Searchable career taxonomy from technology to skilled trades.'], ['🎨', '6 professional templates', 'Modern, corporate, minimal, creative, executive & academic — switch anytime without losing data.'], ['🤖', 'DanTECH AI writer', 'Improves YOUR wording. It never invents qualifications or experience.']].map(([i, t, d]) => (
                 <div key={t} className="glass rounded-2xl p-5"><div className="text-2xl">{i}</div><div className="font-bold mt-2">{t}</div><div className="text-xs text-white/50 mt-1">{d}</div></div>
               ))}
             </div>
@@ -223,7 +223,7 @@ export default function CVBuilder() {
     <div key="s1" className="space-y-4">
       <Field label="Professional summary">
         <textarea rows={6} className={`${inp} !h-auto py-3 leading-relaxed`} value={cv.summary} onChange={(e) => setCv({ ...cv, summary: e.target.value })}
-          placeholder="2–4 sentences: who you are, your strongest skills, and what you deliver. DANQEL AI can polish it below." />
+          placeholder="2–4 sentences: who you are, your strongest skills, and what you deliver. DanTECH AI can polish it below." />
       </Field>
       <AIImprove text={cv.summary} field="summary" onApply={(t) => setCv({ ...cv, summary: t })} />
     </div>,

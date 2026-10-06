@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CourseProvider } from './context/CourseContext';
-import { CatalogProvider } from './context/CatalogContext';
 import { LMSProvider } from './context/LMSContext';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
@@ -36,13 +35,10 @@ const BundleEnroll = lazy(() => import('./pages/BundleEnroll'));
 const Certificates = lazy(() => import('./pages/Certificates'));
 const CertificateView = lazy(() => import('./pages/CertificateView'));
 const Profile = lazy(() => import('./pages/Profile'));
-const Security = lazy(() => import('./pages/Security'));
 const Admin = lazy(() => import('./pages/Admin'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const CVBuilder = lazy(() => import('./pages/CVBuilder'));
 const AIPage = lazy(() => import('./pages/AIPage'));
-const JambCBT = lazy(() => import('./pages/jamb/JambCBT'));
-const JambExam = lazy(() => import('./pages/jamb/JambExam'));
 
 const RouteLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-[#020a1f]">
@@ -95,7 +91,6 @@ function GatedApp() {
       <SetupGate>
       <AuthProvider>
         <CourseProvider>
-          <CatalogProvider>
           <LMSProvider>
             <Routes>
               <Route path="/" element={<Layout><Home /></Layout>} />
@@ -129,13 +124,8 @@ function GatedApp() {
               <Route path="/enroll/bundle/:id" element={lazyEl(<ProtectedRoute><Layout><BundleEnroll /></Layout></ProtectedRoute>)} />
               <Route path="/certificates" element={lazyEl(<ProtectedRoute><Layout><Certificates /></Layout></ProtectedRoute>)} />
               <Route path="/profile" element={lazyEl(<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>)} />
-              <Route path="/security" element={lazyEl(<ProtectedRoute><Layout><Security /></Layout></ProtectedRoute>)} />
               <Route path="/onboarding" element={lazyEl(<ProtectedRoute><Onboarding /></ProtectedRoute>)} />
               <Route path="/ai" element={lazyEl(<ProtectedRoute><AIPage /></ProtectedRoute>)} />
-
-              {/* JAMB CBT — separate exam area (see src/lib/jambApi.js) */}
-              <Route path="/jamb-cbt" element={lazyEl(<Layout><JambCBT /></Layout>)} />
-              <Route path="/jamb-cbt/exam" element={lazyEl(<JambExam />)} />
 
               <Route path="/admin" element={<AdminRedirect />} />
               <Route path="/admin/dashboard" element={lazyEl(<AdminRoute><Layout><Admin /></Layout></AdminRoute>)} />
@@ -144,7 +134,6 @@ function GatedApp() {
             </Routes>
             <DanTechAI />
           </LMSProvider>
-          </CatalogProvider>
         </CourseProvider>
       </AuthProvider>
       </SetupGate>

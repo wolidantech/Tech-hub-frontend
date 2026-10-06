@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useCourses } from '../../context/CourseContext';
 import { useLMS } from '../../context/LMSContext';
-import { BANK_ACCOUNT_NAME } from '../../lib/brand';
 import { formatNaira } from '../../lib/utils';
 import SignedFile from '../../components/common/SignedFile';
 import {
@@ -132,7 +131,7 @@ export default function PaymentsManager() {
       <div className="flex flex-wrap justify-between items-center gap-4">
         <div>
           <h2 className="font-bold text-xl">Manual Bank Transfer Payments</h2>
-          <p className="text-sm text-white/50 mt-1">Bank: MONIEPOINT • Account: 69852663361 • {BANK_ACCOUNT_NAME}</p>
+          <p className="text-sm text-white/50 mt-1">Bank: MONIEPOINT • Account: 69852663361 • LUNA ENTRY SERVICES- WOLI DAN TECH HUB</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           {[

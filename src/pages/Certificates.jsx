@@ -49,7 +49,7 @@ export default function Certificates() {
                       </div>
 
                       <div className="space-y-1">
-                        <div className="text-[11px] tracking-[0.2em] text-[#e9cf8b]/70 font-bold">DANQEL DIGITAL INSTITUTE</div>
+                        <div className="text-[11px] tracking-[0.2em] text-[#e9cf8b]/70 font-bold">WOLI DAN TECH HUB</div>
                         <div className="font-display font-black text-xl leading-tight">{cert.courseName}</div>
                         <div className="text-sm text-white/60">Certificate of Achievement</div>
                       </div>
@@ -62,7 +62,7 @@ export default function Certificates() {
                         )}
                         <div className="flex justify-between gap-3"><span className="text-white/40 shrink-0">Date</span><span className="font-bold flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {formatDate(cert.issueDate)}</span></div>
                       </div>
-                      <div className="mt-3 text-[11px] text-white/40">Signed by Olowoake Daniel Ayomide — Director, DANQEL DIGITAL INSTITUTE</div>
+                      <div className="mt-3 text-[11px] text-white/40">Signed by Olowoake Daniel Ayomide — Director, Woli Dan Tech Hub</div>
 
                       <div className="mt-6 grid grid-cols-2 gap-2">
                         <Link to={`/certificate/${cert.certificateId}`} className="h-11 rounded-full glass flex items-center justify-center gap-2 font-bold text-xs hover:bg-white/10 transition"><Eye className="h-4 w-4" /> VIEW</Link>

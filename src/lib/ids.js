@@ -9,6 +9,6 @@ export const generateId = () => {
   }
 };
 
-export const generateCouponCode = (prefix = 'DANQEL') =>
+export const generateCouponCode = (prefix = 'WOLI') =>
   `${prefix}-${Math.random().toString(36).slice(2, 6).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 

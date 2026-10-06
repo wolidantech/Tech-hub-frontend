@@ -1,4 +1,4 @@
-/* DANQEL DIGITAL INSTITUTE service worker — cache-first shell, network-first pages */
+/* WOLI DAN TECH HUB service worker — cache-first shell, network-first pages */
 const CACHE = 'wdth-v3';
 const SHELL = ['/', '/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png', '/logo.svg', '/manifest.webmanifest'];
 

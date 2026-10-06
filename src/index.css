@@ -79,7 +79,7 @@
 .lesson-callout.warning { @apply bg-amber-500/10 border-amber-500/30 text-amber-100; }
 .lesson-callout.warning strong { @apply text-amber-300; }
 
-/* ---------- DANQEL AI chat ---------- */
+/* ---------- DanTECH AI chat ---------- */
 .dantech-body { @apply text-[13px] leading-[1.7]; }
 .dantech-body h1 { @apply text-base mb-2; }
 .dantech-body h2 { @apply text-[15px] mt-3 mb-1.5 pb-1; }
