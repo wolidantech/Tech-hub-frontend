@@ -1,4 +1,4 @@
-# WOLI DAN TECH HUB — AI-Powered LMS
+# DANQEL DIGITAL INSTITUTE — AI-Powered LMS
 
 Complete online learning management system: courses, manual bank-transfer
 payments, coupons, quizzes, practical assignments, AI content studio, analytics,
@@ -283,3 +283,18 @@ Both run in throwaway Postgres (PGlite), so they need no Supabase project.
 - The seeded JAMB pass and the seeded course shells stay **unpublished** until the
   content is reviewed and the questions are licensed or written in-house, so
   nothing is sold before it is ready.
+
+## Brand identity (DANQEL)
+
+The platform is **DANQEL DIGITAL INSTITUTE** (full), **DANQEL** (compact) and its
+tutor is **DANQEL AI**. The single source of truth for the names is
+`src/lib/brand.js`; the retired brand appears nowhere user-facing, enforced by
+`src/tests/brand.test.jsx`.
+
+- The mark in `public/logo.svg`, `public/favicon.svg` and the generated PNG icons is
+  a **typographic placeholder**, not the final logo — see `docs/REBRAND_AUDIT.md`
+  §4. Regenerate icons with `node scripts/make-brand-icons.mjs`.
+- A few strings deliberately keep their old values because an external system
+  expects them: the bank account name, the live `@wolidantech.com` mailboxes, the
+  `WDTH-` student-ID prefix, and `wdth.*` local-storage keys. They are documented
+  in `docs/REBRAND_AUDIT.md` §2–§3 and centralised in `src/lib/brand.js`.

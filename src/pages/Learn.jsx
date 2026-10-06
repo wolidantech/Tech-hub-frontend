@@ -260,7 +260,7 @@ export default function Learn() {
     setActiveModuleId(moduleId);
     setSidebarOpen(false);
     setView(!lesson.videoUrl && !lesson.videoStoragePath ? 'read' : 'video');
-    // Publish context for DanTECH AI
+    // Publish context for DANQEL AI
     try { sessionStorage.setItem('wdth_lesson_ctx', JSON.stringify({ courseId: course.id, lessonId: lesson.id })); } catch { /* ignore */ }
   };
 
@@ -545,7 +545,7 @@ export default function Learn() {
                   </button>
                   {!isAdmin && (
                     <button onClick={() => window.dispatchEvent(new CustomEvent('wdth_open_dantech', { detail: { prompt: `Explain this lesson in simple terms: ${activeLesson.title}` } }))} className="min-h-11 inline-flex items-center justify-center gap-2 px-4 rounded-full glass text-xs font-bold text-purple-300 hover:bg-white/10 transition">
-                      <Sparkles className="h-3.5 w-3.5" /> Ask DanTECH AI
+                      <Sparkles className="h-3.5 w-3.5" /> Ask DANQEL AI
                     </button>
                   )}
                 </div>
@@ -599,7 +599,7 @@ export default function Learn() {
                 <div className="rounded-2xl bg-gradient-to-br from-green-500/15 to-emerald-600/15 border border-green-500/30 p-6 text-center">
                   <Award className="h-10 w-10 mx-auto text-green-300 mb-2" />
                   <div className="font-black text-xl">All Requirements Completed! 🎓</div>
-                  <p className="text-sm text-white/60 mt-1">Your WOLI DAN TECH HUB certificate is ready.</p>
+                  <p className="text-sm text-white/60 mt-1">Your DANQEL DIGITAL INSTITUTE certificate is ready.</p>
                   <Link to="/certificates" className="min-h-11 inline-flex items-center mt-4 px-6 py-3 rounded-full bg-green-500 text-white font-bold text-sm">VIEW & DOWNLOAD CERTIFICATE</Link>
                 </div>
               )}

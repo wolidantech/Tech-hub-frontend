@@ -7,6 +7,7 @@ import {
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
+import { FACULTY_LABEL } from '../lib/brand';
 import { copyText, formatNaira, getCourseThumbnailGradient } from '../lib/utils';
 import { fetchClassroom, fetchCourseOutline } from '../lib/catalogApi';
 import CourseArt from '../components/course/CourseArt';
@@ -415,7 +416,7 @@ export default function CourseDetails() {
           <div className="rounded-[24px] glass p-6 md:p-8 flex gap-4">
             <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-black text-xl shrink-0">{(course.instructor || 'W').charAt(0)}</div>
             <div>
-              <div className="font-bold text-lg">{course.instructor || 'Woli Dan Tech Hub'}</div>
+              <div className="font-bold text-lg">{course.instructor || FACULTY_LABEL}</div>
               <div className="text-sm text-cyan-300">{course.instructorRole || 'Instructor'}</div>
               <p className="mt-2 text-sm text-white/60 leading-relaxed">Professional instructor with years of experience helping students build practical skills that generate income.</p>
             </div>

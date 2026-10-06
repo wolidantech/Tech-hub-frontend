@@ -1,5 +1,5 @@
 // ============================================================
-// REST client for the WOLI DAN TECH HUB backend (Tech-hub-backend).
+// REST client for the DANQEL DIGITAL INSTITUTE backend (Tech-hub-backend).
 //
 // The catalogue, course outlines and the student classroom are served by the
 // API — not by hard-coded frontend data. Contract (see Tech-hub-backend

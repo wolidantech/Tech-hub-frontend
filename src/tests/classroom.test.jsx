@@ -53,7 +53,7 @@ describe('Classroom regression coverage', () => {
     mocks.courses.getProgress = () => ({ progress: 100, completedLessons: ['lesson'] });
     render(app());
     await screen.findByText('Backend supplied theory text');
-    expect(screen.queryByText('Your WOLI DAN TECH HUB certificate is ready.')).toBeNull();
+    expect(screen.queryByText('Your DANQEL DIGITAL INSTITUTE certificate is ready.')).toBeNull();
   });
   it('shows empty curriculum and can refresh it from the database', async () => {
     course.curriculum = [];

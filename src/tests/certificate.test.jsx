@@ -19,7 +19,7 @@ const CERT = {
   found: true, status: 'valid', studentName: 'Adaeze Okafor',
   courseName: 'AI Video Content Creation', issueDate: '2026-08-01T00:00:00Z',
   certificateId: 'WDTH-2026-93E108', verificationCode: 'WDTH-ABCD-1234',
-  issuedBy: 'WOLI DAN TECH HUB',
+  issuedBy: 'DANQEL DIGITAL INSTITUTE',
 };
 
 class FakeResizeObserver { observe() {} unobserve() {} disconnect() {} }
@@ -77,7 +77,7 @@ describe('Luxury certificate page', () => {
 
   it('uses the repo logo asset in the masthead (gold monogram only as fallback)', async () => {
     render(certificatePage());
-    const logo = await screen.findByAltText('WOLI DAN TECH HUB');
+    const logo = await screen.findByAltText('DANQEL DIGITAL INSTITUTE');
     expect(logo.getAttribute('src')).toBe('/logo.svg');
   });
 
@@ -91,13 +91,16 @@ describe('Luxury certificate page', () => {
 describe('Certificate source & style audits', () => {
   const read = (p) => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 
-  it('no "Woli Dan" director signature survives; instructor credits untouched', () => {
+  it('director name survives the rebrand; old brand does not; instructor credits updated', () => {
     const view = read('pages/CertificateView.jsx');
+    // The signatory is a real person, preserved through the rebrand.
     expect(view).toContain('Olowoake Daniel Ayomide');
-    expect(view).not.toMatch(/Woli Dan<\/span>/);
+    // The institution on the certificate is the new brand.
+    expect(view).toContain('DANQEL DIGITAL INSTITUTE');
+    expect(view).not.toMatch(/Woli Dan/i);
     expect(view).not.toContain('***');
-    // instructor credits live in the data files and must stay
-    expect(read('data/courses.js')).toContain('instructor: "Woli Dan"');
+    // instructor credits live in the data files under the new faculty label
+    expect(read('data/courses.js')).toContain('instructor: "DANQEL Faculty"');
   });
 
   it('prints as A4 landscape with exact colors and hidden chrome', () => {

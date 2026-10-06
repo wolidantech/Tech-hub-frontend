@@ -1,5 +1,5 @@
 -- ============================================================
--- WOLI DAN TECH HUB — Publish the catalog
+-- DANQEL DIGITAL INSTITUTE — Publish the catalog
 -- ------------------------------------------------------------
 -- WHY THIS FILE EXISTS
 --   seed_12_courses.sql inserts every course with published = false, and the

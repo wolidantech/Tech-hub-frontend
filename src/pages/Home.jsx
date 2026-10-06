@@ -44,8 +44,8 @@ export default function Home() {
 
               <div className="space-y-3">
                 <h1 className="font-display font-black text-[42px] md:text-[64px] leading-[0.9] tracking-tight">
-                  <span className="block">WOLI DAN</span>
-                  <span className="block text-gradient">TECH HUB</span>
+                  <span className="block">DANQEL</span>
+                  <span className="block text-gradient">DIGITAL INSTITUTE</span>
                 </h1>
                 <div className="flex items-center gap-3 text-sm font-bold tracking-[0.2em] text-white/60">
                   <span>LEARN</span><span className="h-1 w-1 rounded-full bg-cyan-400" /><span>BUILD</span><span className="h-1 w-1 rounded-full bg-cyan-400" /><span>GROW</span>
@@ -201,12 +201,12 @@ export default function Home() {
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[11px] font-bold tracking-widest text-cyan-300">ABOUT WOLI DAN TECH HUB</div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[11px] font-bold tracking-widest text-cyan-300">ABOUT DANQEL DIGITAL INSTITUTE</div>
               <h2 className="font-display font-bold text-[32px] md:text-[44px] leading-[0.95]">
                 Empowering You With <span className="text-gradient">Digital Skills</span> That Pay
               </h2>
               <p className="text-white/60 leading-relaxed">
-                WOLI DAN TECH HUB helps students, beginners, entrepreneurs, creatives and aspiring professionals develop practical digital skills that create real opportunities.
+                DANQEL DIGITAL INSTITUTE helps students, beginners, entrepreneurs, creatives and aspiring professionals develop practical digital skills that create real opportunities.
               </p>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="glass rounded-2xl p-5">
@@ -274,7 +274,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* DanTECH AI */}
+      {/* DANQEL AI */}
       <section className="py-10">
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
           <div className="relative rounded-[32px] overflow-hidden bg-gradient-to-br from-violet-600/20 via-purple-600/15 to-indigo-600/20 border border-purple-500/25 p-8 md:p-12">
@@ -282,18 +282,18 @@ export default function Home() {
             <div className="relative grid md:grid-cols-[1fr_1fr] gap-8 items-center">
               <div className="space-y-4">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 text-[11px] font-bold text-purple-200 tracking-widest"><Bot className="h-4 w-4" /> AI LEARNING ASSISTANT</div>
-                <h2 className="font-display font-bold text-[32px] md:text-[40px] leading-tight">Meet <span className="text-gradient">DanTECH AI</span> 🤖</h2>
+                <h2 className="font-display font-bold text-[32px] md:text-[40px] leading-tight">Meet <span className="text-gradient">DANQEL AI</span> 🤖</h2>
                 <p className="text-white/60 leading-relaxed">Your personal AI tutor built into every lesson. Ask questions, get examples, test yourself with quizzes and flashcards — 24/7, in simple language.</p>
                 <div className="flex flex-wrap gap-2">
                   {['Explains lessons', 'Gives examples', 'Quizzes you', 'Code help', 'Study plans'].map((f) => (
                     <span key={f} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full glass text-xs font-bold"><CheckCircle2 className="h-3.5 w-3.5 text-purple-300" /> {f}</span>
                   ))}
                 </div>
-                <Link to="/register" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-gradient-to-r from-violet-500 to-indigo-600 font-bold shadow-[0_0_25px_rgba(139,92,246,0.5)] hover:scale-105 transition">TRY DANTECH AI FREE <ArrowRight className="h-4 w-4" /></Link>
+                <Link to="/register" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-gradient-to-r from-violet-500 to-indigo-600 font-bold shadow-[0_0_25px_rgba(139,92,246,0.5)] hover:scale-105 transition">TRY DANQEL AI FREE <ArrowRight className="h-4 w-4" /></Link>
               </div>
               <div className="glass-strong rounded-[24px] p-5 space-y-3 max-w-[420px] mx-auto w-full">
                 <div className="flex justify-end"><div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-sm">Explain video editing like I'm 10 🎬</div></div>
-                <div className="flex justify-start"><div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5 bg-white/[0.06] border border-white/10 text-sm"><span className="text-[10px] font-black text-purple-300">✨ DANTECH AI</span><br />Video editing is like arranging your favorite photos in a storybook — you cut the boring parts, keep the fun parts, and add music! 🎥</div></div>
+                <div className="flex justify-start"><div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5 bg-white/[0.06] border border-white/10 text-sm"><span className="text-[10px] font-black text-purple-300">✨ DANQEL AI</span><br />Video editing is like arranging your favorite photos in a storybook — you cut the boring parts, keep the fun parts, and add music! 🎥</div></div>
                 <div className="flex justify-end"><div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-sm">Test me on this 📝</div></div>
                 <div className="text-center text-[11px] text-white/30 pt-1">Available inside every lesson for enrolled students</div>
               </div>
@@ -343,7 +343,7 @@ export default function Home() {
       <section className="py-16">
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-8">
           <Link to="/career-hub" className="rounded-[32px] bg-gradient-to-br from-cyan-500/15 to-blue-600/15 border border-cyan-500/25 p-8 md:p-10 hover:border-cyan-400/50 transition group">
-            <div className="inline-flex items-center gap-2 text-[11px] font-bold tracking-widest text-cyan-300 mb-3"><Briefcase className="h-4 w-4" /> WOLI DAN CAREER HUB</div>
+            <div className="inline-flex items-center gap-2 text-[11px] font-bold tracking-widest text-cyan-300 mb-3"><Briefcase className="h-4 w-4" /> DANQEL CAREER HUB</div>
             <h3 className="font-display font-bold text-[28px] leading-tight">From Learning → <span className="text-gradient">Earning</span></h3>
             <p className="text-white/60 mt-3 leading-relaxed">CV guides, portfolio advice, freelancing playbook and a showcase of real student projects. Skills pay when the world can see them.</p>
             <span className="inline-flex items-center gap-2 mt-5 font-bold text-cyan-300 group-hover:gap-3 transition-all">EXPLORE CAREER HUB <ArrowRight className="h-4 w-4" /></span>
@@ -353,7 +353,7 @@ export default function Home() {
             <div className="space-y-4">
               {[
                 { n: 'Adaeze O.', t: 'I went from zero to editing videos for clients in 6 weeks. The practical tasks made all the difference!', c: 'Video Editing' },
-                { n: 'Ibrahim M.', t: 'DanTECH AI explains things better than most humans 😅. I ask questions anytime I get stuck.', c: 'AI & Python' },
+                { n: 'Ibrahim M.', t: 'DANQEL AI explains things better than most humans 😅. I ask questions anytime I get stuck.', c: 'AI & Python' },
                 { n: 'Chioma E.', t: 'My certificate verified instantly and my portfolio got me my first design gig. Worth every naira!', c: 'Graphic Design' },
               ].map((t) => (
                 <div key={t.n} className="rounded-2xl bg-white/[0.03] border border-white/10 p-4">
@@ -375,7 +375,7 @@ export default function Home() {
             {[
               { q: 'How do I pay for a course?', a: 'Transfer the exact amount to our Moniepoint account (69852663361), upload your receipt on the enroll page, and get access once admin approves — usually within hours.' },
               { q: 'Do I get a certificate?', a: 'Yes! Complete all lessons, pass the quizzes and get your assignments approved to earn a verifiable certificate with a unique ID and QR code.' },
-              { q: 'What is DanTECH AI?', a: 'DanTECH AI is your built-in AI learning assistant. It explains lessons, gives examples, quizzes you, and helps with code — available 24/7 inside every lesson.' },
+              { q: 'What is DANQEL AI?', a: 'DANQEL AI is your built-in AI learning assistant. It explains lessons, gives examples, quizzes you, and helps with code — available 24/7 inside every lesson.' },
               { q: 'I\'m a complete beginner. Can I cope?', a: 'Absolutely. Most courses start from zero, and learning paths guide you step by step from Beginner to Advanced.' },
               { q: 'Do courses expire?', a: 'No. You get lifetime access to every course you enroll in, including all future updates.' },
             ].map((f, i) => (
@@ -398,7 +398,7 @@ export default function Home() {
                 <div className="space-y-4">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-[11px] font-bold text-green-300 tracking-widest">COMMUNITY</div>
                   <h3 className="font-display font-bold text-[28px] md:text-[36px] leading-tight">Join Our <span className="text-gradient">WhatsApp Community</span></h3>
-                  <p className="text-white/60 leading-relaxed max-w-[520px]">Connect with other learners, receive updates, learning resources and important announcements. Get support directly from Woli Dan Tech Hub.</p>
+                  <p className="text-white/60 leading-relaxed max-w-[520px]">Connect with other learners, receive updates, learning resources and important announcements. Get support directly from DANQEL DIGITAL INSTITUTE.</p>
                   <div className="flex flex-wrap gap-3 pt-2">
                     <a href="https://chat.whatsapp.com/Hj9hsrcYSXHDIPW6DnW73z" target="_blank" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#25D366] text-white font-bold shadow-[0_0_20px_rgba(37,211,102,0.4)] hover:bg-[#20bd5a] transition">
                       <MessageCircle className="h-5 w-5" /> JOIN WHATSAPP GROUP

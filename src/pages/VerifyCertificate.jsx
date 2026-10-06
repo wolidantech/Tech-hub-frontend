@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { BadgeCheck, Search, ShieldAlert } from 'lucide-react';
 import { useCourses } from '../context/CourseContext';
 import { formatDate } from '../lib/utils';
+import { INSTITUTE_NAME, normalizeIssuer } from '../lib/brand';
 
 // Public certificate verifier. The holder's FULL name is returned by design
 // (owner-requested): certificate IDs carry a random suffix and verification
@@ -73,7 +74,7 @@ export default function VerifyCertificate() {
               <div className="text-center py-4">
                 <ShieldAlert className="h-12 w-12 mx-auto text-red-400 mb-4" />
                 <h2 className="font-display font-bold text-xl text-red-400 mb-2">Certificate Revoked</h2>
-                <p className="text-sm text-white/60 mb-6">This certificate has been revoked by Woli Dan Tech Hub and is no longer valid.</p>
+                <p className="text-sm text-white/60 mb-6">This certificate has been revoked by DANQEL DIGITAL INSTITUTE and is no longer valid.</p>
                 <div className="text-left glass rounded-2xl p-5 space-y-3 text-sm">
                   <div className="flex justify-between gap-4"><span className="text-white/40 shrink-0">Certificate ID</span><span className="font-mono font-bold text-right">{result.certificateId}</span></div>
                   <div className="flex justify-between gap-4"><span className="text-white/40 shrink-0">Course</span><span className="font-bold text-right">{result.courseName}</span></div>
@@ -86,7 +87,7 @@ export default function VerifyCertificate() {
                     <BadgeCheck className="h-9 w-9 text-[#0a1a4a]" />
                   </div>
                   <h2 className="font-display font-bold text-xl text-[#e9cf8b]">Valid Certificate</h2>
-                  <p className="text-xs text-white/50 mt-1">Authentic WOLI DAN TECH HUB certificate</p>
+                  <p className="text-xs text-white/50 mt-1">Authentic DANQEL DIGITAL INSTITUTE certificate</p>
                 </div>
                 <div className="divide-y divide-white/[0.08] rounded-2xl border border-white/[0.08] px-5">
                   <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4 py-3 text-sm"><span className="text-white/40 shrink-0">Awarded To</span><span className="cert-serif font-bold text-base text-right">{result.studentName}</span></div>
@@ -96,10 +97,10 @@ export default function VerifyCertificate() {
                   {result.verificationCode && (
                     <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4 py-3 text-sm"><span className="text-white/40 shrink-0">Verification Code</span><span className="font-mono text-[13px] font-bold text-[#e9cf8b] text-right break-all">{result.verificationCode}</span></div>
                   )}
-                  <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4 py-3 text-sm"><span className="text-white/40 shrink-0">Issued By</span><span className="font-bold text-right">{result.issuedBy || 'WOLI DAN TECH HUB'}</span></div>
+                  <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4 py-3 text-sm"><span className="text-white/40 shrink-0">Issued By</span><span className="font-bold text-right">{normalizeIssuer(result.issuedBy)}</span></div>
                 </div>
                 <p className="mt-5 text-center text-xs text-white/40">
-                  Signed by Olowoake Daniel Ayomide, Director, Woli Dan Tech Hub.
+                  Signed by Olowoake Daniel Ayomide, Director, DANQEL DIGITAL INSTITUTE.
                 </p>
               </div>
             )}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, UserCheck, Ban, RotateCcw, Award, Bell, Trash2, CheckCircle2, XCircle } from 'lucide-react';
 import { useCourses } from '../../context/CourseContext';
 import { useLMS } from '../../context/LMSContext';
+import { INSTITUTE_NAME } from '../../lib/brand';
 import { useAuth } from '../../context/AuthContext';
 import { formatNaira } from '../../lib/utils';
 import { toast } from 'sonner';
@@ -210,7 +211,7 @@ export default function StudentControl() {
               <option className="bg-[#061236]" value="">Select course to issue certificate manually</option>
               {studentEnrollments.map((e) => { const c = courses.find((x) => x.id === e.courseId); return c ? <option className="bg-[#061236]" key={e.id} value={c.id}>{c.title}</option> : null; })}
             </select>
-            <button onClick={() => { const sel = document.getElementById('manual-cert-course'); if (!sel.value) return toast.error('Select a course'); const c = courses.find((x) => x.id === sel.value); doAction('Issue certificate manually', async () => { await issueCertificateManual({ userId: student.id, courseId: c.id }); await sendNotificationToUser(student.id, { title: 'Congratulations! 🎓', message: `Congratulations! 🎓 You have successfully completed ${c.title}. Your WOLI DAN TECH HUB certificate is now available.`, type: 'course_completed', courseId: c.id }); audit(user, 'certificate.issue_manual', 'certificate', c.id, { studentId: student.id }); }); }} className="h-11 px-4 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1"><Award className="h-3.5 w-3.5" /> ISSUE</button>
+            <button onClick={() => { const sel = document.getElementById('manual-cert-course'); if (!sel.value) return toast.error('Select a course'); const c = courses.find((x) => x.id === sel.value); doAction('Issue certificate manually', async () => { await issueCertificateManual({ userId: student.id, courseId: c.id }); await sendNotificationToUser(student.id, { title: 'Congratulations! 🎓', message: `Congratulations! 🎓 You have successfully completed ${c.title}. Your DANQEL DIGITAL INSTITUTE certificate is now available.`, type: 'course_completed', courseId: c.id }); audit(user, 'certificate.issue_manual', 'certificate', c.id, { studentId: student.id }); }); }} className="h-11 px-4 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1"><Award className="h-3.5 w-3.5" /> ISSUE</button>
           </div>
         </div>
 

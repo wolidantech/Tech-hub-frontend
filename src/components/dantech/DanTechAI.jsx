@@ -75,7 +75,7 @@ export default function DanTechAI() {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, thinking, open]);
 
   // The Learn classroom dispatches 'wdth_open_dantech' with an optional
-  // prefilled prompt ("Ask DanTECH AI" button) — open the tutor and prefill.
+  // prefilled prompt ("Ask DANQEL AI" button) — open the tutor and prefill.
   useEffect(() => {
     const onOpen = (e) => {
       setOpen(true);

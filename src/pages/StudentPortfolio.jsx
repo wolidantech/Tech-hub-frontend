@@ -75,7 +75,7 @@ export default function StudentPortfolio() {
               <div className="h-28 w-28 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-black text-4xl mx-auto">{(student.fullName || '?').charAt(0)}</div>
             )}
             <h1 className="font-display font-black text-[32px] mt-4 flex items-center justify-center gap-2">{student.fullName} <BadgeCheck className="h-6 w-6 text-cyan-300" /></h1>
-            <div className="text-cyan-300 font-bold text-sm mt-1">WOLI DAN TECH HUB Certified Student • Level {level} • {xp} XP</div>
+            <div className="text-cyan-300 font-bold text-sm mt-1">DANQEL DIGITAL INSTITUTE Certified Student • Level {level} • {xp} XP</div>
             {student.bio && <p className="text-white/60 mt-3 max-w-[560px] mx-auto leading-relaxed">{student.bio}</p>}
             {(student.skills || []).length > 0 && (
               <div className="flex flex-wrap gap-2 justify-center mt-4">
@@ -127,7 +127,7 @@ export default function StudentPortfolio() {
         )}
 
         <div className="mt-10 text-center text-xs text-white/30 flex items-center justify-center gap-1">
-          <MapPin className="h-3 w-3" /> Verified student work • WOLI DAN TECH HUB • Learn • Build • Grow
+          <MapPin className="h-3 w-3" /> Verified student work • DANQEL DIGITAL INSTITUTE • Learn • Build • Grow
         </div>
       </div>
     </div>

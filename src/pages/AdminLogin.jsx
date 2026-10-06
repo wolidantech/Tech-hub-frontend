@@ -46,7 +46,7 @@ export default function AdminLogin() {
             </div>
             <div>
               <h1 className="font-display font-black text-[28px] leading-none">Admin Login</h1>
-              <p className="mt-2 text-sm text-white/60">Secure access to WOLI DAN TECH HUB admin dashboard</p>
+              <p className="mt-2 text-sm text-white/60">Secure access to the DANQEL DIGITAL INSTITUTE admin dashboard</p>
             </div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[11px] font-bold tracking-widest text-amber-300">
               <AlertTriangle className="h-3 w-3" /> RESTRICTED ACCESS

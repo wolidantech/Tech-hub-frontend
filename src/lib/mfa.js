@@ -30,7 +30,7 @@ const codeError = (err) => {
  * Start TOTP enrollment. Returns `{ factorId, secret, uri, qrCode }` where
  * `qrCode` is an SVG data URL that can be dropped straight into an <img>.
  */
-export async function enrollTotp(friendlyName = 'Woli Dan Tech Hub') {
+export async function enrollTotp(friendlyName = 'DANQEL DIGITAL INSTITUTE') {
   const { data, error } = await sb().auth.mfa.enroll({ factorType: 'totp', friendlyName });
   if (error) throw new Error(friendlyError(error, 'Could not start authenticator setup.'));
   return {

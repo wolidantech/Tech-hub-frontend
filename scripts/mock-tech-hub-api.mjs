@@ -107,7 +107,7 @@ const card = (course, index) => ({
   is_published: true,
   created_at: new Date(Date.now() - index * 86400000).toISOString(),
   course_categories: { id: course.category, name: categoryName(course.category) },
-  instructor: { id: 'inst-1', full_name: 'Woli Dan', profile_photo_url: null },
+  instructor: { id: 'inst-1', full_name: 'DANQEL Faculty', profile_photo_url: null },
 });
 
 function outline(course) {

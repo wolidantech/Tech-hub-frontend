@@ -2,6 +2,7 @@
 // truth — every function below reads/writes Postgres (via RLS) or Storage.
 // Rows are mapped to the app's camelCase shapes at the boundary.
 import { requireSb, friendlyError, uploadFile } from './supabase';
+import { INSTITUTE_NAME, BRAND_DESCRIPTION, FACULTY_LABEL, BANK_ACCOUNT_NAME, SUPPORT_EMAIL } from './brand';
 
 const sb = () => requireSb();
 const num = (v, fb = 0) => { const n = Number(v); return Number.isFinite(n) ? n : fb; };
@@ -241,17 +242,18 @@ export const mapConvo = (c) => c && {
 };
 
 export const DEFAULT_SITE_SETTINGS = {
-  siteName: 'WOLI DAN TECH HUB',
+  siteName: INSTITUTE_NAME,
   tagline: 'Learn • Build • Grow',
   whatsapp: '08159610509',
-  supportEmail: 'wolidantech@gmail.com',
+  supportEmail: SUPPORT_EMAIL,
   bankName: 'MONIEPOINT',
   accountNumber: '69852663361',
-  accountName: 'LUNA ENTRY SERVICES- WOLI DAN TECH HUB',
+  // Must match the bank-registered name exactly — see lib/brand.js.
+  accountName: BANK_ACCOUNT_NAME,
   dantechEnabled: true,
   allowRegistration: true,
   facebook: '', instagram: '', twitter: '', youtube: '',
-  metaDescription: 'WOLI DAN TECH HUB — Learn Digital Skills. Build Real Projects. Grow Your Future.',
+  metaDescription: BRAND_DESCRIPTION,
 };
 
 export const mapSettings = (row) => ({
@@ -369,7 +371,7 @@ export const adminCreateCourse = async (input) => {
     slug: input.slug, title: input.title,
     short_description: input.shortDescription || '', description: input.description || '',
     long_description: input.longDescription || '', category: input.category || 'General',
-    instructor: input.instructor || 'Woli Dan', instructor_role: input.instructorRole || '',
+    instructor: input.instructor || FACULTY_LABEL, instructor_role: input.instructorRole || '',
     duration: input.duration || '', level: input.level || 'Beginner',
     price: num(input.price), original_price: num(input.originalPrice),
     thumbnail_key: input.thumbnail || 'default', thumbnail_url: input.thumbnailUrl || null,

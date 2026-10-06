@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { MessageCircle, Mail, Phone, MapPin, ArrowUpRight } from 'lucide-react';
 import { isConfigured } from '../../lib/backendHealth';
+import { BrandFullLockup } from './BrandMark';
+import { COPYRIGHT_LINE, CONTACT_EMAIL, INSTITUTE_NAME } from '../../lib/brand';
 
 export default function Footer() {
   return (
@@ -20,14 +22,7 @@ export default function Footer() {
 
         <div className="py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           <div className="space-y-5">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center font-black">W</div>
-              <div>
-                <div className="font-display font-bold leading-none">WOLI DAN</div>
-                <div className="font-display font-bold text-gradient text-sm tracking-widest leading-none">TECH HUB</div>
-                <div className="text-[10px] tracking-[0.2em] text-white/50 mt-1">LEARN • BUILD • GROW</div>
-              </div>
-            </div>
+            <BrandFullLockup />
             <p className="text-sm text-white/60 leading-relaxed">
               Making quality digital skills training accessible, practical and affordable for every Nigerian youth.
             </p>
@@ -35,7 +30,7 @@ export default function Footer() {
               <a aria-label="Chat on WhatsApp" href="https://wa.me/2348159610509" target="_blank" rel="noreferrer" className="h-11 w-11 rounded-full glass flex items-center justify-center hover:bg-green-500/20 hover:border-green-500/30 transition">
                 <MessageCircle className="h-4 w-4" />
               </a>
-              <a aria-label="Email Woli Dan Tech Hub" href="mailto:info@wolidantech.com" className="h-11 w-11 rounded-full glass flex items-center justify-center hover:bg-white/10 transition">
+              <a aria-label={`Email ${INSTITUTE_NAME}`} href={`mailto:${CONTACT_EMAIL}`} className="h-11 w-11 rounded-full glass flex items-center justify-center hover:bg-white/10 transition">
                 <Mail className="h-4 w-4" />
               </a>
             </div>
@@ -88,7 +83,7 @@ export default function Footer() {
               </a>
               <div className="flex items-center gap-3 text-white/60">
                 <span className="h-8 w-8 rounded-full glass flex items-center justify-center"><Mail className="h-4 w-4" /></span>
-                info@wolidantech.com
+                {CONTACT_EMAIL}
               </div>
               <div className="flex items-center gap-3 text-white/60">
                 <span className="h-8 w-8 rounded-full glass flex items-center justify-center"><MapPin className="h-4 w-4" /></span>
@@ -103,7 +98,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-white/[0.06] py-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-white/40">
-          <div>© 2026 WOLI DAN TECH HUB. All Rights Reserved.</div>
+          <div>{COPYRIGHT_LINE}</div>
           <div className="flex items-center gap-6">
             <span>Digital Skills • Better Opportunities • Real Income</span>
             {/* Was a hardcoded "All systems operational" — a false claim whenever

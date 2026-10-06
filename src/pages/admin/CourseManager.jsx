@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, X, Edit, Trash2, Eye, EyeOff, Save, Image as ImageIcon, ChevronDown, ChevronUp, ListChecks, FolderPlus } from 'lucide-react';
 import { useCourses } from '../../context/CourseContext';
+import { FACULTY_LABEL } from '../../lib/brand';
 import { useLMS } from '../../context/LMSContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatNaira } from '../../lib/utils';
@@ -17,7 +18,7 @@ export default function CourseManager() {
   const { categories, addCategory, deleteCategory, completionRules, setCourseRules, audit, getCourseQuizzes, getCourseAssignments } = useLMS();
 
   const [showAdd, setShowAdd] = useState(false);
-  const [newCourse, setNewCourse] = useState({ title: '', category: categories[0] || 'Design', price: 5000, duration: '5 hours', level: 'Beginner', instructor: 'Woli Dan', description: '' });
+  const [newCourse, setNewCourse] = useState({ title: '', category: categories[0] || 'Design', price: 5000, duration: '5 hours', level: 'Beginner', instructor: FACULTY_LABEL, description: '' });
   const [editing, setEditing] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [managing, setManaging] = useState(null); // course id for curriculum view
@@ -48,7 +49,7 @@ export default function CourseManager() {
       });
       audit(user, 'course.create', 'course', created.id, { title: newCourse.title });
       setShowAdd(false);
-      setNewCourse({ title: '', category: categories[0] || 'Design', price: 5000, duration: '5 hours', level: 'Beginner', instructor: 'Woli Dan', description: '' });
+      setNewCourse({ title: '', category: categories[0] || 'Design', price: 5000, duration: '5 hours', level: 'Beginner', instructor: FACULTY_LABEL, description: '' });
       toast.success('Course created as UNPUBLISHED. Add curriculum, then publish.');
     } catch (err) {
       toast.error(err.message);
