@@ -19,7 +19,7 @@ in the Supabase Dashboard SQL Editor.
 
 ## Exact order
 
-### Fast path (any project that already has migrations 001–010)
+### Fast path (any project that already has migrations 001–011)
 
 One paste, one Run:
 
@@ -46,6 +46,7 @@ Run each migration as a separate SQL Editor query, in numeric order:
 8. `supabase/migrations/008_cv_builder_and_study_tools.sql`
 9. `supabase/migrations/009_fix_is_admin_recursion.sql`
 10. `supabase/migrations/010_certificate_fullname.sql`
+11. `supabase/migrations/011_student_identity_and_exam_access.sql`
 
 Then run these files, one at a time, in this exact order:
 
@@ -55,8 +56,8 @@ Then run these files, one at a time, in this exact order:
 4. `supabase/seed/seed_learning_paths.sql`
 5. `supabase/verify/verify_curriculum.sql` (read-only verification)
 
-In short: **migrations 001–008 → migration 009 → migration 010 → 12-course
-catalog → curriculum → publish eligible courses → four learning paths → verify**.
+In short: **migrations 001–008 → migration 009 → migration 010 → migration 011 →
+12-course catalog → curriculum → publish eligible courses → four learning paths → verify**.
 
 `setup_full_catalog.sql` is the generated combination of the four seed files and
 is useful for a brand-new project. For a production repair, the separate files
@@ -74,20 +75,22 @@ Apply the checked-in sequence below so migration history and data are repaired:
    `verify_certificate`, backfills any NULL/empty `verification_code` (the live
    "—" bug), and re-enforces the NOT NULL invariant. It is idempotent and never
    shuffles already-issued codes.
-3. Run `seed_12_courses.sql`. Existing slug rows are updated without changing
+3. Run `011_student_identity_and_exam_access.sql`. This creates the student ID
+   card table and server-side issuance RPC; it is safe to run on a live project.
+4. Run `seed_12_courses.sql`. Existing slug rows are updated without changing
    their `published`/`featured` flags; missing launch rows are inserted as
    drafts. On the live project the five custom courses match the seeded twin
    slugs, so their copy refreshes in place; the archived duplicate rows are
    never touched.
-4. Run `seed_curriculum.sql` in one execution. Modules and lessons are matched
+5. Run `seed_curriculum.sql` in one execution. Modules and lessons are matched
    by (course slug, module title, lesson title), so on the live project this
    refreshes the twins' cloned curriculum in place instead of duplicating it.
-5. Run `publish_courses.sql`. It only changes `published = false` to `true` for
+6. Run `publish_courses.sql`. It only changes `published = false` to `true` for
    unarchived courses that have at least one module. It never sets any course to
    unpublished. A previously published empty custom course therefore remains a
    separate cleanup decision and will be exposed by verification.
-6. Run `seed_learning_paths.sql`.
-7. Run `verify_curriculum.sql` and save/export the result for the release record.
+7. Run `seed_learning_paths.sql`.
+8. Run `verify_curriculum.sql` and save/export the result for the release record.
 
 ## Pasting the curriculum in SQL Editor (fast path)
 
@@ -340,7 +343,7 @@ access and do not replace these policies.
 ## Migration 009 test and function audit
 
 The repository verification uses **PGlite, a fresh disposable PostgreSQL
-instance**, not the live project. `npm run verify` applies migrations 001–010 in
+instance**, not the live project. `npm run verify` applies migrations 001–011 in
 order and checks that `public.is_admin()` is `SECURITY DEFINER` with
 `search_path=public`. It then switches to non-owner `anon`/`authenticated` test
 roles to verify:

@@ -37,8 +37,9 @@ in this order:
 | 8 | `migrations/008_cv_builder_and_study_tools.sql` | saved CVs, notes and bookmarks |
 | 9 | `migrations/009_fix_is_admin_recursion.sql` | recursion-safe admin helper and archived-course RLS scope |
 | 10 | `migrations/010_certificate_fullname.sql` | full holder name in `verify_certificate`, verification-code backfill |
+| 11 | `migrations/011_student_identity_and_exam_access.sql` | student ID cards, server-issued card numbers, card RLS, and exam-access bundle kind |
 
-> **Do not skip 003 or 009.** 003 owns `on_auth_user_created`, the trigger that
+> **Do not skip 003, 009, or 011.** 003 owns `on_auth_user_created`, the trigger that
 > creates a `profiles` row when someone registers. Without it, authentication succeeds but
 > the app immediately signs the user back out with *"Account setup is incomplete"*
 > — which looks exactly like "users are unable to login". Without 009, guarded
@@ -46,7 +47,9 @@ in this order:
 > the same RLS-protected `profiles` table whose policies call it. Migration 009
 > also pins the two legacy `SECURITY DEFINER` functions that lacked a fixed
 > search path; the verifier checks that no elevated `public` function is left
-> unpinned.
+> unpinned. Migration 011 creates `student_id_cards` and the
+> `issue_student_id_card()` RPC; without it, the profile card cannot load or be
+> issued even though the frontend is deployed.
 
 ## 3. Seed the catalog
 
@@ -208,7 +211,7 @@ prints the key.
 ```bash
 npm ci
 npm --prefix supabase/verify ci
-npm run verify        # migrations 001-010 + backend and non-owner RLS checks
+npm run verify        # migrations 001-011 + backend and non-owner RLS checks
 npm run verify:seed   # seed chain → full curriculum + published catalog
 ```
 

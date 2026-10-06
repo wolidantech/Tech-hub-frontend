@@ -14,16 +14,17 @@ npm run verify:seed
 
 Expected:
 
-- `npm run verify` → `47 passed, 0 failed`
+- `npm run verify` → `53 passed, 0 failed`
 - `npm run verify:seed` → `43 passed, 0 failed`
 
 ## Coverage
 
-`run.mjs` applies migrations 001–010 to a fresh database and behaviorally tests
+`run.mjs` applies migrations 001–011 to a fresh database and behaviorally tests
 auth/profile setup, scoring, coupons, payments, certificates, portfolios,
-storage policy definitions, study tools, migration 009, and migration 010
+storage policy definitions, study tools, migration 009, migration 010
 (full holder name in `verify_certificate`, verification-code backfill and
-its idempotency).
+its idempotency), and migration 011 (photo-required, server-issued student ID
+cards with own-row RLS).
 
 The migration-009 regression creates separate non-owner `verify_anon` and
 `verify_authenticated` PostgreSQL roles. After switching to them, it confirms
