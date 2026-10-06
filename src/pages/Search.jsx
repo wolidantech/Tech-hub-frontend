@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Search as SearchIcon, BookOpen, Map as MapIcon, MessagesSquare, Layers, Paperclip, Sparkles, Briefcase } from 'lucide-react';
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { searchSubjects, coursesForSubject } from '../data/skillsLibrary';
 import { isCatalogCourse } from '../lib/lms';
+import { fetchCourses } from '../lib/catalogApi';
 import { searchOccupations } from '../data/occupations';
 
 export default function Search() {
@@ -13,6 +14,20 @@ export default function Search() {
   const { courses, ensureCourseDetail } = useCourses();
   const { learningPaths, posts, categories } = useLMS();
   const hydrated = useRef(false);
+  // Course hits come from the catalogue API's own search filter
+  // (GET /api/courses?search=…), not from a client-side scan.
+  const [apiCourses, setApiCourses] = useState([]);
+
+  useEffect(() => {
+    if (!q) { setApiCourses([]); return undefined; }
+    const controller = new AbortController();
+    const handle = setTimeout(() => {
+      fetchCourses({ search: q, limit: 24 }, { signal: controller.signal })
+        .then((res) => setApiCourses(res.courses))
+        .catch(() => setApiCourses([]));
+    }, 300);
+    return () => { clearTimeout(handle); controller.abort(); };
+  }, [q]);
 
   // Global search covers lesson titles & resources too — hydrate the
   // curriculum of every published course once so guests can find them.
@@ -26,7 +41,7 @@ export default function Search() {
   const results = useMemo(() => {
     if (!q) return null;
     const pub = courses.filter(isCatalogCourse);
-    const matchCourses = pub.filter((c) => `${c.title} ${c.shortDescription} ${c.category} ${c.level || ''}`.toLowerCase().includes(q));
+    const matchCourses = apiCourses;
     const lessons = [];
     const resources = [];
     pub.forEach((c) => {
@@ -45,7 +60,7 @@ export default function Search() {
     const matchSkills = searchSubjects(q);
     const matchOccs = searchOccupations(q, 18);
     return { matchCourses, lessons: lessons.slice(0, 12), resources: resources.slice(0, 12), matchCats, matchPaths, matchPosts, matchSkills, matchOccs, pub };
-  }, [q, courses, learningPaths, posts, categories]);
+  }, [q, courses, learningPaths, posts, categories, apiCourses]);
 
   return (
     <div className="min-h-screen">

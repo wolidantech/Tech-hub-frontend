@@ -51,7 +51,8 @@ export default function Register() {
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
         <div className="w-full max-w-[440px] space-y-6">
           <div className="text-center space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass text-[11px] font-bold tracking-widest"><Sparkles className="h-3 w-3 text-cyan-300" /> JOIN WOLI DAN TECH HUB</div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass text-[11px] font-bold tracking-widest"><Sparkles className="h-3 w-3 text-cyan-300" /> JOIN DANQEL DIGITAL INSTITUTE</div>
+            <img src="/logo.png" alt="DANQEL DIGITAL INSTITUTE" className="h-24 w-auto max-w-full mb-5" draggable={false} />
             <h1 className="font-display font-black text-[32px] leading-none">Create your account</h1>
             <p className="text-sm text-white/60">Start learning practical digital skills today</p>
           </div>
@@ -81,7 +82,7 @@ export default function Register() {
 
             <div className="flex items-start gap-2 text-[12px] text-white/50">
               <input required type="checkbox" className="mt-1 rounded" />
-              <span>I agree to the <span className="text-white font-semibold">Terms</span> and <span className="text-white font-semibold">Privacy Policy</span> of WOLI DAN TECH HUB</span>
+              <span>I agree to the <span className="text-white font-semibold">Terms</span> and <span className="text-white font-semibold">Privacy Policy</span> of DANQEL DIGITAL INSTITUTE</span>
             </div>
 
             <button disabled={loading} className="w-full btn-primary !py-4 !text-[14px] gap-2 disabled:opacity-60">

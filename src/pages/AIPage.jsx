@@ -26,11 +26,11 @@ const CLOUD_BADGE = {
 
 function TypingDots() {
   return (
-    <div className="flex items-center gap-1.5 px-4 py-3" aria-label="DanTECH AI is typing">
+    <div className="flex items-center gap-1.5 px-4 py-3" aria-label="DANQEL AI is typing">
       {[0, 1, 2].map((i) => (
         <span key={i} className="h-2 w-2 rounded-full bg-cyan-300 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
       ))}
-      <span className="ml-2 text-[11px] text-white/40 font-bold">DanTECH AI is typing…</span>
+      <span className="ml-2 text-[11px] text-white/40 font-bold">DANQEL AI is typing…</span>
     </div>
   );
 }
@@ -115,9 +115,9 @@ function StudyTools({ user, open, onClose }) {
 
           <div className="rounded-2xl glass p-4 text-[11px] text-white/50 leading-relaxed space-y-1.5">
             <p className="font-bold text-white/70">📌 Bookmarks & lesson summaries</p>
-            <p>Bookmark any lesson from its page in the classroom, then use the DanTECH AI panel there for lesson-specific summaries, quizzes and questions.</p>
+            <p>Bookmark any lesson from its page in the classroom, then use the DANQEL AI panel there for lesson-specific summaries, quizzes and questions.</p>
             <p className="font-bold text-white/70 pt-1">🔒 Privacy</p>
-            <p>DanTECH AI only sees what YOU paste or upload here. It never sees other students' files or submissions.</p>
+            <p>DANQEL AI only sees what YOU paste or upload here. It never sees other students' files or submissions.</p>
           </div>
         </div>
       </div>
@@ -215,8 +215,8 @@ export default function AIPage() {
         patchConvo(convo.id, (c) => ({ ...c, messages: [...c.messages, { role: 'assistant', content: '_(stopped by you — ask me to continue or rephrase)_', ts: Date.now(), mode }] }));
       } else {
         setCloudState('degraded');
-        setIssue({ code: err.code || 'unknown', message: err.message || 'DanTECH AI hit an error', retryAfterMs: err.retryAfterMs || 0, base, text });
-        toast.error(err.message || 'DanTECH AI hit an error');
+        setIssue({ code: err.code || 'unknown', message: err.message || 'DANQEL AI hit an error', retryAfterMs: err.retryAfterMs || 0, base, text });
+        toast.error(err.message || 'DANQEL AI hit an error');
       }
     } finally { setBusy(false); ctrlRef.current = null; }
   };
@@ -350,7 +350,7 @@ export default function AIPage() {
                 <div className="text-center py-10 md:py-16">
                   <div className="inline-flex h-16 w-16 rounded-3xl bg-gradient-to-br from-cyan-400 to-purple-500 items-center justify-center text-3xl shadow-[0_0_60px_rgba(34,211,238,0.35)]">🤖</div>
                   <h1 className="font-display font-black text-2xl md:text-4xl mt-5">Hi {user?.fullName?.split?.(' ')[0] || 'there'}! Ask me anything.</h1>
-                  <p className="text-white/50 mt-2 max-w-[520px] mx-auto text-sm md:text-base">Lessons, code, careers, CVs, business — pick a mode above and go. For lesson-specific help, open DanTECH AI on the lesson page.</p>
+                  <p className="text-white/50 mt-2 max-w-[520px] mx-auto text-sm md:text-base">Lessons, code, careers, CVs, business — pick a mode above and go. For lesson-specific help, open DANQEL AI on the lesson page.</p>
                   <div className="mt-6 flex flex-wrap justify-center gap-2 max-w-[640px] mx-auto">
                     {QUICK_ACTIONS.slice(0, 6).map((qa) => (
                       <button key={qa.id} onClick={() => send(qa.prompt)} className="px-4 py-2.5 rounded-full glass text-xs font-bold hover:bg-white/10 transition">{qa.label}</button>
@@ -377,7 +377,7 @@ export default function AIPage() {
                   ) : (
                     <div className="glass rounded-2xl rounded-tl-lg p-4 sm:p-5 max-w-full">
                       <div className="flex items-center gap-2 mb-2 text-[10px] font-bold tracking-widest text-white/35">
-                        <span className="text-cyan-300">DANTECH AI</span>
+                        <span className="text-cyan-300">DANQEL AI</span>
                         {m.mode && <span className="px-2 py-0.5 rounded-full bg-white/5 text-white/50">{AI_MODES.find((x) => x.id === m.mode)?.name?.toUpperCase() || m.mode}</span>}
                         {m.provider === 'secure-backend' && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-400/10 text-emerald-200" title="Answered by your server-side AI gateway">
@@ -444,7 +444,7 @@ export default function AIPage() {
                 <input ref={fileRef} type="file" accept=".txt,.md,.csv,.json" className="hidden" onChange={onFile} aria-hidden="true" tabIndex={-1} />
                 <button onClick={() => fileRef.current?.click()} aria-label="Attach a text file" className="h-11 w-11 shrink-0 rounded-full glass flex items-center justify-center text-white/50 hover:text-cyan-300 transition"><Paperclip className="h-4 w-4" /></button>
                 <textarea ref={taRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={onKey} rows={1}
-                  placeholder={`Message DanTECH AI (${modeObj?.name})…`} aria-label="Message DanTECH AI"
+                  placeholder={`Message DANQEL AI (${modeObj?.name})…`} aria-label="Message DANQEL AI"
                   className="flex-1 max-h-40 min-h-[44px] rounded-2xl bg-white/[0.05] border border-white/10 px-4 py-3 text-sm resize-none focus:outline-none focus:border-cyan-400/60 placeholder:text-white/30" />
                 {busy ? (
                   <button onClick={stop} aria-label="Stop generating" className="h-11 w-11 shrink-0 rounded-full bg-red-500/90 flex items-center justify-center"><Square className="h-4 w-4" /></button>

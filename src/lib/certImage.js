@@ -32,15 +32,16 @@ const PIXEL_RATIO = 3;
 const FALLBACK_RATIO = 2;
 
 /**
- * Stand-in for any artwork that cannot be inlined: drawn from the same gold-on-
- * navy palette as the sheet, as an SVG data URL (no canvas, no network, no CORS,
- * so it works inside the serialized SVG where a real file would not).
+ * The school's official logo (rebuilt as vector geometry — public/mark.svg)
+ * placed on a gold-bordered navy tile, emitted as an SVG data URL so it survives
+ * inside the serialized certificate SVG (no canvas, no network, no CORS).
  */
+import { MARK_PNG_DATA_URL } from './logoPng';
 export const BRAND_TILE_DATA_URL = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">`
   + `<rect width="128" height="128" fill="${NAVY}"/><rect x="7" y="7" width="114" height="114" fill="none" stroke="${GOLD}" stroke-width="3"/>`
-  + `<path d="m34 44 12 42 18-28 18 28 12-42" fill="none" stroke="${GOLD_LIGHT}" stroke-width="7" stroke-linejoin="round"/>`
-  + `<text x="64" y="112" text-anchor="middle" font-family="Georgia,serif" font-size="11" letter-spacing="2" fill="${GOLD}">WOLI DAN</text></svg>`,
+  + `<image href="${MARK_PNG_DATA_URL}" x="6" y="14" width="115" height="92"/>`
+  + `<text x="64" y="121" text-anchor="middle" font-family="Georgia,serif" font-size="11" letter-spacing="2" fill="${GOLD}">DANQEL</text></svg>`,
 )}`;
 
 const isInline = (src) => /^(data:|blob:)/i.test(String(src || ''));
@@ -177,14 +178,14 @@ export async function captureCertificatePng(node, { pixelRatio = PIXEL_RATIO } =
   }
 }
 
-/** `WOLI-DAN-TECH-HUB-certificate-WDTH-2026-93E108.png` */
+/** `DANQEL-certificate-WDTH-2026-93E108.png` */
 export function certificateFileName(certificateId) {
   const id = String(certificateId || '')
     .trim()
     .replace(/[^A-Za-z0-9._-]+/g, '-')
     .replace(/^[-.]+|[-.]+$/g, '')
     .slice(0, 80);
-  return `WOLI-DAN-TECH-HUB-certificate-${id || 'certificate'}.png`;
+  return `DANQEL-certificate-${id || 'certificate'}.png`;
 }
 
 /** Desktop path: an <a download> click, object URL first, data URL if unavailable. */

@@ -481,7 +481,7 @@ export function diagnosticsToText(report) {
   if (!report) return '';
   const icon = { pass: 'PASS', warn: 'WARN', fail: 'FAIL', skip: 'SKIP' };
   const lines = [
-    'WOLI DAN TECH HUB — backend diagnostics',
+    'DANQEL DIGITAL INSTITUTE — backend diagnostics',
     `origin:   ${report.origin}`,
     `backend:  ${report.url}`,
     `checked:  ${report.checkedAt}`,

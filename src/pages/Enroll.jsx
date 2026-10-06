@@ -4,6 +4,7 @@ import { Shield, Copy, CheckCircle2, Upload, AlertTriangle, ArrowLeft, FileText,
 import { useCourses } from '../context/CourseContext';
 import { useLMS } from '../context/LMSContext';
 import { useAuth } from '../context/AuthContext';
+import { BANK_ACCOUNT_NAME } from '../lib/brand';
 import { copyText, formatNaira } from '../lib/utils';
 import { toast, Toaster } from 'sonner';
 import CourseArt from '../components/course/CourseArt';
@@ -24,7 +25,8 @@ export default function Enroll() {
   const BANK_DETAILS = {
     bankName: siteSettings?.bankName || 'MONIEPOINT',
     accountNumber: siteSettings?.accountNumber || '69852663361',
-    accountName: siteSettings?.accountName || 'LUNA ENTRY SERVICES- WOLI DAN TECH HUB',
+    // Must match the bank-registered account name exactly — see lib/brand.js.
+    accountName: siteSettings?.accountName || BANK_ACCOUNT_NAME,
   };
 
   const [form, setForm] = useState({
@@ -254,7 +256,7 @@ export default function Enroll() {
             <div className="h-20 w-20 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mx-auto"><FileText className="h-10 w-10 text-amber-400" /></div>
             <div>
               <h1 className="font-display font-black text-2xl md:text-3xl">Payment submitted successfully.</h1>
-              <p className="mt-3 text-white/70 leading-relaxed">Your payment is now <span className="text-amber-300 font-bold">PENDING</span> manual verification by WOLI DAN TECH HUB. Course access stays locked until an administrator approves your payment.</p>
+              <p className="mt-3 text-white/70 leading-relaxed">Your payment is now <span className="text-amber-300 font-bold">PENDING</span> manual verification by DANQEL DIGITAL INSTITUTE. Course access stays locked until an administrator approves your payment.</p>
             </div>
             <PaymentFlow status="pending" className="justify-center" />
             <div className="glass rounded-2xl p-6 text-left space-y-3">

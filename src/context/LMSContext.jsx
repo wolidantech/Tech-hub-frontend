@@ -584,7 +584,7 @@ export const LMSProvider = ({ children }) => {
     .filter((l) => !courseIds || !l.courseId || courseIds.includes(l.courseId))
     .sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`)), [liveClasses]);
 
-  // ---------------- DanTECH AI conversations ----------------
+  // ---------------- DANQEL AI conversations ----------------
   const saveConvo = async (convo) => {
     const saved = await saveConvoRow(convo);
     setAIConvos((prev) => {

@@ -1,4 +1,4 @@
-# WOLI DAN TECH HUB — Server Reference
+# DANQEL DIGITAL INSTITUTE — Server Reference
 
 The frontend (`/src`) is **not** standalone: it requires a Supabase backend for
 all accounts, courses, payments and certificates, and `SetupGate` blocks every

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Sparkles, X, RefreshCw, Check, Trash2, Eye, Upload, ChevronDown } from 'lucide-react';
 import { useCourses } from '../../context/CourseContext';
 import { useLMS } from '../../context/LMSContext';
+import { FACULTY_LABEL } from '../../lib/brand';
 import { useAuth } from '../../context/AuthContext';
 import { AI_KINDS, getActiveProviderName, isCloudAIEnabled } from '../../lib/ai';
 import { renderLessonMarkdown } from '../../lib/lms';
@@ -70,7 +71,7 @@ export default function AIStudio() {
         const created = await addCourse({
           slug, title: d.title.toUpperCase(), shortDescription: (d.description || '').slice(0, 120),
           description: d.description, longDescription: d.description, category: d.category || 'General',
-          instructor: 'Woli Dan', instructorRole: 'Instructor', duration: d.duration,
+          instructor: FACULTY_LABEL, instructorRole: 'Instructor', duration: d.duration,
           level: d.level, price: 5000, originalPrice: 10000,
           thumbnail: 'default', published: false, featured: false,
           whatYouWillLearn: d.learningObjectives || [],

@@ -3,6 +3,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, LogOut, LayoutDashboard, User, Shield, CreditCard, BookOpen, Search, FileText, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCourses } from '../../context/CourseContext';
+import { BrandNavLockup } from './BrandMark';
+import { INSTITUTE_NAME } from '../../lib/brand';
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -24,6 +26,7 @@ export default function Navbar() {
     { to: '/courses', label: 'Skills Library' },
     { to: '/learning-paths', label: 'Paths' },
     { to: '/career-hub', label: 'Career' },
+    { to: '/jamb-cbt', label: 'JAMB CBT' },
     { to: '/cv-builder', label: 'CV Builder' },
     ...(user && !isAdmin ? [{ to: '/ai', label: 'AI' }] : []),
     { to: '/verify-certificate', label: 'Verify' },
@@ -43,8 +46,8 @@ export default function Navbar() {
     <nav className="mobile-safe-top sticky top-0 z-50 max-w-full border-b border-white/[0.06] bg-[#020a1f]/80 backdrop-blur-2xl">
       <div className="safe-inline mx-auto max-w-[1920px] lg:px-8">
         <div className="flex h-[72px] min-w-0 items-center justify-between gap-3">
-          <Link to="/" className="flex min-h-11 min-w-0 items-center gap-3">
-            <img src="/logo.svg" alt="WOLI DAN TECH HUB — Learn • Build • Grow" className="w-[160px] sm:w-[190px] h-auto max-h-12" />
+          <Link to="/" aria-label={INSTITUTE_NAME} className="flex min-h-11 min-w-0 items-center gap-3">
+            <BrandNavLockup />
           </Link>
 
           <div className="hidden min-[1600px]:flex items-center gap-1">
@@ -118,7 +121,7 @@ export default function Navbar() {
             </Link>
             {user && !isAdmin && (
               <Link to="/ai" onClick={() => setOpen(false)} className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-purple-400/40 bg-purple-500/10 text-purple-200 font-bold text-sm">
-                <Sparkles className="h-4 w-4" /> Open DanTECH AI Full Page
+                <Sparkles className="h-4 w-4" /> Open DANQEL AI Full Page
               </Link>
             )}
             <div className="pt-4 border-t border-white/10 space-y-3">

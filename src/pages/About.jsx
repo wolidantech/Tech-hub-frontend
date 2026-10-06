@@ -6,9 +6,9 @@ export default function About() {
     <div className="min-h-screen bg-gradient-to-br from-[#020a1f] via-[#061236] to-[#020a1f]">
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-16">
         <div className="max-w-[800px] mx-auto text-center space-y-6 mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-[11px] font-bold tracking-widest">ABOUT WOLI DAN TECH HUB</div>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-[11px] font-bold tracking-widest">ABOUT DANQEL DIGITAL INSTITUTE</div>
           <h1 className="font-display font-black text-[36px] md:text-[56px] leading-[0.9]">We Make Digital Skills <span className="text-gradient">Accessible For All</span></h1>
-          <p className="text-[18px] text-white/60 leading-relaxed">WOLI DAN TECH HUB helps students, beginners, entrepreneurs, creatives and aspiring professionals develop practical digital skills that create real opportunities in the digital economy.</p>
+          <p className="text-[18px] text-white/60 leading-relaxed">DANQEL DIGITAL INSTITUTE helps students, beginners, entrepreneurs, creatives and aspiring professionals develop practical digital skills that create real opportunities in the digital economy.</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6 max-w-[960px] mx-auto mb-16">
@@ -28,7 +28,7 @@ export default function About() {
 
         <div className="max-w-[1080px] mx-auto grid lg:grid-cols-3 gap-8 mb-20">
           <div className="lg:col-span-2 space-y-6">
-            <h2 className="font-display font-bold text-[28px] leading-tight">Why WOLI DAN TECH HUB?</h2>
+            <h2 className="font-display font-bold text-[28px] leading-tight">Why DANQEL DIGITAL INSTITUTE?</h2>
             <div className="grid sm:grid-cols-2 gap-4">
               {[
                 { title: 'Practical Training', desc: 'No boring theory. Learn by building real projects you can show to clients.' },

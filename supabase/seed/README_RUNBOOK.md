@@ -1,6 +1,6 @@
 # Curriculum restore runbook
 
-Use this runbook for the WOLI DAN TECH HUB Supabase project. It is intentionally
+Use this runbook for the DANQEL DIGITAL INSTITUTE Supabase project. It is intentionally
 credential-free: all production actions are performed by an authorized operator
 in the Supabase Dashboard SQL Editor.
 

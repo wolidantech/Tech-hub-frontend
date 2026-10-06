@@ -11,6 +11,7 @@ import QuizTaker from '../components/learn/QuizTaker';
 import AssignmentPanel from '../components/learn/AssignmentPanel';
 import Discussions from '../components/learn/Discussions';
 import { evaluateCompletion, getCourseCompletionRules, isCatalogCourse } from '../lib/lms';
+import { fetchClassroom } from '../lib/catalogApi';
 import { signedUrl } from '../lib/supabase';
 import { toast, Toaster } from 'sonner';
 
@@ -156,6 +157,9 @@ export default function Learn() {
   const [sidebarOpen, setSidebarOpen] = useState(false); // mobile drawer
   const [savingProgress, setSavingProgress] = useState(false);
   const [query, setQuery] = useState(''); // curriculum search
+  // Classroom payload from the authenticated endpoint
+  // (GET /api/classroom/:slug) — the enrolled student's curriculum.
+  const [classroom, setClassroom] = useState(null);
 
   // Admin preview: admins can walk the exact student classroom before
   // publishing, without needing an enrollment. Backend RLS already lets
@@ -163,7 +167,15 @@ export default function Learn() {
   const isAdmin = user?.role === 'admin';
   const preview = isAdmin && searchParams.get('preview') === '1';
 
-  const course = getCourseBySlug(slug);
+  const contextCourse = getCourseBySlug(slug);
+  // Enrolled students get their curriculum from the authenticated classroom
+  // endpoint; its lessons (contents, videos, resources, quizzes) override the
+  // catalog row so the classroom shows exactly what the API grants access to.
+  const course = useMemo(() => (
+    classroom?.curriculum?.length
+      ? { ...contextCourse, curriculum: classroom.curriculum, title: contextCourse?.title || classroom.course?.title }
+      : contextCourse
+  ), [contextCourse, classroom]);
   const progress = course && user ? getProgress(user.id, course.id) : { completedLessons: [], progress: 0, lastLessonId: null };
 
   useEffect(() => {
@@ -172,11 +184,26 @@ export default function Learn() {
     setCertChecked(false);
     setDetailError('');
     setDetailLoading(true);
-    if (course?.id && !dataLoading) Promise.all([ensureCourseDetail(course.id), refreshCourseAssessments(course.id)])
+    const load = async () => {
+      // 1. The authenticated classroom endpoint is the student's source of
+      //    truth for curriculum access.
+      try {
+        const data = await fetchClassroom(slug);
+        if (alive) setClassroom(data);
+      } catch (err) {
+        // 2. Fall back to the direct database read (RLS-gated) so the
+        //    classroom still works when the API is not deployed.
+        if (alive && course?.id && !dataLoading) await ensureCourseDetail(course.id);
+        if (alive && err?.message) console.warn('[classroom] API unavailable, using database curriculum:', err.message);
+      }
+      if (alive && course?.id) await refreshCourseAssessments(course.id).catch(() => {});
+    };
+    if (course?.id && !dataLoading) load()
       .catch(err => { if (alive) setDetailError(err.message); })
       .finally(() => { if (alive) setDetailLoading(false); });
     return () => { alive = false; };
-  }, [course?.id, accessKey, dataLoading, retry, ensureCourseDetail, refreshCourseAssessments]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contextCourse?.id, slug, accessKey, dataLoading, retry, ensureCourseDetail, refreshCourseAssessments]);
 
   const allLessons = useMemo(() => (course?.curriculum || []).flatMap((m) => (m.lessons || []).map((l) => ({ ...l, moduleId: m.id, moduleTitle: m.title }))), [course]);
   const totalLessons = allLessons.length;
@@ -233,7 +260,7 @@ export default function Learn() {
     setActiveModuleId(moduleId);
     setSidebarOpen(false);
     setView(!lesson.videoUrl && !lesson.videoStoragePath ? 'read' : 'video');
-    // Publish context for DanTECH AI
+    // Publish context for DANQEL AI
     try { sessionStorage.setItem('wdth_lesson_ctx', JSON.stringify({ courseId: course.id, lessonId: lesson.id })); } catch { /* ignore */ }
   };
 
@@ -518,7 +545,7 @@ export default function Learn() {
                   </button>
                   {!isAdmin && (
                     <button onClick={() => window.dispatchEvent(new CustomEvent('wdth_open_dantech', { detail: { prompt: `Explain this lesson in simple terms: ${activeLesson.title}` } }))} className="min-h-11 inline-flex items-center justify-center gap-2 px-4 rounded-full glass text-xs font-bold text-purple-300 hover:bg-white/10 transition">
-                      <Sparkles className="h-3.5 w-3.5" /> Ask DanTECH AI
+                      <Sparkles className="h-3.5 w-3.5" /> Ask DANQEL AI
                     </button>
                   )}
                 </div>
@@ -572,7 +599,7 @@ export default function Learn() {
                 <div className="rounded-2xl bg-gradient-to-br from-green-500/15 to-emerald-600/15 border border-green-500/30 p-6 text-center">
                   <Award className="h-10 w-10 mx-auto text-green-300 mb-2" />
                   <div className="font-black text-xl">All Requirements Completed! 🎓</div>
-                  <p className="text-sm text-white/60 mt-1">Your WOLI DAN TECH HUB certificate is ready.</p>
+                  <p className="text-sm text-white/60 mt-1">Your DANQEL DIGITAL INSTITUTE certificate is ready.</p>
                   <Link to="/certificates" className="min-h-11 inline-flex items-center mt-4 px-6 py-3 rounded-full bg-green-500 text-white font-bold text-sm">VIEW & DOWNLOAD CERTIFICATE</Link>
                 </div>
               )}

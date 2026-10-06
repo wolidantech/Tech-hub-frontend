@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, Eye, EyeOff, Sparkles, Shield, Stethoscope } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Eye, EyeOff, Sparkles, Shield, Stethoscope, Fingerprint, KeyRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { isPasskeyAvailable, PASSKEY_PRIVACY_NOTE } from '../lib/passkeys';
 import { toast, Toaster } from 'sonner';
 
 export default function Login() {
@@ -12,28 +13,77 @@ export default function Login() {
   // Set when the failure is the backend connection rather than the password,
   // so we can offer diagnostics instead of a toast that vanishes in 4 seconds.
   const [backendIssue, setBackendIssue] = useState(null);
-  const { login } = useAuth();
+  // 'credentials' -> email + password; 'totp' -> the Google Authenticator step
+  // that follows a password sign-in for accounts with a verified factor.
+  const [step, setStep] = useState('credentials');
+  const [code, setCode] = useState('');
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [passkeyReady, setPasskeyReady] = useState(false);
+  const { login, loginWithPasskey, needsSecondFactor, completeTotpLogin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from || '/dashboard';
+
+  // Passkeys need WebAuthn: only advertise the button on browsers that have it.
+  useEffect(() => {
+    let alive = true;
+    isPasskeyAvailable().then((ok) => { if (alive) setPasskeyReady(!!ok); });
+    return () => { alive = false; };
+  }, []);
+
+  const goAfterLogin = (user) => {
+    toast.success(`Welcome back, ${user.fullName}!`);
+    setTimeout(() => {
+      if (user.role === 'admin') navigate('/admin/dashboard');
+      else if (!user.onboarded) navigate('/onboarding');
+      else navigate(from);
+    }, 500);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setBackendIssue(null);
     try {
-      const user = await login(email, password);
-      toast.success(`Welcome back, ${user.fullName}!`);
-      setTimeout(() => {
-        if (user.role === 'admin') navigate('/admin/dashboard');
-        else if (!user.onboarded) navigate('/onboarding');
-        else navigate(from);
-      }, 500);
+      // A password sign-in only lands on AAL2 once the second factor is checked,
+      // so an account with an authenticator gets the code step first.
+      if (await needsSecondFactor()) {
+        setPendingEmail(email);
+        setStep('totp');
+        setCode('');
+        return;
+      }
+      goAfterLogin(await login(email, password));
     } catch (err) {
       const msg = err?.message || 'Login failed. Please try again.';
       toast.error(msg);
       const isBackend = /network|failed to fetch|cannot reach|backend not configured|check your connection|something went wrong/i.test(msg);
       if (isBackend) setBackendIssue(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Passkey sign-in: the browser runs the WebAuthn ceremony, Supabase verifies it.
+  const handlePasskey = async () => {
+    setLoading(true);
+    setBackendIssue(null);
+    try {
+      goAfterLogin(await loginWithPasskey());
+    } catch (err) {
+      toast.error(err?.message || 'Passkey sign-in failed. You can still use your password.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTotp = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      goAfterLogin(await completeTotpLogin(code));
+    } catch (err) {
+      toast.error(err?.message || 'That code was not accepted');
     } finally {
       setLoading(false);
     }
@@ -46,6 +96,7 @@ export default function Login() {
         <div className="w-full max-w-[420px] space-y-8">
           <div className="text-center space-y-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass text-[11px] font-bold tracking-widest"><Sparkles className="h-3 w-3 text-cyan-300" /> WELCOME BACK</div>
+            <img src="/logo.png" alt="DANQEL DIGITAL INSTITUTE" className="h-24 w-auto max-w-full mb-5" draggable={false} />
             <h1 className="font-display font-black text-[32px] leading-none">Login to your account</h1>
             <p className="text-sm text-white/60">Continue your learning journey</p>
           </div>
@@ -66,6 +117,48 @@ export default function Login() {
             </div>
           )}
 
+          {step === 'totp' && (
+            <form onSubmit={handleTotp} className="space-y-5 glass-strong rounded-[24px] p-6">
+              <div className="flex items-center gap-2 text-cyan-300 font-bold text-sm">
+                <KeyRound className="h-4 w-4" /> TWO-STEP VERIFICATION
+              </div>
+              <p className="text-xs text-white/60 leading-relaxed">
+                {pendingEmail ? `Enter the 6-digit code from your authenticator app for ${pendingEmail}.` : 'Enter the 6-digit code from your authenticator app.'}
+                {' '}Codes change every 30 seconds.
+              </p>
+              <input
+                autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={8} value={code}
+                onChange={e => setCode(e.target.value)} placeholder="123456"
+                className="w-full h-[56px] rounded-2xl glass text-center text-2xl tracking-[0.5em] focus:outline-none focus:border-cyan-400/50"
+              />
+              <button disabled={loading || code.replace(/\s/g, '').length < 6} className="w-full btn-primary !py-4 !text-[14px] gap-2 disabled:opacity-60">
+                {loading ? 'CHECKING...' : 'VERIFY & CONTINUE'} <ArrowRight className="h-4 w-4" />
+              </button>
+              <button type="button" onClick={() => { setStep('credentials'); setCode(''); }}
+                className="w-full text-xs text-white/50 hover:text-white font-bold">
+                USE A DIFFERENT ACCOUNT
+              </button>
+            </form>
+          )}
+
+          {passkeyReady && step === 'credentials' && (
+            <div className="glass-strong rounded-[24px] p-5 space-y-3">
+              <div className="flex items-start gap-3">
+                <Fingerprint className="h-5 w-5 text-cyan-300 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <div className="font-bold text-sm">Sign in with a passkey</div>
+                  <p className="mt-1 text-[11px] text-white/50 leading-relaxed">{PASSKEY_PRIVACY_NOTE}</p>
+                </div>
+              </div>
+              <button type="button" onClick={handlePasskey} disabled={loading}
+                className="w-full h-11 rounded-full glass border border-white/15 text-xs font-bold hover:bg-white/10 disabled:opacity-60 transition">
+                {loading ? 'WAITING FOR YOUR DEVICE...' : 'USE FACE ID / FINGERPRINT / PIN'}
+              </button>
+              <div className="text-[10px] text-white/35 text-center font-bold tracking-widest">OR USE YOUR PASSWORD</div>
+            </div>
+          )}
+
+          {step === 'credentials' && (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-4">
               <div className="relative">
@@ -113,6 +206,7 @@ export default function Login() {
               </div>
             </div>
           </form>
+          )}
         </div>
       </div>
 
