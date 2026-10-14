@@ -1,4 +1,4 @@
-// PGlite behavioral verification for migrations 001-011.
+// PGlite behavioral verification for migrations 001-012.
 // Most fixtures run as the database owner; H26 creates and switches to genuine
 // non-owner anon/authenticated roles so PostgreSQL enforces the catalog/content
 // RLS policies and catches is_admin() recursion on a fresh database.
@@ -19,12 +19,12 @@ const migrations = [
   '004_notify_and_counts.sql', '005_showcase_reads.sql', '006_payment_notes.sql',
   '007_classroom_upgrade.sql', '008_cv_builder_and_study_tools.sql',
   '009_fix_is_admin_recursion.sql', '010_certificate_fullname.sql',
-  '011_student_identity_and_exam_access.sql',
+  '011_student_identity_and_exam_access.sql', '012_lecturers_review_workflow.sql',
 ];
 for (const f of migrations) {
   await db.exec(readFileSync(`${MIG}/${f}`, 'utf8'));
 }
-console.log('migrations 001-011 applied clean');
+console.log('migrations 001-012 applied clean');
 
 const ADMIN = '11111111-1111-1111-1111-111111111111';
 const STU = '22222222-2222-2222-2222-222222222222';
@@ -105,7 +105,7 @@ await t('H1 schema: tables/columns/buckets/constraints', async () => {
     where table_schema='public' and table_name='manual_payments' and column_name='course_id'`);
   assert(nul.n === 'YES', 'manual_payments.course_id still NOT NULL');
   const buckets = await one(`select count(*) c from storage.buckets`);
-  assert(Number(buckets.c) === 7, 'expected 7 buckets, got ' + buckets.c);
+  assert(Number(buckets.c) === 8, 'expected 8 buckets, got ' + buckets.c);
   const chk = await one(`select pg_get_constraintdef(oid) d from pg_constraint where conname='quiz_questions_type_check'`);
   assert(chk.d.includes('short_answer'), 'short_answer missing from CHECK');
   const ann = await one(`select count(*) c from information_schema.tables where table_schema='public' and table_name='announcements'`);
@@ -413,9 +413,9 @@ await t('H19 bundle payment approval fans out enrollments', async () => {
   }, 'Admin only');
   await as(ADMIN);
   await q(`insert into auth.users (id, email, raw_user_meta_data) values
-    ('44444444-4444-4444-4444-444444444444','cara@example.com','{"full_name":"Cara"}')`);
-  await q(`select enroll_bundle_courses(null,'44444444-4444-4444-4444-444444444444',array['${COURSE}'::uuid],'admin@wolidantech.com')`);
-  const be = await one(`select status, approved_by from enrollments where user_id='44444444-4444-4444-4444-444444444444'`);
+    ('44444444-4444-4444-4444-444444444445','cara@example.com','{"full_name":"Cara"}')`);
+  await q(`select enroll_bundle_courses(null,'44444444-4444-4444-4444-444444444445',array['${COURSE}'::uuid],'admin@wolidantech.com')`);
+  const be = await one(`select status, approved_by from enrollments where user_id='44444444-4444-4444-4444-444444444445'`);
   assert(be.status === 'active' && be.approved_by === 'admin@wolidantech.com', 'admin bundle enroll wrong');
 });
 
@@ -791,6 +791,56 @@ await t('H31 bundles carry a kind so exam passes are distinguishable from course
   }, 'check');
 });
 
+// ---------- H32: migration 012 — lecturer review workflow ----------
+await t('H32 lecturers cannot publish or release; admin approval applies only the exact version', async () => {
+  const LEC = '99999999-9999-9999-9999-999999999999';
+  await q(`insert into auth.users (id,email,raw_user_meta_data) values ('${LEC}','lec@example.com','{"full_name":"Test Lecturer"}')`);
+  await as(ADMIN);
+  await one(`select admin_promote_lecturer('${LEC}'::uuid) r`);
+  // Unassigned lecturer cannot draft for the course.
+  await as(LEC);
+  await tErr('H32a unassigned lecturer draft is rejected', async () => {
+    await one(`select lecturer_save_content_draft('${COURSE}'::uuid,'module','create',null,'{"title":"Blocked"}'::jsonb,null) r`);
+  }, 'not assigned');
+  await as(ADMIN);
+  await one(`select admin_assign_lecturer_course('${LEC}'::uuid,'${COURSE}'::uuid) r`);
+  await as(LEC);
+  const saved = (await one(`select lecturer_save_content_draft('${COURSE}'::uuid,'module','create',null,'{"title":"Lecturer Module","position":9}'::jsonb,null) r`)).r;
+  assert(saved.status === 'draft', 'draft not saved');
+  const submitted = (await one(`select lecturer_submit_content('${saved.id}'::uuid) r`)).r;
+  assert(submitted.status === 'pending_review', 'draft did not enter pending_review');
+  // Student-visible live table unchanged while pending.
+  const pendingLive = await one(`select count(*)::int n from course_modules where title='Lecturer Module'`);
+  assert(pendingLive.n === 0, 'pending lecturer content leaked to live modules');
+  // Lecturer cannot review/publish own work.
+  await tErr('H32b lecturer cannot approve own work', async () => {
+    await one(`select admin_review_content('${saved.id}'::uuid,'approved','') r`);
+  }, 'Admin only');
+  await as(ADMIN);
+  const approved = (await one(`select admin_review_content('${saved.id}'::uuid,'approved','') r`)).r;
+  assert(approved.status === 'approved', 'admin approval failed');
+  const published = (await one(`select admin_publish_content('${saved.id}'::uuid) r`)).r;
+  assert(published.status === 'published', 'admin publish failed');
+  const live = await one(`select count(*)::int n from course_modules where title='Lecturer Module'`);
+  assert(live.n === 1, 'approved content was not published exactly once');
+
+  // Grading: lecturer marks stay unofficial until admin release.
+  await q(`insert into assignment_submissions (assignment_id,course_id,user_id,student_name,status) values ('${ASG}','${COURSE}','${STU}','Ada Lovelace','submitted')`);
+  const sub = await one(`select id from assignment_submissions where assignment_id='${ASG}' and user_id='${STU}' order by submitted_at desc limit 1`);
+  await as(LEC);
+  const grade = (await one(`select lecturer_save_grade('${sub.id}'::uuid,88,'Good work',null) r`)).r;
+  await one(`select lecturer_submit_grade('${grade.id}'::uuid) r`);
+  const before = await one(`select score,status from assignment_submissions where id='${sub.id}'`);
+  assert(before.score === null && before.status === 'submitted', 'unapproved marks leaked to official record');
+  await as(ADMIN);
+  await one(`select admin_review_grade('${grade.id}'::uuid,'approved','') r`);
+  await one(`select admin_release_grade('${grade.id}'::uuid) r`);
+  const after = await one(`select score,status from assignment_submissions where id='${sub.id}'`);
+  assert(after.score === 88 && after.status === 'approved', 'released marks were not applied');
+  await anon();
+});
+
 console.log(`\n==== RESULT: ${pass} passed, ${fail} failed ====`);
+
 process.exit(fail ? 1 : 0);
 

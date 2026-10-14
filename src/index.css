@@ -299,3 +299,14 @@ a, button, summary, label, select, [role="button"] {
   .cert-sheet { box-shadow: none !important; border-radius: 0 !important; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 }
+
+/* Lecturer/admin responsive hardening: long data becomes contained scroll or
+   stacked cards; page itself never scrolls sideways. */
+.table-scroll { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.table-scroll > table { min-width: 640px; }
+img, video, canvas, svg { max-width: 100%; }
+button, a, input, select, textarea { touch-action: manipulation; }
+@media (max-width: 767px) {
+  input, select, textarea { max-width: 100%; }
+  .glass { overflow-wrap: anywhere; }
+}

@@ -22,7 +22,7 @@ export default function Profile() {
     showCertificates: user?.showCertificates !== false, showProjects: user?.showProjects !== false,
   });
   const [pwd, setPwd] = useState({ current: '', next: '', confirm: '' });
-  const { card, status: cardStatus, error: cardError, issuing, issue } = useStudentIdCard(user);
+  const { card, status: cardStatus, error: cardError, issuing, issue, reload: reloadCard } = useStudentIdCard(user);
 
   if (!user) return null;
   const enrollments = getUserEnrollments(user.id);
@@ -112,7 +112,7 @@ export default function Profile() {
               <h3 className="font-bold flex items-center gap-2"><IdCard className="h-5 w-5 text-cyan-300" /> Student ID Card</h3>
               <StudentIdCard
                 card={card} status={cardStatus} error={cardError} issuing={issuing}
-                onIssue={generateCard} onPhotoChange={handlePhotoFile}
+                onIssue={generateCard} onRetry={reloadCard} onPhotoChange={handlePhotoFile}
                 photoUrl={user.avatar ? publicUrl('avatars', user.avatar) : null}
               />
             </div>

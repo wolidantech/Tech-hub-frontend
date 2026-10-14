@@ -45,7 +45,8 @@ const REQUIRED_TABLES = [
   'profiles', 'categories', 'courses', 'course_modules', 'course_lessons',
   'enrollments', 'manual_payments', 'certificate_issues', 'student_notifications',
   'quiz_questions', 'quizzes', 'assignments', 'coupons', 'site_settings',
-  'student_id_cards',
+  'student_id_cards', 'lecturer_course_assignments', 'lecturer_content_revisions',
+  'lecturer_grading_revisions', 'review_events',
 ];
 
 const PROBE_TIMEOUT = 9000;
@@ -417,7 +418,7 @@ async function checkSchema() {
         return {
           id: 'schema', title: 'Database schema', level: 'fail',
           detail: `The database is reachable but ${missing.length} required table(s) are missing: ${missing.join(', ')}. The migrations were not run (or only partly run).`,
-          fix: 'In the Supabase SQL Editor run supabase/migrations/001_lms_core.sql through 011_student_identity_and_exam_access.sql IN THAT ORDER, then supabase/seed/seed_12_courses.sql. Migration 003 creates the signup trigger and migration 011 creates the student ID card table and RPC.',
+          fix: 'In the Supabase SQL Editor run supabase/migrations/001_lms_core.sql, then 002, 003, 004, 005 IN THAT ORDER, then supabase/seed/seed_12_courses.sql. Migration 003 is the one that creates the signup trigger, so skipping it breaks every login.',
         };
       }
       return {
@@ -459,7 +460,7 @@ async function checkSchema() {
     return {
       id: 'schema', title: 'Database schema', level: 'fail',
       detail: `The database is reachable but ${missing.length} required table(s) are missing: ${missing.join(', ')}. The migrations were not run (or only partly run).`,
-      fix: 'In the Supabase SQL Editor run supabase/migrations/001_lms_core.sql through 011_student_identity_and_exam_access.sql IN THAT ORDER, then supabase/seed/seed_12_courses.sql. Migration 003 creates the signup trigger and migration 011 creates the student ID card table and RPC.',
+      fix: 'In the Supabase SQL Editor run supabase/migrations/001_lms_core.sql, then 002, 003, 004, 005 IN THAT ORDER, then supabase/seed/seed_12_courses.sql. Migration 003 is the one that creates the signup trigger, so skipping it breaks every login.',
     };
   }
   if (unverifiable.length) {

@@ -17,6 +17,8 @@ import AuditLogViewer from './admin/AuditLogViewer';
 import CommunityManager from './admin/CommunityManager';
 import SiteSettingsPanel from './admin/SiteSettingsPanel';
 import PaymentsManager from './admin/PaymentsManager';
+import LecturersManager from './admin/LecturersManager';
+import ReviewQueue from './admin/ReviewQueue';
 
 export default function Admin() {
   const { user, isAdmin, changePassword, adminLogout, adminEmail } = useAuth();
@@ -78,7 +80,7 @@ export default function Admin() {
           </div>
           <div className="flex flex-wrap gap-2 items-center">
             <div className="flex gap-2 flex-wrap">
-              {['overview','courses','students','quizzes','assignments','coupons','ai-studio','community','payments','certificates','notify','audit','settings'].map(t => (
+              {['overview','courses','students','lecturers','review-queue','quizzes','assignments','coupons','ai-studio','community','payments','certificates','notify','audit','settings'].map(t => (
                 <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 rounded-full text-xs font-bold tracking-wide capitalize flex items-center gap-1.5 ${tab===t?'bg-white text-black':'glass text-white/60 hover:text-white'}`}>
                   {t === 'settings' && <Settings className="h-3.5 w-3.5" />}
                   {t === 'payments' && stats.pendingPayments > 0 && <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />}
@@ -145,6 +147,10 @@ export default function Admin() {
         {tab === 'courses' && <CourseManager />}
 
         {tab === 'students' && <StudentControl />}
+
+        {tab === 'lecturers' && <LecturersManager />}
+
+        {tab === 'review-queue' && <ReviewQueue />}
 
         {tab === 'quizzes' && <QuizManager />}
 

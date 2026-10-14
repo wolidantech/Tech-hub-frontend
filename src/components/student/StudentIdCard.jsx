@@ -1,5 +1,6 @@
-import { useRef } from 'react';
-import { Camera, IdCard, Loader2, ShieldCheck, Sparkles, AlertTriangle } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Camera, IdCard, Loader2, ShieldCheck, Sparkles, AlertTriangle, Download, FileDown, Share2, ExternalLink, RotateCcw } from 'lucide-react';
+import { captureIdCardPng, downloadBlob, idCardFileBase, idCardPdfBlob, openBlobInNewTab, shareOrDownload } from '../../lib/idCardExport';
 import { publicUrl } from '../../lib/supabase';
 
 const formatDate = (value) => {
@@ -15,8 +16,36 @@ const formatDate = (value) => {
  * "upload a photo to generate your ID" when no photo exists, or a "generate"
  * action when the photo is there but the server has not minted the card yet.
  */
-export default function StudentIdCard({ card, status, error, issuing, onIssue, onPhotoChange, photoUrl }) {
+export default function StudentIdCard({ card, status, error, issuing, onIssue, onPhotoChange, photoUrl, onRetry }) {
   const inputRef = useRef(null);
+  const cardRef = useRef(null);
+  const busyRef = useRef(false);
+  const [exporting, setExporting] = useState('');
+  const [exportError, setExportError] = useState('');
+  const [exportNote, setExportNote] = useState('');
+  const [lastExport, setLastExport] = useState(null);
+
+  // Downloads render the EXISTING issued card only. They never call the
+  // issue RPC, so a download can never mint a new identity/number.
+  const runExport = async (kind) => {
+    if (busyRef.current || !card) return;
+    busyRef.current = true; setExporting(kind); setExportError(''); setExportNote('');
+    try {
+      const { blob, dataUrl } = await captureIdCardPng(cardRef.current);
+      const base = idCardFileBase(card);
+      let outBlob = blob; let fileName = `${base}.png`; let note = 'Image saved. Check your Photos/Downloads.';
+      if (kind === 'pdf') { outBlob = await idCardPdfBlob(blob); fileName = `${base}.pdf`; }
+      const result = await shareOrDownload(outBlob, dataUrl, fileName, 'DANQEL student ID card');
+      setLastExport({ blob: outBlob, fileName });
+      if (result === 'dismissed') note = 'Share sheet closed. Tap Open / Share / Save below, then choose Save Image, Save to Files or Share.';
+      else if (result === 'shared') note = kind === 'pdf' ? 'Choose “Save to Files” or Drive in the share sheet to keep the PDF.' : 'Choose “Save Image” / “Save to Photos” in the share sheet.';
+      else if (result === 'failed') throw new Error('Your browser blocked the automatic download.');
+      setExportNote(note);
+    } catch (err) {
+      setExportError(`${err?.message || 'Download failed.'} Your card and number are unchanged — tap Retry. If your browser opens the file instead of saving, use Open / Share / Save, then Save to Files (iPhone) or Download (Android/desktop).`);
+    } finally { busyRef.current = false; setExporting(''); }
+  };
+
 
   const uploadRow = (label, hint) => (
     <div className="glass rounded-2xl p-5 space-y-3">
@@ -82,9 +111,9 @@ export default function StudentIdCard({ card, status, error, issuing, onIssue, o
       <div className="glass rounded-2xl p-5 space-y-3">
         <div className="flex items-center gap-2 text-rose-300 text-xs font-bold"><AlertTriangle className="h-4 w-4" /> ID CARD UNAVAILABLE</div>
         <p className="text-[11px] text-white/50 leading-relaxed">{error || 'We could not load your ID card. Please try again.'}</p>
-        <button type="button" onClick={() => onIssue?.()} disabled={issuing}
-          className="w-full h-10 rounded-full glass border border-white/15 text-xs font-bold hover:bg-white/10 disabled:opacity-60">
-          {issuing ? 'TRYING…' : 'TRY AGAIN'}
+        <button type="button" onClick={() => (onRetry || onIssue)?.()} disabled={issuing}
+          className="w-full min-h-11 rounded-full glass border border-white/15 text-xs font-bold hover:bg-white/10 disabled:opacity-60">
+          {issuing ? 'TRYING…' : 'RETRY'}
         </button>
       </div>
     );
@@ -95,7 +124,7 @@ export default function StudentIdCard({ card, status, error, issuing, onIssue, o
   return (
     <div className="space-y-3">
       {/* The card itself */}
-      <div className="relative overflow-hidden rounded-[22px] border border-white/15 bg-gradient-to-br from-[#0a1a4a] via-[#061236] to-[#020a1f] p-5 shadow-2xl">
+      <div ref={cardRef} data-testid="student-id-card" className="relative w-full max-w-[560px] overflow-hidden rounded-[22px] border border-white/15 bg-gradient-to-br from-[#0a1a4a] via-[#061236] to-[#020a1f] p-4 sm:p-5 shadow-2xl">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(34,211,238,0.18),transparent_60%)]" />
         <div className="relative">
           <div className="flex items-center justify-between">
@@ -105,15 +134,15 @@ export default function StudentIdCard({ card, status, error, issuing, onIssue, o
           <div className="mt-4 flex gap-4">
             <div className="h-[92px] w-[76px] shrink-0 overflow-hidden rounded-xl border border-white/20 bg-white/5">
               {photo
-                ? <img src={photo} alt={card.fullName} className="h-full w-full object-cover" />
+                ? <img src={photo} alt={card.fullName} data-card-photo="true" className="h-full w-full object-cover" />
                 : <div className="h-full w-full grid place-items-center text-white/30"><Camera className="h-5 w-5" /></div>}
             </div>
             <div className="min-w-0 flex-1 space-y-1.5">
-              <div className="font-display font-black text-lg leading-tight truncate">{card.fullName}</div>
+              <div className="font-display font-black text-base sm:text-lg leading-tight break-words">{card.fullName}</div>
               <div className="text-[11px] text-white/60 truncate">{card.programme}</div>
               <div className="pt-1">
                 <div className="text-[9px] tracking-widest text-white/40 font-bold">CARD NUMBER</div>
-                <div className="font-mono text-sm text-cyan-200 tracking-wider">{card.cardNumber}</div>
+                <div className="font-mono text-[13px] sm:text-sm text-cyan-200 tracking-wider break-all">{card.cardNumber}</div>
               </div>
             </div>
           </div>
@@ -131,6 +160,28 @@ export default function StudentIdCard({ card, status, error, issuing, onIssue, o
         Digitally issued by our records system. The number is allocated server-side and cannot be edited from this app.
         Change your photo and ask us to re-issue if your details change.
       </p>
+      <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2">
+        <button type="button" onClick={() => runExport('pdf')} disabled={Boolean(exporting)} className="min-h-11 rounded-full bg-gradient-to-r from-cyan-400 to-blue-600 px-4 text-xs font-black text-[#020617] disabled:opacity-60 flex items-center justify-center gap-2">
+          {exporting === 'pdf' ? <><Loader2 className="h-4 w-4 animate-spin" /> PREPARING PDF…</> : <><FileDown className="h-4 w-4" /> DOWNLOAD PDF</>}
+        </button>
+        <button type="button" onClick={() => runExport('png')} disabled={Boolean(exporting)} className="min-h-11 rounded-full glass border border-white/15 px-4 text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-2">
+          {exporting === 'png' ? <><Loader2 className="h-4 w-4 animate-spin" /> PREPARING IMAGE…</> : <><Download className="h-4 w-4" /> DOWNLOAD IMAGE</>}
+        </button>
+      </div>
+      {lastExport && (
+        <button type="button" onClick={() => { if (!openBlobInNewTab(lastExport.blob)) setExportError('Pop-ups are blocked. Allow pop-ups for this site, or use Download PDF/Image again.'); }}
+          className="w-full min-h-11 rounded-full glass border border-cyan-300/30 px-4 text-xs font-bold flex items-center justify-center gap-2">
+          <Share2 className="h-4 w-4" /> OPEN / SHARE / SAVE TO FILES <ExternalLink className="h-3.5 w-3.5" />
+        </button>
+      )}
+      <p className="text-[11px] text-white/45 leading-relaxed">On iPhone, if the file opens instead of downloading: tap <b>Open / Share / Save to Files</b>, tap the Share icon, then <b>Save to Files</b> or <b>Save Image</b>. On Android/desktop, check Downloads if no prompt appears.</p>
+      {exportNote && <p role="status" className="text-[11px] text-emerald-300 leading-relaxed">{exportNote}</p>}
+      {exportError && (
+        <div className="rounded-xl border border-rose-400/30 bg-rose-500/10 p-3 space-y-2">
+          <p role="alert" className="text-[11px] text-rose-200 leading-relaxed flex gap-1.5"><AlertTriangle className="h-3.5 w-3.5 shrink-0" /> {exportError}</p>
+          <button type="button" onClick={() => runExport(exporting || 'pdf')} className="min-h-10 rounded-full bg-white/10 px-4 text-[11px] font-bold inline-flex items-center gap-1.5"><RotateCcw className="h-3.5 w-3.5" /> RETRY DOWNLOAD</button>
+        </div>
+      )}
       <button type="button" onClick={() => inputRef.current?.click()} className="w-full h-10 rounded-full glass border border-white/15 text-xs font-bold hover:bg-white/10">
         CHANGE PHOTO
       </button>

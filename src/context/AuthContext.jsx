@@ -259,6 +259,7 @@ export const AuthProvider = ({ children }) => {
       studentsLoading,
       refreshStudents,
       isAdmin: user?.role === 'admin',
+      isLecturer: ['lecturer','instructor'].includes(user?.role) && user?.lecturerEnabled !== false && !user?.banned,
       isAdminSessionValid,
       adminEmail: '',
     }}>
