@@ -19,7 +19,7 @@ Expected:
 
 ## Coverage
 
-`run.mjs` applies migrations 001–010 to a fresh database and behaviorally tests
+`run.mjs` applies migrations 001–012 to a fresh database and behaviorally tests
 auth/profile setup, scoring, coupons, payments, certificates, portfolios,
 storage policy definitions, study tools, migration 009, and migration 010
 (full holder name in `verify_certificate`, verification-code backfill and

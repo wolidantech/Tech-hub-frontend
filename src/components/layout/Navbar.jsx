@@ -9,7 +9,7 @@ import { INSTITUTE_NAME } from '../../lib/brand';
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, isLecturer } = useAuth();
   const { getPendingManualPayments } = useCourses();
   const navigate = useNavigate();
   const location = useLocation();
@@ -29,6 +29,7 @@ export default function Navbar() {
     { to: '/jamb-cbt', label: 'JAMB CBT' },
     { to: '/cv-builder', label: 'CV Builder' },
     ...(user && !isAdmin ? [{ to: '/ai', label: 'AI' }] : []),
+    ...(isLecturer ? [{ to: '/lecturer', label: 'Lecturer' }] : []),
     { to: '/verify-certificate', label: 'Verify' },
   ];
 

@@ -19,7 +19,7 @@ in the Supabase Dashboard SQL Editor.
 
 ## Exact order
 
-### Fast path (any project that already has migrations 001–010)
+### Fast path (any project that already has migrations 001–012)
 
 One paste, one Run:
 
@@ -340,7 +340,7 @@ access and do not replace these policies.
 ## Migration 009 test and function audit
 
 The repository verification uses **PGlite, a fresh disposable PostgreSQL
-instance**, not the live project. `npm run verify` applies migrations 001–010 in
+instance**, not the live project. `npm run verify` applies migrations 001–012 in
 order and checks that `public.is_admin()` is `SECURITY DEFINER` with
 `search_path=public`. It then switches to non-owner `anon`/`authenticated` test
 roles to verify:

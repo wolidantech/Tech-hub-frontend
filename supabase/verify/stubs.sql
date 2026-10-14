@@ -33,3 +33,9 @@ create or replace function storage.foldername(p text) returns text[] language sq
   select (string_to_array(p, '/'))[1:greatest(cardinality(string_to_array(p, '/')) - 1, 1)];
 $$;
 alter table storage.objects enable row level security;
+
+-- Supabase-managed API roles (present in every real project).
+do $$ begin
+  if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin; end if;
+  if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;
+end $$;

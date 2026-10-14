@@ -510,13 +510,31 @@ export const uploadReceipt = async (userId, file, onProgress = null) => uploadFi
 // The card is minted by `issue_student_id_card()` (migration 011): it requires a
 // profile photo, allocates the number server-side and is idempotent. Clients can
 // only read their own row — there is no insert/update policy.
+const ID_CARD_SETUP_ERROR = 'Student ID cards are not enabled yet. Ask the administrator to run migration 011_student_identity_and_exam_access.sql.';
+
 export const fetchMyIdCard = async (userId) => {
-  const rows = await one(sb().from('student_id_cards').select('*').eq('user_id', userId).limit(1));
-  return rows.length ? mapIdCard(rows[0]) : null;
+  const { data, error } = await sb().from('student_id_cards').select('*').eq('user_id', userId).limit(1);
+  if (error) {
+    // PostgREST reports an unapplied migration as a missing table in its schema
+    // cache. Keep this actionable instead of reducing it to "Something went wrong".
+    if (error.code === 'PGRST205' || /student_id_cards|schema cache/i.test(error.message || '')) {
+      throw new Error(ID_CARD_SETUP_ERROR);
+    }
+    throw new Error(friendlyError(error));
+  }
+  return data?.length ? mapIdCard(data[0]) : null;
 };
 
 export const issueIdCardRpc = async () => {
-  const data = await one(sb().rpc('issue_student_id_card'));
+  const { data, error } = await sb().rpc('issue_student_id_card');
+  if (error) {
+    // A missing function is the other common symptom when migration 011 was
+    // skipped or only the table was copied into the live project.
+    if (error.code === 'PGRST202' || /issue_student_id_card|student_id_cards|function .* does not exist/i.test(error.message || '')) {
+      throw new Error(ID_CARD_SETUP_ERROR);
+    }
+    throw new Error(friendlyError(error));
+  }
   return data && {
     id: data.id, userId: data.userId, cardNumber: data.cardNumber, fullName: data.fullName,
     photoPath: data.photoPath, programme: data.programme, issuedAt: data.issuedAt,

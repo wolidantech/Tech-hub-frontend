@@ -208,7 +208,7 @@ prints the key.
 ```bash
 npm ci
 npm --prefix supabase/verify ci
-npm run verify        # migrations 001-010 + backend and non-owner RLS checks
+npm run verify        # migrations 001-012 + backend and non-owner RLS checks
 npm run verify:seed   # seed chain → full curriculum + published catalog
 ```
 

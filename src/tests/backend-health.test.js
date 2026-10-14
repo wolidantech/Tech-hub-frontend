@@ -9,6 +9,8 @@ const REQUIRED = [
   'profiles', 'categories', 'courses', 'course_modules', 'course_lessons',
   'enrollments', 'manual_payments', 'certificate_issues', 'student_notifications',
   'quiz_questions', 'quizzes', 'assignments', 'coupons', 'site_settings',
+  'student_id_cards', 'lecturer_course_assignments', 'lecturer_content_revisions',
+  'lecturer_grading_revisions', 'review_events',
 ];
 
 const json = (obj, status = 200) =>
