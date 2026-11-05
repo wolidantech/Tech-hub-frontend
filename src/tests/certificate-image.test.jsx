@@ -310,7 +310,7 @@ describe('Certificate page download action', () => {
     expect(node.className).toContain('cert-sheet');
     expect(node.textContent).toContain('Adaeze Okafor');
     expect(node.textContent).toContain('AI Video Content Creation');
-    expect(node.textContent).toContain('Olowoake Daniel Ayomide');
+    expect(node.querySelectorAll('[data-testid="certificate-signature"]')).toHaveLength(2);
     expect(node.textContent).toContain('WDTH-ABCD-1234');
     expect(node.querySelector('img[alt="Certificate verification QR code"]')).toBeTruthy();
     expect(node.querySelector('svg')).toBeTruthy(); // seal + frames are inline SVG

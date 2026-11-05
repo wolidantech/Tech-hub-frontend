@@ -100,7 +100,7 @@ export default function VerifyCertificate() {
                   <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4 py-3 text-sm"><span className="text-white/40 shrink-0">Issued By</span><span className="font-bold text-right">{normalizeIssuer(result.issuedBy)}</span></div>
                 </div>
                 <p className="mt-5 text-center text-xs text-white/40">
-                  Signed by Olowoake Daniel Ayomide, Director, DANQEL DIGITAL INSTITUTE.
+                  Signed by the Head of Learning &amp; Programs and the Director, DANQEL DIGITAL INSTITUTE.
                 </p>
               </div>
             )}
