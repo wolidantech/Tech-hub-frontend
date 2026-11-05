@@ -78,7 +78,25 @@ describe('Luxury certificate page', () => {
   it('uses the repo logo asset in the masthead (gold monogram only as fallback)', async () => {
     render(certificatePage());
     const logo = await screen.findByAltText('DANQEL DIGITAL INSTITUTE');
-    expect(logo.getAttribute('src')).toBe('/logo.png');
+    expect(logo.getAttribute('src')).toBe('/mark.png');
+  });
+
+  it('prints both signatures, the completion date and the schedule ID when the data has them', async () => {
+    mocks.courses.verifyCertificate = vi.fn().mockResolvedValue({
+      ...CERT,
+      completionDate: '2026-10-22T00:00:00Z',
+      scheduleId: 'DH-2026-AI-01',
+      programDuration: '15-week Bootcamp',
+      validityMonths: 24,
+    });
+    render(certificatePage());
+    // Two signatories: Head of Learning & Programs and Director.
+    expect((await screen.findAllByText(/HEAD OF LEARNING & PROGRAMS/)).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/^DIRECTOR$/)).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/DH-2026-AI-01/)).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/15-week Bootcamp/)).length).toBeGreaterThan(0);
+    // The same person signs both lines, so the name legitimately appears twice.
+    expect((await screen.findAllByText('Olowoake Daniel Ayomide')).length).toBe(2);
   });
 
   it('builds the QR code locally for the verification link (no external QR service)', async () => {
@@ -95,12 +113,36 @@ describe('Certificate source & style audits', () => {
     const view = read('pages/CertificateView.jsx');
     // The signatory is a real person, preserved through the rebrand.
     expect(view).toContain('Olowoake Daniel Ayomide');
-    // The institution on the certificate is the new brand.
-    expect(view).toContain('DANQEL DIGITAL INSTITUTE');
+    // The institution name now comes from the single brand constant...
+    expect(view).toContain('INSTITUTE_NAME');
+    // ...whose value is the new brand, so it still prints in full.
+    expect(read('lib/brand.js')).toContain("INSTITUTE_NAME = 'DANQEL DIGITAL INSTITUTE'");
     expect(view).not.toMatch(/Woli Dan/i);
     expect(view).not.toContain('***');
     // instructor credits live in the data files under the new faculty label
     expect(read('data/courses.js')).toContain('instructor: "DANQEL Faculty"');
+  });
+
+  it('the sheet is white paper with the full-width navy verification band, like the reference', () => {
+    const view = read('pages/CertificateView.jsx');
+    // White sheet: the PNG export must be backed with white, not the old navy.
+    expect(view).toContain("backgroundColor: '#ffffff'");
+    expect(view).toContain("linear-gradient(168deg, #ffffff");
+    // The band runs edge to edge at the bottom of the fixed canvas.
+    expect(view).toContain('const BAND_TOP =');
+    expect(view).toContain('height: CERT_H - BAND_TOP');
+    // Light-paper print output.
+    expect(read('index.css')).toContain('html, body { background: #ffffff !important; }');
+  });
+
+  it('never claims an accreditation the institute does not hold', () => {
+    // The reference artwork carries a US accreditation line and an eagle seal.
+    // DANQEL has no such accreditation on record, so the sheet must not print
+    // one — the crest in that position is the institute's own mark.
+    const view = read('pages/CertificateView.jsx');
+    expect(view).not.toMatch(/American Council of Training/i);
+    expect(view).not.toMatch(/accredited/i);
+    expect(view).not.toMatch(/TechCrush/i);
   });
 
   it('prints as A4 landscape with exact colors and hidden chrome', () => {

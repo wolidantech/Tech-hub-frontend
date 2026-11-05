@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, X, Edit, Trash2, Eye, EyeOff, Save, Image as ImageIcon, ChevronDown, ChevronUp, ListChecks, FolderPlus } from 'lucide-react';
+import { Plus, X, Edit, Trash2, Eye, EyeOff, Save, Image as ImageIcon, ChevronDown, ChevronUp, ListChecks, FolderPlus, Award } from 'lucide-react';
 import { useCourses } from '../../context/CourseContext';
 import { FACULTY_LABEL } from '../../lib/brand';
 import { useLMS } from '../../context/LMSContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatNaira } from '../../lib/utils';
-import { uploadThumbnail } from '../../lib/store';
+import { uploadThumbnail, fetchCourseCertificateWording, saveCourseCertificateWording } from '../../lib/store';
 import { DEFAULT_COMPLETION_RULES } from '../../lib/lms';
 import CourseArt from '../../components/course/CourseArt';
 import { BundleManager, PathManager } from './BundlePathManager';
@@ -22,12 +22,22 @@ export default function CourseManager() {
   const [editing, setEditing] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [managing, setManaging] = useState(null); // course id for curriculum view
+  useEffect(() => {
+    if (!managing) { setCertWording(null); setCertWordingEdit(null); setCertWordingError(''); return; }
+    loadCertWording(managing);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [managing]);
   const [openMod, setOpenMod] = useState(null);
   const [newModuleTitle, setNewModuleTitle] = useState('');
   const [lessonForm, setLessonForm] = useState(null); // { moduleId, lesson? }
   const [lessonData, setLessonData] = useState({ title: '', type: 'video', duration: '10:00', videoUrl: '', textContent: '' });
   const [rulesForm, setRulesForm] = useState(null);
   const [newCat, setNewCat] = useState('');
+  // Certificate wording (migration 013): admin-only, snapshotted onto a
+  // certificate when it is issued, so editing it never rewrites past awards.
+  const [certWording, setCertWording] = useState(null);      // null = not loaded
+  const [certWordingEdit, setCertWordingEdit] = useState(null);
+  const [certWordingError, setCertWordingError] = useState('');
   const [search, setSearch] = useState('');
   const [view, setView] = useState('courses'); // courses | bundles | paths
 
@@ -51,6 +61,35 @@ export default function CourseManager() {
       setShowAdd(false);
       setNewCourse({ title: '', category: categories[0] || 'Design', price: 5000, duration: '5 hours', level: 'Beginner', instructor: FACULTY_LABEL, description: '' });
       toast.success('Course created as UNPUBLISHED. Add curriculum, then publish.');
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const loadCertWording = async (courseId) => {
+    setCertWordingError('');
+    try {
+      const wording = await fetchCourseCertificateWording(courseId);
+      setCertWording(wording);
+      setCertWordingEdit(wording);
+    } catch (err) {
+      setCertWordingError(err.message || 'Could not load certificate wording');
+    }
+  };
+
+  const saveCertWording = async (courseId) => {
+    if (!certWordingEdit) return;
+    const months = String(certWordingEdit.validityMonths ?? '').trim();
+    if (months && (!/^\d+$/.test(months) || Number(months) < 1 || Number(months) > 120)) {
+      toast.error('Validity must be between 1 and 120 months, or blank for no expiry');
+      return;
+    }
+    try {
+      await saveCourseCertificateWording(courseId, { ...certWordingEdit, validityMonths: months });
+      setCertWording({ ...certWordingEdit, validityMonths: months });
+      setCertWordingEdit(null);
+      audit(user, 'course.certificate_wording', 'course', courseId, {});
+      toast.success('Certificate wording saved. Certificates already issued keep their wording.');
     } catch (err) {
       toast.error(err.message);
     }
@@ -160,6 +199,56 @@ export default function CourseManager() {
               {rules.requireAssignmentsApproved > 0 && <span className="px-3 py-1.5 rounded-full glass">{rules.requireAssignmentsApproved} approved assignment(s)</span>}
               {rules.requireFinalProject && <span className="px-3 py-1.5 rounded-full glass">Final project approved</span>}
               <button onClick={() => setRulesForm({ ...rules })} className="px-4 py-1.5 rounded-full glass text-xs font-bold flex items-center gap-1"><Edit className="h-3.5 w-3.5" /> EDIT RULES</button>
+            </div>
+          )}
+        </div>
+
+        {/* Certificate wording */}
+        <div className="glass rounded-[20px] p-6">
+          <h3 className="font-bold flex items-center gap-2 mb-1"><Award className="h-4 w-4 text-[#e9cf8b]" /> Certificate Wording</h3>
+          <p className="text-xs text-white/40 mb-4">
+            Printed on every certificate for this course from now on. Certificates already issued keep
+            the wording they were awarded with.
+          </p>
+          {certWordingError && <p className="text-sm text-red-300 mb-3">{certWordingError}</p>}
+          {certWordingEdit ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-xs text-white/40 font-bold">PROGRAMME LABEL</label>
+                <input value={certWordingEdit.programLabel} onChange={(e) => setCertWordingEdit({ ...certWordingEdit, programLabel: e.target.value })}
+                  placeholder="Digital Skills Programme" className="mt-1 w-full h-11 rounded-full glass px-4 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-white/40 font-bold">SCHEDULE ID (optional)</label>
+                <input value={certWordingEdit.scheduleId} onChange={(e) => setCertWordingEdit({ ...certWordingEdit, scheduleId: e.target.value })}
+                  placeholder="DH-2026-AI-01" className="mt-1 w-full h-11 rounded-full glass px-4 text-sm" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-xs text-white/40 font-bold">PROGRAMME DESCRIPTION</label>
+                <input value={certWordingEdit.programDescription} onChange={(e) => setCertWordingEdit({ ...certWordingEdit, programDescription: e.target.value })}
+                  placeholder="AI Prompt Engineering 15-week Bootcamp" className="mt-1 w-full h-11 rounded-full glass px-4 text-sm" />
+                <p className="mt-1 text-[11px] text-white/30">Sits between the bold course name and “at DANQEL DIGITAL INSTITUTE”. Blank uses the course duration.</p>
+              </div>
+              <div>
+                <label className="text-xs text-white/40 font-bold">VALIDITY (MONTHS, BLANK = NO EXPIRY)</label>
+                <input type="number" min="1" max="120" value={certWordingEdit.validityMonths}
+                  onChange={(e) => setCertWordingEdit({ ...certWordingEdit, validityMonths: e.target.value })}
+                  placeholder="24" className="mt-1 w-full h-11 rounded-full glass px-4 text-sm" />
+              </div>
+              <div className="sm:col-span-2 flex flex-wrap gap-2">
+                <button onClick={() => saveCertWording(course.id)} className="px-6 h-11 rounded-full bg-green-500 text-white font-bold text-sm">SAVE WORDING</button>
+                <button onClick={() => setCertWordingEdit(null)} className="px-6 h-11 rounded-full glass font-bold text-sm">CANCEL</button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="px-3 py-1.5 rounded-full glass">{certWording?.programLabel || 'No programme label'}</span>
+              <span className="px-3 py-1.5 rounded-full glass">{certWording?.validityMonths ? `Valid ${certWording.validityMonths} months` : 'No expiry'}</span>
+              {certWording?.scheduleId && <span className="px-3 py-1.5 rounded-full glass">Schedule {certWording.scheduleId}</span>}
+              <button onClick={() => setCertWordingEdit(certWording || {})} disabled={!certWording}
+                className="px-4 py-1.5 rounded-full glass text-xs font-bold flex items-center gap-1 disabled:opacity-50">
+                <Edit className="h-3.5 w-3.5" /> EDIT WORDING
+              </button>
             </div>
           )}
         </div>

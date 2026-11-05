@@ -274,7 +274,7 @@ a, button, summary, label, select, [role="button"] {
 }
 
 /* ============================================================
-   CERTIFICATES — navy & gold luxury theme + A4 landscape print
+   CERTIFICATES — white paper, navy ink, gold rules + A4 landscape print
    The certificate sheet is a fixed-size canvas scaled to fit its
    container, so it renders identically from 360px phones to desktop
    and prints as one full-bleed A4 landscape page.
@@ -291,9 +291,10 @@ a, button, summary, label, select, [role="button"] {
 
 @media print {
   @page { size: A4 landscape; margin: 0; }
-  html, body { background: #0a1a4a !important; }
+  /* The sheet is white paper; the page behind it must not print as ink. */
+  html, body { background: #ffffff !important; }
   nav, footer, .no-print { display: none !important; }
-  .cert-page { padding: 0 !important; margin: 0 !important; max-width: none !important; background: #0a1a4a !important; }
+  .cert-page { padding: 0 !important; margin: 0 !important; max-width: none !important; background: #ffffff !important; }
   .cert-fit-wrap { height: auto !important; }
   .cert-scaler { transform: none !important; }
   .cert-sheet { box-shadow: none !important; border-radius: 0 !important; }
