@@ -332,7 +332,7 @@ const CertificateSheet = forwardRef(function CertificateSheet({ cert, name, qrUr
         position: 'absolute', top: 242, left: PAD + 2,
         fontSize: 10.5, fontWeight: 700, letterSpacing: '0.22em', lineHeight: 1.3,
         color: NAVY,
-      }}>Accredited by TechCrush</div>
+      }}>Accredited by the American Council of Training and Development, USA</div>
 
       <div aria-hidden="true" style={{
         position: 'absolute', top: 254, left: PAD, width: 92, height: 3,

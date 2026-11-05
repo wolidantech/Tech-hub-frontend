@@ -136,9 +136,9 @@ describe('Certificate source & style audits', () => {
     expect(read('index.css')).toContain('html, body { background: #ffffff !important; }');
   });
 
-  it('prints the TechCrush accreditation line under the title block', () => {
+  it('prints the American Council of Training and Development accreditation line under the title block', () => {
     const view = read('pages/CertificateView.jsx');
-    expect(view).toMatch(/Accredited by TechCrush/i);
+    expect(view).toMatch(/Accredited by the American Council of Training and Development, USA/i);
   });
 
   it('prints as A4 landscape with exact colors and hidden chrome', () => {
