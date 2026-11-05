@@ -1,4 +1,4 @@
-// PGlite behavioral verification for migrations 001-012.
+// PGlite behavioral verification for migrations 001-013.
 // Most fixtures run as the database owner; H26 creates and switches to genuine
 // non-owner anon/authenticated roles so PostgreSQL enforces the catalog/content
 // RLS policies and catches is_admin() recursion on a fresh database.
@@ -20,11 +20,12 @@ const migrations = [
   '007_classroom_upgrade.sql', '008_cv_builder_and_study_tools.sql',
   '009_fix_is_admin_recursion.sql', '010_certificate_fullname.sql',
   '011_student_identity_and_exam_access.sql', '012_lecturers_review_workflow.sql',
+  '013_certificate_design.sql',
 ];
 for (const f of migrations) {
   await db.exec(readFileSync(`${MIG}/${f}`, 'utf8'));
 }
-console.log('migrations 001-012 applied clean');
+console.log('migrations 001-013 applied clean');
 
 const ADMIN = '11111111-1111-1111-1111-111111111111';
 const STU = '22222222-2222-2222-2222-222222222222';
@@ -837,6 +838,87 @@ await t('H32 lecturers cannot publish or release; admin approval applies only th
   await one(`select admin_release_grade('${grade.id}'::uuid) r`);
   const after = await one(`select score,status from assignment_submissions where id='${sub.id}'`);
   assert(after.score === 88 && after.status === 'approved', 'released marks were not applied');
+  await anon();
+});
+
+// ---------- H33: migration 013 — programme details are real, snapshotted data ----------
+await t('H33 certificate programme details: snapshot on issue, verifier exposes them', async () => {
+  // H27 deliberately re-applies the OLD migration 010 file to prove it is
+  // idempotent, which also reverts verify_certificate() to its 010 body. Re-apply
+  // the newest design migration so the schema under test is the current one —
+  // this mirrors an operator running "as of current" rather than a mixed state.
+  await db.exec(readFileSync(`${MIG}/013_certificate_design.sql`, 'utf8'));
+  await as(ADMIN);
+  // The course carries the wording an administrator can now edit.
+  await one(`select admin_set_course_certificate_wording(
+    '${COURSE}'::uuid, 'Digital Skills Programme',
+    'AI Prompt Engineering 15-week Bootcamp', 24, 'DH-2026-AI-01') r`);
+
+  // A certificate issued now snapshots the wording and derives the real
+  // completion date from the student's own activity.
+  await q(`insert into certificate_issues (certificate_id, verification_code, user_id, student_name, course_id, course_name, status)
+    values ('WDTH-2027-SNAP01', 'WDTH-SNAP-0001', '${STU}', 'Ada Lovelace', '${COURSE}', 'Web Dev Test', 'valid')`);
+  const issued = await one(`select completion_date, program_label, program_description, program_duration, validity_months, schedule_id
+    from certificate_issues where certificate_id='WDTH-2027-SNAP01'`);
+  assert(issued.completion_date instanceof Date, 'completion_date was not stamped on issue');
+  assert(issued.program_label === 'Digital Skills Programme', 'program_label not snapshotted: ' + issued.program_label);
+  assert(issued.program_description === 'AI Prompt Engineering 15-week Bootcamp', 'program_description not snapshotted');
+  assert(issued.validity_months === 24, 'validity_months not snapshotted: ' + issued.validity_months);
+  assert(issued.schedule_id === 'DH-2026-AI-01', 'schedule_id not snapshotted');
+
+  // The public verifier returns what the sheet prints, and computes the expiry.
+  await anon();
+  const v = (await one(`select verify_certificate('WDTH-2027-SNAP01') r`)).r;
+  assert(v.completionDate, 'verifier did not return completionDate');
+  assert(v.scheduleId === 'DH-2026-AI-01', 'verifier did not return scheduleId');
+  assert(v.validityMonths === 24, 'verifier did not return validityMonths');
+  assert(v.validUntil && new Date(v.validUntil).getTime() > new Date(v.issueDate).getTime(),
+    'verifier did not compute validUntil from issue date + validity');
+  assert(v.studentName === 'Ada Lovelace' && v.certificateId === 'WDTH-2027-SNAP01',
+    'verifier lost its existing contract');
+
+  // Changing the wording must never rewrite a certificate that was already awarded.
+  await as(ADMIN);
+  await one(`select admin_set_course_certificate_wording('${COURSE}'::uuid, 'Renamed Programme', 'Entirely new wording', null, 'DH-2027-B') r`);
+  const untouched = await one(`select certificate_id, verification_code, program_description, program_label, schedule_id, issue_date
+    from certificate_issues where certificate_id='WDTH-2027-SNAP01'`);
+  assert(untouched.program_description === 'AI Prompt Engineering 15-week Bootcamp',
+    'an already-issued certificate was rewritten by a wording change');
+  assert(untouched.program_label === 'Digital Skills Programme' && untouched.schedule_id === 'DH-2026-AI-01',
+    'issued certificate snapshot drifted');
+  assert(untouched.verification_code === 'WDTH-SNAP-0001', 'issued verification code changed');
+
+  // A certificate issued after the change picks up the new wording.
+  await q(`insert into certificate_issues (certificate_id, verification_code, user_id, student_name, course_id, course_name, status)
+    values ('WDTH-2027-SNAP02', 'WDTH-SNAP-0002', '${STU}', 'Ada Lovelace', '${COURSE}', 'Web Dev Test', 'valid')`);
+  const fresh = await one(`select program_label, validity_months, schedule_id from certificate_issues where certificate_id='WDTH-2027-SNAP02'`);
+  assert(fresh.program_label === 'Renamed Programme' && fresh.schedule_id === 'DH-2027-B',
+    'a new certificate did not pick up the current wording');
+  assert(fresh.validity_months === null, 'clearing validity_months did not mean "does not expire"');
+  await anon();
+});
+
+await t('H34 certificate wording is admin-only and bounded; re-running 013 is a no-op', async () => {
+  await as(STU);
+  await tErr('H34a a student cannot rewrite certificate wording', async () => {
+    await one(`select admin_set_course_certificate_wording('${COURSE}'::uuid, 'Hacked', 'Hacked', 1, 'X') r`);
+  }, 'Admin only');
+
+  await as(ADMIN);
+  await tErr('H34b an out-of-range validity period is rejected', async () => {
+    await one(`select admin_set_course_certificate_wording('${COURSE}'::uuid, 'X', 'Y', 500, 'Z') r`);
+  }, 'validity_months must be between 1 and 120');
+  await tErr('H34c an unknown course is rejected', async () => {
+    await one(`select admin_set_course_certificate_wording('99999999-9999-9999-9999-999999999999'::uuid, 'X', 'Y', 12, 'Z') r`);
+  }, 'Course not found');
+
+  // Idempotency: the whole file re-applies cleanly and moves no data.
+  const before = await one(`select certificate_id, verification_code, student_name, issue_date, completion_date,
+    program_label, program_description, schedule_id from certificate_issues where certificate_id='WDTH-2027-SNAP01'`);
+  await db.exec(readFileSync(`${MIG}/013_certificate_design.sql`, 'utf8'));
+  const after = await one(`select certificate_id, verification_code, student_name, issue_date, completion_date,
+    program_label, program_description, schedule_id from certificate_issues where certificate_id='WDTH-2027-SNAP01'`);
+  assert(JSON.stringify(before) === JSON.stringify(after), 're-running 013 changed an already-issued certificate');
   await anon();
 });
 

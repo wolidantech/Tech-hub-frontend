@@ -262,7 +262,7 @@ catalog) with the fix for each. It also has a **Copy report** button.
 ```bash
 cd supabase/verify
 npm install
-npm run verify        # migrations 001-012 + backend/RLS behavior (56 assertions)
+npm run verify        # migrations 001-013 + backend/RLS behavior (61 assertions)
 npm run verify:seed   # exact 12-course curriculum seed chain (43 assertions)
 ```
 
@@ -273,6 +273,14 @@ Both run in throwaway Postgres (PGlite), so they need no Supabase project.
 - **This project's migration 011** (`011_student_identity_and_exam_access.sql`)
   owns `student_id_cards`, `issue_student_id_card()`, `revoke_student_id_card()`
   and `bundles.kind`.
+- **Migration 013** (`013_certificate_design.sql`) owns the certificate design
+  data: `courses.program_label` / `program_description` / `validity_months` /
+  `schedule_id`, the matching snapshot columns on `certificate_issues`, the
+  derived `completion_date`, the issue-time snapshot trigger, and
+  `admin_set_course_certificate_wording()`. It is additive and never rewrites an
+  issued certificate: the sheet prints the snapshot taken at issue time, so a
+  wording change only affects certificates issued afterwards. Administrators edit
+  the wording under **Admin → Courses → (manage a course) → Certificate Wording**.
 - **Migration 012** (`012_lecturers_review_workflow.sql`) adds lecturer course
   assignments, private content/grading revisions, the admin review queue,
   review events and the `lecturer-files` private bucket. It is additive: it
@@ -283,7 +291,7 @@ Both run in throwaway Postgres (PGlite), so they need no Supabase project.
   owners of one table is how a card number gets forged or duplicated.
 - The backend's `npm run migrate:frontend` applies *its* frontend migrations
   (012 catalogue expansion + the JAMB engine) and skips 001–018. Use it only once
-  **this project's migrations 001–012 are already applied** and production
+  **this project's migrations 001–013 are already applied** and production
   credentials are configured securely; its preflight refuses to run against a
   schema that is missing the catalogue, bundle or ID-card columns.
 - The seeded JAMB pass and the seeded course shells stay **unpublished** until the

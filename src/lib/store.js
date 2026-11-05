@@ -844,6 +844,34 @@ export const issueCertificateRpc = async (userId, courseId) =>
 export const revokeCertificateRpc = async (certId) =>
   one(sb().rpc('revoke_certificate', { p_cert_id: certId }));
 
+// Certificate wording is per course and deliberately NOT part of mapCourse():
+// it is admin-only configuration, read on demand by the course manager, and the
+// sheet prints a snapshot taken at issue time (migration 013).
+export const fetchCourseCertificateWording = async (courseId) => {
+  const row = await one(sb()
+    .from('courses')
+    .select('program_label, program_description, validity_months, schedule_id')
+    .eq('id', courseId)
+    .maybeSingle());
+  return {
+    programLabel: row?.program_label || '',
+    programDescription: row?.program_description || '',
+    validityMonths: row?.validity_months ?? '',
+    scheduleId: row?.schedule_id || '',
+  };
+};
+
+export const saveCourseCertificateWording = async (courseId, wording = {}) =>
+  one(sb().rpc('admin_set_course_certificate_wording', {
+    p_course_id: courseId,
+    p_program_label: wording.programLabel || null,
+    p_program_description: wording.programDescription || null,
+    p_validity_months: wording.validityMonths === '' || wording.validityMonths == null
+      ? null
+      : Number(wording.validityMonths),
+    p_schedule_id: wording.scheduleId || null,
+  }));
+
 // ============================================================ NOTIFICATIONS
 export const fetchMyNotifications = async (userId) =>
   (await one(sb().from('student_notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(200))).map(mapNotification);

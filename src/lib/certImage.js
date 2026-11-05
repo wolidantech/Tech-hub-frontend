@@ -121,7 +121,7 @@ const waitForFonts = async (ms = 2500) => {
  * Render `node` (the certificate sheet only) to a PNG blob + data URL.
  * Throws only if every attempt failed — callers show a retry message.
  */
-export async function captureCertificatePng(node, { pixelRatio = PIXEL_RATIO } = {}) {
+export async function captureCertificatePng(node, { pixelRatio = PIXEL_RATIO, backgroundColor = NAVY } = {}) {
   if (!node) throw new Error('The certificate is not on screen yet.');
   await waitForFonts();
 
@@ -136,9 +136,10 @@ export async function captureCertificatePng(node, { pixelRatio = PIXEL_RATIO } =
     height,
     cacheBust: true,
     fetchRequestInit: { mode: 'cors', credentials: 'omit' },
-    // Navy behind the sheet's own gradient: never a transparent PNG, and the
-    // screen-only drop shadow is clipped so no dark bleed lands in the image.
-    backgroundColor: NAVY,
+    // The sheet's own paper colour behind the sheet: never a transparent PNG,
+    // and the screen-only drop shadow is clipped so no dark bleed lands in the
+    // image. White for the current (light) certificate sheet.
+    backgroundColor,
     style: { boxShadow: 'none' },
   };
 
