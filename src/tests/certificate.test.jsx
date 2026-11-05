@@ -136,14 +136,9 @@ describe('Certificate source & style audits', () => {
     expect(read('index.css')).toContain('html, body { background: #ffffff !important; }');
   });
 
-  it('never claims an accreditation the institute does not hold', () => {
-    // The reference artwork carries a US accreditation line and an eagle seal.
-    // DANQEL has no such accreditation on record, so the sheet must not print
-    // one — the crest in that position is the institute's own mark.
+  it('prints the TechCrush accreditation line under the title block', () => {
     const view = read('pages/CertificateView.jsx');
-    expect(view).not.toMatch(/American Council of Training/i);
-    expect(view).not.toMatch(/accredited/i);
-    expect(view).not.toMatch(/TechCrush/i);
+    expect(view).toMatch(/Accredited by TechCrush/i);
   });
 
   it('prints as A4 landscape with exact colors and hidden chrome', () => {

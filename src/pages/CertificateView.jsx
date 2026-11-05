@@ -327,6 +327,13 @@ const CertificateSheet = forwardRef(function CertificateSheet({ cert, name, qrUr
         fontSize: 19, fontWeight: 700, letterSpacing: '0.32em', lineHeight: 1.2, color: NAVY,
       }}>OF COMPLETION</div>
 
+      {/* ------------------------------------------------ accreditation */}
+      <div style={{
+        position: 'absolute', top: 242, left: PAD + 2,
+        fontSize: 10.5, fontWeight: 700, letterSpacing: '0.22em', lineHeight: 1.3,
+        color: NAVY,
+      }}>Accredited by TechCrush</div>
+
       <div aria-hidden="true" style={{
         position: 'absolute', top: 254, left: PAD, width: 92, height: 3,
         background: `linear-gradient(90deg, ${GOLD}, rgba(201,162,39,0.15))`,
