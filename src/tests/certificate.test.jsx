@@ -71,7 +71,7 @@ describe('Luxury certificate page', () => {
     expect((await screen.findAllByText('Adaeze Okafor')).length).toBeGreaterThan(0);
     expect((await screen.findAllByText('AI Video Content Creation')).length).toBeGreaterThan(0);
     expect((await screen.findAllByText(/WDTH-ABCD-1234/)).length).toBeGreaterThan(0);
-    expect((await screen.findAllByText(/Olowoake Daniel Ayomide/)).length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId('certificate-signature')).toHaveLength(2);
     expect(document.body.textContent).not.toContain('***');
   });
 
@@ -95,8 +95,8 @@ describe('Luxury certificate page', () => {
     expect((await screen.findAllByText(/^DIRECTOR$/)).length).toBeGreaterThan(0);
     expect((await screen.findAllByText(/DH-2026-AI-01/)).length).toBeGreaterThan(0);
     expect((await screen.findAllByText(/15-week Bootcamp/)).length).toBeGreaterThan(0);
-    // The same person signs both lines, so the name legitimately appears twice.
-    expect((await screen.findAllByText('Olowoake Daniel Ayomide')).length).toBe(2);
+    // Two signature marks render (Head + Director), typed name appears nowhere.
+    expect(screen.getAllByTestId('certificate-signature')).toHaveLength(2);
   });
 
   it('builds the QR code locally for the verification link (no external QR service)', async () => {
@@ -111,8 +111,9 @@ describe('Certificate source & style audits', () => {
 
   it('director name survives the rebrand; old brand does not; instructor credits updated', () => {
     const view = read('pages/CertificateView.jsx');
-    // The signatory is a real person, preserved through the rebrand.
-    expect(view).toContain('Olowoake Daniel Ayomide');
+    // The signatory marks are authored in the sheet (never printed names).
+    expect(view).toContain('HEAD_SIGNATURE');
+    expect(view).toContain('DIRECTOR_SIGNATURE');
     // The institution name now comes from the single brand constant...
     expect(view).toContain('INSTITUTE_NAME');
     // ...whose value is the new brand, so it still prints in full.

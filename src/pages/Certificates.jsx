@@ -62,7 +62,7 @@ export default function Certificates() {
                         )}
                         <div className="flex justify-between gap-3"><span className="text-white/40 shrink-0">Date</span><span className="font-bold flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {formatDate(cert.issueDate)}</span></div>
                       </div>
-                      <div className="mt-3 text-[11px] text-white/40">Signed by Olowoake Daniel Ayomide — Director, DANQEL DIGITAL INSTITUTE</div>
+                      <div className="mt-3 text-[11px] text-white/40">Signed by the Head of Learning &amp; Programs and the Director, DANQEL DIGITAL INSTITUTE</div>
 
                       <div className="mt-6 grid grid-cols-2 gap-2">
                         <Link to={`/certificate/${cert.certificateId}`} className="h-11 rounded-full glass flex items-center justify-center gap-2 font-bold text-xs hover:bg-white/10 transition"><Eye className="h-4 w-4" /> VIEW</Link>

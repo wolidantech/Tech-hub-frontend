@@ -106,11 +106,11 @@ function AwardSeal({ style }) {
       <circle cx="75" cy="75" r="56" fill="none" stroke={NAVY} strokeWidth="1" opacity="0.55" />
       <circle cx="75" cy="75" r="40" fill={NAVY} />
       <circle cx="75" cy="75" r="40" fill="none" stroke={GOLD_LIGHT} strokeWidth="1.2" />
-      <text fontSize="8.5" fill={NAVY} fontWeight="700" letterSpacing="1.9"
+      <text fontSize="7.2" fill={NAVY} fontWeight="700" letterSpacing="1.1"
         fontFamily="'Plus Jakarta Sans', system-ui, sans-serif">
         <textPath href="#seal-arc-top" startOffset="50%" textAnchor="middle">OFFICIAL · CERTIFIED</textPath>
       </text>
-      <text fontSize="8" fill={NAVY} fontWeight="700" letterSpacing="1.9"
+      <text fontSize="6.6" fill={NAVY} fontWeight="700" letterSpacing="1"
         fontFamily="'Plus Jakarta Sans', system-ui, sans-serif">
         <textPath href="#seal-arc-bottom" startOffset="50%" textAnchor="middle">DANQEL DIGITAL INSTITUTE</textPath>
       </text>
@@ -121,7 +121,73 @@ function AwardSeal({ style }) {
   );
 }
 
+/* ------------------------------------------------------------- signatures
+   Deliberately NOT a printed name: the sheet carries a handwritten signature
+   mark over the title line, exactly as the reference artwork does. The names
+   are gone from the sheet entirely (a long name clipped in an exported PNG and
+   read as unfinished), so the signatory is identified by role, not by text.
+
+   The strokes are authored as pen points and smoothed with Catmull-Rom into
+   cubic Béziers — a real drawn signature rather than a font, so it renders
+   identically on every device and inside the exported PNG. */
+
+// Pen points for the Head of Learning & Programs mark; `null` segments lift the
+// pen. Kept as data so the flourish can be edited without touching SVG maths.
+const HEAD_SIGNATURE = [
+  [[26, 92], [32, 62], [44, 34], [58, 24], [70, 28], [70, 44], [58, 60], [44, 74], [56, 70], [80, 62], [104, 58], [128, 58]],
+  [[122, 64], [114, 78], [124, 84], [140, 78], [152, 64], [160, 46], [168, 28], [176, 22], [172, 44], [160, 74], [150, 94], [152, 106], [166, 110], [182, 100]],
+  [[196, 84], [204, 66], [212, 50], [222, 44], [228, 54], [230, 68], [240, 80]],
+  [[258, 68], [280, 50], [304, 34], [330, 24], [352, 20], [366, 28]],
+  [[150, 62], [182, 58]], // the cross-stroke through the tall letter
+  [[48, 106], [112, 104], [182, 106], [252, 100], [318, 90], [370, 76], [396, 60]], // underline sweep
+];
+
+// A different hand for the Director: initials plus a shorter flourish, so the
+// two lines are visibly two signatures rather than the same mark twice.
+const DIRECTOR_SIGNATURE = [
+  [[150, 96], [150, 70], [162, 44], [182, 32], [200, 36], [206, 58], [196, 82], [178, 96], [166, 100], [186, 92], [212, 78], [238, 68], [258, 64]],
+  [[252, 96], [268, 60], [278, 36], [292, 40], [300, 72], [304, 96]],
+  [[262, 78], [286, 74], [306, 74]], // crossbar
+  [[168, 110], [224, 106], [286, 104], [330, 96], [356, 88]],
+];
+
+/** Catmull-Rom spline through `pts` as a smooth cubic-Bézier SVG path. */
+function smoothPath(pts) {
+  if (!pts || pts.length < 2) return '';
+  const r = (n) => Math.round(n * 10) / 10;
+  const p = [pts[0], ...pts, pts[pts.length - 1]];
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < p.length - 2; i += 1) {
+    const [p0, p1, p2, p3] = [p[i - 1], p[i], p[i + 1], p[i + 2]];
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += ` C ${r(c1[0])} ${r(c1[1])}, ${r(c2[0])} ${r(c2[1])}, ${r(p2[0])} ${r(p2[1])}`;
+  }
+  return d;
+}
+
+/** A signature mark. Decorative only — the role beneath it identifies the signer. */
+function Signature({ strokes, style, label }) {
+  return (
+    <svg viewBox="0 0 410 124" preserveAspectRatio="xMinYMid meet" style={style}
+      role="img" aria-label={label} data-testid="certificate-signature">
+      {strokes.map((stroke, i) => (
+        <path
+          key={i}
+          d={smoothPath(stroke)}
+          fill="none"
+          stroke={GOLD_DEEP}
+          strokeWidth="4.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ))}
+    </svg>
+  );
+}
+
 /* ------------------------------------------------------------------ sheet */
+
 
 /**
  * One line of label + value, as printed in the reference: the label is muted,
@@ -305,26 +371,22 @@ const CertificateSheet = forwardRef(function CertificateSheet({ cert, name, qrUr
       {/* ------------------------------------------------ seal + signatures */}
       <AwardSeal style={{ position: 'absolute', top: 232, left: CERT_W - PAD - 150 }} />
 
-      <div style={{ position: 'absolute', top: 536, left: PAD, width: 280 }}>
-        <div className="cert-script" style={{
-          fontSize: 26, lineHeight: 1.15, color: GOLD_DEEP,
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>Olowoake Daniel Ayomide</div>
+      <div style={{ position: 'absolute', top: 506, left: PAD, width: 280 }}>
+        <Signature strokes={HEAD_SIGNATURE} label="Head of Learning & Programs signature"
+          style={{ display: 'block', width: 196, height: 59, marginLeft: -4 }} />
         <div aria-hidden="true" style={{
-          marginTop: 6, height: 1, background: 'linear-gradient(90deg, rgba(11,17,48,0.42), rgba(11,17,48,0.08))',
+          marginTop: 2, height: 1, background: 'linear-gradient(90deg, rgba(11,17,48,0.42), rgba(11,17,48,0.08))',
         }} />
         <div style={{ marginTop: 8, fontSize: 8.5, fontWeight: 700, letterSpacing: '0.24em', color: MUTED }}>
           HEAD OF LEARNING &amp; PROGRAMS
         </div>
       </div>
 
-      <div style={{ position: 'absolute', top: 536, left: CERT_W - PAD - 280, width: 280, textAlign: 'right' }}>
-        <div className="cert-script" style={{
-          fontSize: 26, lineHeight: 1.15, color: GOLD_DEEP,
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>Olowoake Daniel Ayomide</div>
+      <div style={{ position: 'absolute', top: 506, left: CERT_W - PAD - 280, width: 280, textAlign: 'right' }}>
+        <Signature strokes={DIRECTOR_SIGNATURE} label="Director signature"
+          style={{ display: 'block', width: 196, height: 59, marginLeft: 'auto', marginRight: -4 }} />
         <div aria-hidden="true" style={{
-          marginTop: 6, height: 1, background: 'linear-gradient(90deg, rgba(11,17,48,0.08), rgba(11,17,48,0.42))',
+          marginTop: 2, height: 1, background: 'linear-gradient(90deg, rgba(11,17,48,0.08), rgba(11,17,48,0.42))',
         }} />
         <div style={{ marginTop: 8, fontSize: 8.5, fontWeight: 700, letterSpacing: '0.24em', color: MUTED }}>
           DIRECTOR
@@ -574,7 +636,7 @@ export default function CertificateView() {
             )}
           </dl>
           <p className="mt-3 text-xs text-white/50">
-            Signed by Olowoake Daniel Ayomide, Head of Learning &amp; Programs, and the Director, {INSTITUTE_NAME}.
+            Signed by the Head of Learning &amp; Programs and the Director, {INSTITUTE_NAME}.
           </p>
         </div>
 
